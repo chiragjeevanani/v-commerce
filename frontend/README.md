@@ -1,16 +1,62 @@
-# React + Vite
+# V-Commerce
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+V-Commerce is a modern, premium e-commerce platform designed for a seamless shopping experience. Built with React, Vite, Tailwind CSS, and Framer Motion.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Storefront**: Browse products by category, search, and view detailed product information.
+- **Cart & Checkout**: Smooth add-to-cart experience and a multi-step checkout process.
+- **User Authentication**: Secure login, signup, and OTP verification flows.
+- **Admin Dashboard**: Comprehensive management of orders, products, payments, and store settings.
+- **Dropshipping-Ready**: Built-in support for markup management and supplier API integrations.
+- **Responsive Design**: Fully optimized for mobile, tablet, and desktop views.
+- **Premium UI**: Uses Radix UI components and Framer Motion for a state-of-the-art look and feel.
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React 18, Vite
+- **Styling**: Tailwind CSS, Lucide React (Icons)
+- **UI Components**: Radix UI
+- **Animations**: Framer Motion
+- **State Management**: React Hooks
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   ```
+
+2. Install dependencies:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Deployment
+
+The project is configured for easy deployment on **Vercel**.
+
+1. Connect your repository to Vercel.
+2. Set the root directory to `frontend`.
+3. Vercel will automatically detect the Vite build settings.
+4. Deploy!
+
+Alternatively, if deploying from the project root:
+- The root `package.json` and `vercel.json` are already set up to handle the subfolder build.
+
+---
+
+Built with ❤️ by the V-Commerce Team.
