@@ -32,6 +32,17 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const adminLogin = async (email, password) => {
+        try {
+            const response = await authService.adminLogin(email, password);
+            setUser(response.user);
+            setIsAuthenticated(true);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    };
+
     const signup = async (userData) => {
         try {
             const response = await authService.signup(userData);
@@ -56,6 +67,7 @@ export const AuthProvider = ({ children }) => {
                 isAuthenticated,
                 isLoading,
                 login,
+                adminLogin,
                 signup,
                 logout
             }}
@@ -64,6 +76,7 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
+
 
 export const useAuth = () => {
     const context = useContext(AuthContext);

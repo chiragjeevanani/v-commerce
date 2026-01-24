@@ -1,15 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "../../user/context/AuthContext";
 
 const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(true); // Default true for dev
-    const [adminUser, setAdminUser] = useState({
-        name: "Admin User",
-        email: "admin@vcommerce.com",
-        role: "Super Admin",
-        avatar: "https://github.com/shadcn.png"
-    });
+    const { user, logout: authLogout } = useAuth();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [notifications, setNotifications] = useState([
         { id: 1, title: "New Order", message: "Order #ORD-98765 received", time: "5m ago", read: false },
@@ -18,13 +13,8 @@ export const AdminProvider = ({ children }) => {
 
     const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
 
-    const login = (credentials) => {
-        // Mock login
-        setIsAuthenticated(true);
-    };
-
     const logout = () => {
-        setIsAuthenticated(false);
+        authLogout();
     };
 
     const markNotificationRead = (id) => {
@@ -34,12 +24,10 @@ export const AdminProvider = ({ children }) => {
     return (
         <AdminContext.Provider
             value={{
-                isAuthenticated,
-                adminUser,
+                adminUser: user,
                 sidebarCollapsed,
                 notifications,
                 toggleSidebar,
-                login,
                 logout,
                 markNotificationRead
             }}
@@ -56,3 +44,4 @@ export const useAdmin = () => {
     }
     return context;
 };
+

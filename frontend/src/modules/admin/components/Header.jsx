@@ -29,7 +29,10 @@ const Header = () => {
     const { theme, setTheme } = useTheme();
     const [isSearchFocused, setIsSearchFocused] = useState(false);
 
+    if (!adminUser) return null;
+
     const unreadCount = notifications.filter(n => !n.read).length;
+
 
     return (
         <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">

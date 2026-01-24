@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AdminProvider } from '../context/AdminContext';
 import AdminLayout from '../layouts/AdminLayout';
+import AdminProtectedRoute from '../components/AdminProtectedRoute';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('../pages/Dashboard'));
@@ -11,10 +12,11 @@ const Customers = lazy(() => import('../pages/Customers'));
 const Payments = lazy(() => import('../pages/Payments'));
 const Analytics = lazy(() => import('../pages/Analytics'));
 const Settings = lazy(() => import('../pages/Settings'));
+const AdminLogin = lazy(() => import('../pages/AdminLogin'));
 
 const LoadingFallback = () => (
-    <div className="flex items-center justify-center h-screen">
-        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="flex items-center justify-center h-screen bg-slate-950/20">
+        <div className="h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
     </div>
 );
 
@@ -23,7 +25,17 @@ const AdminRoutes = () => {
         <AdminProvider>
             <Suspense fallback={<LoadingFallback />}>
                 <Routes>
-                    <Route element={<AdminLayout />}>
+                    {/* Public Admin Routes */}
+                    <Route path="login" element={<AdminLogin />} />
+
+                    {/* Protected Admin Routes */}
+                    <Route
+                        element={
+                            <AdminProtectedRoute>
+                                <AdminLayout />
+                            </AdminProtectedRoute>
+                        }
+                    >
                         <Route index element={<Dashboard />} />
                         <Route path="orders" element={<Orders />} />
                         <Route path="products" element={<Products />} />
@@ -31,8 +43,10 @@ const AdminRoutes = () => {
                         <Route path="payments" element={<Payments />} />
                         <Route path="analytics" element={<Analytics />} />
                         <Route path="settings" element={<Settings />} />
-                        <Route path="*" element={<Navigate to="/admin" replace />} />
                     </Route>
+
+                    {/* Redirect unknown routes */}
+                    <Route path="*" element={<Navigate to="/admin" replace />} />
                 </Routes>
             </Suspense>
         </AdminProvider>
@@ -40,3 +54,4 @@ const AdminRoutes = () => {
 };
 
 export default AdminRoutes;
+
