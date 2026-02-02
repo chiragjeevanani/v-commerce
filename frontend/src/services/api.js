@@ -1,66 +1,77 @@
-import { products, categories, userOrders } from "./mockData";
+import axios from "axios";
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const API_URL = 'http://localhost:3000/api/v1';
+
+const apiClient = axios.create({
+  baseURL: API_URL,
+});
+
+// Interceptor to add auth token to requests
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export const api = {
-  getProducts: async () => {
-    await delay(500); // Simulate network latency
-    return products;
+  // Products (using existing CJ endpoints via our backend)
+  getProducts: async (params) => {
+    const response = await apiClient.get('/cj/list-products-v2', { params });
+    const data = response.data.data;
+    const productList = data.content?.[0]?.productList || data.list || [];
+    return productList.map(product => ({
+      id: product.id || product.pid,
+      name: product.nameEn || product.productNameEn,
+      image: product.bigImage || product.productImage,
+      category: product.categoryName || product.oneCategoryName || 'General',
+      price: (parseFloat(product.sellPrice) * 1.3).toFixed(2), // 30% margin
+      pid: product.id || product.pid
+    }));
   },
-  getProductById: async (id) => {
-    await delay(300);
-    return products.find((p) => p.id === Number(id));
-  },
-  getCategories: async () => {
-    await delay(300);
-    return categories;
-  },
-  getOrders: async () => {
-    await delay(400);
-    return userOrders;
-  },
-  getOrderById: async (orderId) => {
-    await delay(400);
-    return userOrders.find(o => o.id === orderId);
-  },
-  trackOrder: async (orderId) => {
-    await delay(600);
-    const existingOrder = userOrders.find(o => o.id === orderId);
-    if (existingOrder) return existingOrder;
 
-    // Smart Mocking: Generate a realistic order if ID starts with ORD-
-    if (orderId.startsWith("ORD-")) {
-      return {
-        id: orderId,
-        date: new Date().toISOString(),
-        status: "confirmed",
-        total: 154.98,
-        paymentMethod: "Credit Card",
-        shippingAddress: "456 Mock Street, Tech City, TC 10101",
-        estimatedDelivery: "In 2-3 days",
-        items: [
-          { productId: 1, name: "Wireless Noise Cancelling Headphones", quantity: 1, price: 249.99, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80" },
-        ],
-        timeline: [
-          { status: "placed", label: "Order Placed", date: "Just now", completed: true },
-          { status: "confirmed", label: "Confirmed", date: "Processing", completed: true },
-          { status: "shipped", label: "Shipped", date: null, completed: false },
-          { status: "out_for_delivery", label: "Out for Delivery", date: null, completed: false },
-          { status: "delivered", label: "Delivered", date: null, completed: false }
-        ]
-      };
-    }
-    return null;
-  },
-  placeOrder: async (orderData) => {
-    await delay(1000);
+  getProductById: async (pid) => {
+    const response = await apiClient.get('/cj/product-details', { params: { pid } });
+    const product = response.data.data;
+    if (!product) return null;
+
     return {
-      success: true,
-      orderId: `ORD-${Math.floor(Math.random() * 100000)}`,
-      orderData: {
-        ...orderData,
-        date: new Date().toISOString(),
-      }
+      id: product.pid,
+      name: product.productNameEn,
+      description: product.description,
+      price: (parseFloat(product.sellPrice) * 1.3).toFixed(2),
+      images: product.productImage || [product.productImage], // assuming it might be an array or string
+      category: product.categoryName,
+      pid: product.pid
     };
+  },
+
+  getCategories: async () => {
+    const response = await apiClient.get('/cj/get-categories');
+    return response.data.data || [];
+  },
+
+  // Real Orders
+  getOrders: async () => {
+    const response = await apiClient.get('/orders/my-orders');
+    return response.data.data.map(order => ({ ...order, id: order._id }));
+  },
+
+  getOrderById: async (orderId) => {
+    const response = await apiClient.get(`/orders/${orderId}`);
+    const data = response.data.data;
+    return { ...data, id: data._id };
+  },
+
+  trackOrder: async (orderId) => {
+    const response = await apiClient.get(`/orders/${orderId}`);
+    const data = response.data.data;
+    return { ...data, id: data._id };
+  },
+
+  placeOrder: async (orderData) => {
+    const response = await apiClient.post('/orders/place', orderData);
+    return response.data;
   }
 };

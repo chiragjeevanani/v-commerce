@@ -1,53 +1,89 @@
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import axios from 'axios';
 
-const MOCK_USER = {
-    id: "user-123",
-    name: "Test User",
-    email: "test@vcommerce.com",
-    phone: "9876543210",
-    avatar: "https://github.com/shadcn.png",
-    role: "user"
-};
+const API_URL = 'http://localhost:3000/api/v1/auth';
 
-const MOCK_ADMIN = {
-    id: "admin-1",
-    name: "V-Commerce Admin",
-    email: "admin@vcommerce.com",
-    role: "admin",
-    avatar: "https://github.com/shadcn.png"
-};
+const api = axios.create({
+    baseURL: API_URL,
+});
+
+// Interceptor to add auth token to requests
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
 
 export const authService = {
     login: async (email, password) => {
-        await delay(1000);
-        if (email === "test@vcommerce.com" && password === "password123") {
-            const token = "mock-jwt-token-123";
+        try {
+            const response = await api.post('/login', { email, password });
+            const { data, token } = response.data;
+
             localStorage.setItem("auth_token", token);
-            localStorage.setItem("user", JSON.stringify(MOCK_USER));
-            return { success: true, user: MOCK_USER, token };
+            localStorage.setItem("user", JSON.stringify(data));
+
+            return { success: true, user: data, token };
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Invalid email or password");
         }
-        throw new Error("Invalid email or password");
     },
 
     adminLogin: async (email, password) => {
-        await delay(1500);
-        if (email === "admin@vcommerce.com" && password === "admin123") {
-            const token = "mock-admin-token-456";
+        try {
+            const response = await api.post('/login', { email, password });
+            const { data, token } = response.data;
+
+            if (data.role !== "admin") {
+                throw new Error("Unauthorized: Only admins can login here.");
+            }
+
             localStorage.setItem("auth_token", token);
-            localStorage.setItem("user", JSON.stringify(MOCK_ADMIN));
-            return { success: true, user: MOCK_ADMIN, token };
+            localStorage.setItem("user", JSON.stringify(data));
+
+            return { success: true, user: data, token };
+        } catch (error) {
+            throw new Error(error.response?.data?.message || error.message || "Admin login failed");
         }
-        throw new Error("Unauthorized: Only admins can login here.");
     },
 
     signup: async (userData) => {
-        await delay(1200);
-        // Simulating signup - in reality, would save to DB
-        const token = "mock-jwt-token-new";
-        localStorage.setItem("auth_token", token);
-        const newUser = { ...MOCK_USER, ...userData, role: "user" };
-        localStorage.setItem("user", JSON.stringify(newUser));
-        return { success: true, user: newUser, token };
+        try {
+            const response = await api.post('/register', userData);
+            // Store email temporarily for verification
+            localStorage.setItem("pending_email", userData.email);
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Signup failed");
+        }
+    },
+
+    verifyOTP: async (otp) => {
+        try {
+            const email = localStorage.getItem("pending_email");
+            if (!email) throw new Error("No pending verification found. Please signup again.");
+
+            const response = await api.post('/verify', { email, otp });
+            const { data, token } = response.data;
+
+            localStorage.setItem("auth_token", token);
+            localStorage.setItem("user", JSON.stringify(data));
+            localStorage.removeItem("pending_email");
+
+            return { success: true, user: data, token };
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Invalid OTP code");
+        }
+    },
+
+    resendOTP: async (email) => {
+        try {
+            const response = await api.post('/resend-otp', { email });
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to resend OTP");
+        }
     },
 
     logout: () => {
@@ -64,18 +100,28 @@ export const authService = {
         return localStorage.getItem("auth_token");
     },
 
-    forgotPassword: async (email) => {
-        await delay(800);
-        console.log(`Reset link sent to ${email}`);
-        return { success: true };
+    getUsers: async () => {
+        try {
+            const response = await api.get('/all-users');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to fetch users");
+        }
     },
 
-    verifyOTP: async (otp) => {
-        await delay(1000);
-        if (otp === "123456") {
-            return { success: true };
+    toggleUserStatus: async (userId) => {
+        try {
+            const response = await api.put(`/toggle-status/${userId}`);
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to toggle user status");
         }
-        throw new Error("Invalid OTP code");
+    },
+
+    forgotPassword: async (email) => {
+        // Implement forgot password if backend supports it
+        console.log(`Reset link request for ${email}`);
+        return { success: true };
     }
 };
 

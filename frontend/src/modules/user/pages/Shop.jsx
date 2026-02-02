@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Filter, SlidersHorizontal } from "lucide-react";
-import { api } from "@/services/api";
+import { Filter, SlidersHorizontal, Loader2 } from "lucide-react";
+import { productsService } from "@/modules/admin/services/products.service";
 import ProductCard from "@/modules/user/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -40,32 +40,70 @@ const Shop = () => {
   const [visibleCount, setVisibleCount] = useState(6);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
-        const [productsData, categoriesData] = await Promise.all([
-          api.getProducts(),
-          api.getCategories(),
-        ]);
-        setProducts(productsData);
-        setCategories(categoriesData);
+        const categoriesResult = await productsService.fetchCategories();
+        if (categoriesResult) {
+          const flattened = [];
+          categoriesResult.forEach(c1 => {
+            flattened.push({ id: c1.categoryFirstId, name: c1.categoryFirstName, level: 1 });
+            c1.categoryFirstList?.forEach(c2 => {
+              flattened.push({ id: c2.categorySecondId, name: c2.categorySecondName, level: 2 });
+              c2.categorySecondList?.forEach(c3 => {
+                flattened.push({ id: c3.categoryId, name: c3.categoryName, level: 3 });
+              });
+            });
+          });
+          setCategories(flattened);
+        }
+      } catch (error) {
+        console.error("Error fetching categories", error);
+      }
+    };
+    fetchInitialData();
+  }, []);
 
-        // Initial filter from URL
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
         const categoryParam = searchParams.get("category");
-        if (categoryParam) {
+        const searchParam = searchParams.get("search");
+
+        // Update local state if URL contains category
+        if (categoryParam && !selectedCategories.includes(categoryParam)) {
           setSelectedCategories([categoryParam]);
+        } else if (!categoryParam && selectedCategories.length > 0) {
+          // If category param is removed from URL, clear selected categories
+          setSelectedCategories([]);
         }
 
-        const searchParam = searchParams.get("search");
-        // Search logic handled in filtering effect
+        const params = {
+          page: 1,
+          size: 60,
+          categoryId: categoryParam || undefined,
+          keyWord: searchParam || undefined
+        };
 
+        const productsResult = await productsService.getSupplierProducts(params);
+
+        if (productsResult && productsResult.products) {
+          setProducts(productsResult.products);
+        }
       } catch (error) {
-        console.error("Error fetching data", error);
+        console.error("Error fetching products", error);
+        toast({
+          title: "Network Error",
+          description: "Unable to load products.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+
+    fetchProducts();
+  }, [searchParams]); // Re-fetch when URL params change
 
   useEffect(() => {
     let result = [...products];
@@ -75,26 +113,41 @@ const Shop = () => {
     if (searchParam) {
       result = result.filter(p =>
         p.name.toLowerCase().includes(searchParam.toLowerCase()) ||
+        p.productNameEn.toLowerCase().includes(searchParam.toLowerCase()) ||
         p.description.toLowerCase().includes(searchParam.toLowerCase())
       );
     }
 
     // Category Filter
-    if (selectedCategories.length > 0) {
-      result = result.filter(p => selectedCategories.includes(p.category));
+    // If we have a category in the URL, the backend already filtered it.
+    // We only apply local filtering if multiple categories are selected manually in the sidebar
+    // AND we are not already filtered by a specific parent category from the URL.
+    const urlCategory = searchParams.get("category");
+    if (selectedCategories.length > 0 && !urlCategory) {
+      result = result.filter(p => selectedCategories.includes(p.categoryId));
     }
 
     // Price Filter
     result = result.filter(p => {
-      const price = p.discountPrice || p.price;
-      return price >= priceRange[0] && price <= priceRange[1];
+      // Handle potential price range strings from CJ
+      const priceStr = String(p.sellPrice || '0');
+      const minPrice = priceStr.includes('-') ? parseFloat(priceStr.split('-')[0]) : parseFloat(priceStr);
+      return minPrice >= priceRange[0] && minPrice <= priceRange[1];
     });
 
     // Sorting
     if (sortOption === "price-asc") {
-      result.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
+      result.sort((a, b) => {
+        const pA = String(a.sellPrice).includes('-') ? parseFloat(a.sellPrice.split('-')[0]) : parseFloat(a.sellPrice);
+        const pB = String(b.sellPrice).includes('-') ? parseFloat(b.sellPrice.split('-')[0]) : parseFloat(b.sellPrice);
+        return pA - pB;
+      });
     } else if (sortOption === "price-desc") {
-      result.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
+      result.sort((a, b) => {
+        const pA = String(a.sellPrice).includes('-') ? parseFloat(a.sellPrice.split('-')[0]) : parseFloat(a.sellPrice);
+        const pB = String(b.sellPrice).includes('-') ? parseFloat(b.sellPrice.split('-')[0]) : parseFloat(b.sellPrice);
+        return pB - pA;
+      });
     }
     // "featured" is default order
 
@@ -106,27 +159,31 @@ const Shop = () => {
     setVisibleCount((prev) => prev + 6);
   };
 
-  const toggleCategory = (categoryName) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryName)
-        ? prev.filter(c => c !== categoryName)
-        : [...prev, categoryName]
-    );
+  const toggleCategory = (categoryId) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (selectedCategories.includes(categoryId)) {
+      newParams.delete("category");
+      setSelectedCategories([]);
+    } else {
+      newParams.set("category", categoryId);
+      setSelectedCategories([categoryId]);
+    }
+    setSearchParams(newParams);
   };
 
   const FilterContent = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Categories</h3>
-        <div className="space-y-2">
-          {categories.map((cat) => (
-            <div key={cat.id} className="flex items-center space-x-2">
+        <h3 className="text-lg font-semibold mb-4">Top Categories</h3>
+        <div className="space-y-1 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+          {categories.filter(c => c.level === 1).map((cat) => (
+            <div key={cat.id} className="flex items-center space-x-2 py-1">
               <Checkbox
                 id={`cat-${cat.id}`}
-                checked={selectedCategories.includes(cat.name)}
-                onCheckedChange={() => toggleCategory(cat.name)}
+                checked={selectedCategories.includes(cat.id)}
+                onCheckedChange={() => toggleCategory(cat.id)}
               />
-              <label htmlFor={`cat-${cat.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <label htmlFor={`cat-${cat.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
                 {cat.name}
               </label>
             </div>

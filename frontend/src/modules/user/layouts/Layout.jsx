@@ -18,26 +18,22 @@ const Layout = () => {
   }, [location.pathname]);
 
   return (
-    <AuthProvider>
-      <CartProvider>
-        <div className="flex min-h-screen flex-col">
-          {(!isProductDetail) ? <Navbar /> : (
-            <div className="hidden md:block">
-              <Navbar />
-            </div>
-          )}
-          <main className="flex-1 pb-16 md:pb-0 relative overflow-x-hidden">
-            <AnimatePresence mode="wait" initial={false}>
-              <PageTransition key={location.pathname}>
-                {outlet}
-              </PageTransition>
-            </AnimatePresence>
-          </main>
-          <Footer />
-          <MobileBottomNav />
+    <div className="flex min-h-screen flex-col">
+      {(!isProductDetail) ? <Navbar /> : (
+        <div className="hidden md:block">
+          <Navbar />
         </div>
-      </CartProvider>
-    </AuthProvider>
+      )}
+      <main className="flex-1 pb-16 md:pb-0 relative overflow-x-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <PageTransition key={location.pathname}>
+            {outlet}
+          </PageTransition>
+        </AnimatePresence>
+      </main>
+      <Footer />
+      <MobileBottomNav />
+    </div>
   );
 };
 

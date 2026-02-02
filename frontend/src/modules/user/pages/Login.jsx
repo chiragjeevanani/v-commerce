@@ -11,7 +11,8 @@ import {
     ArrowRight,
     Chrome,
     Apple,
-    Loader2
+    Loader2,
+    ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,7 +54,13 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-muted/30 lg:bg-background p-4 lg:p-0 overflow-hidden">
+        <div className="min-h-screen relative flex items-center justify-center bg-muted/30 lg:bg-background p-4 lg:p-0 overflow-hidden">
+            {/* Absolute Back Button */}
+            <div className="absolute top-8 left-8 z-50">
+                <Button variant="ghost" className="hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate('/')}>
+                    <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Home
+                </Button>
+            </div>
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}

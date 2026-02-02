@@ -87,14 +87,33 @@ const VerifyOTP = () => {
         }
     };
 
-    const handleResend = () => {
-        setTimer(60);
-        setOtp(['', '', '', '', '', '']);
-        inputRefs.current[0].focus();
-        toast({
-            title: "OTP Resent",
-            description: "A new verification code has been sent to your phone.",
-        });
+    const handleResend = async () => {
+        const email = localStorage.getItem("pending_email");
+        if (!email) {
+            toast({
+                title: "Error",
+                description: "Email not found. Please signup again.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        try {
+            await authService.resendOTP(email);
+            setTimer(60);
+            setOtp(['', '', '', '', '', '']);
+            inputRefs.current[0].focus();
+            toast({
+                title: "OTP Resent",
+                description: "A new verification code has been sent to your email.",
+            });
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error.message || "Failed to resend OTP.",
+                variant: "destructive",
+            });
+        }
     };
 
     return (
@@ -111,7 +130,9 @@ const VerifyOTP = () => {
                     <h1 className="text-3xl font-black tracking-tight">Verify Your Account</h1>
                     <p className="text-muted-foreground text-sm font-medium">
                         We've sent a 6-digit verification code to <br />
-                        <span className="font-bold text-foreground">+91 98*** **210</span>
+                        <span className="font-bold text-foreground">
+                            {localStorage.getItem("pending_email") || "your email address"}
+                        </span>
                     </p>
                 </div>
 

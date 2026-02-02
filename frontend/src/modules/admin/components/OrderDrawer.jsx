@@ -43,9 +43,8 @@ const OrderDrawer = ({ order, isOpen, onClose }) => {
                             <User className="h-4 w-4" /> Customer Information
                         </h3>
                         <div className="bg-muted/30 p-4 rounded-xl space-y-2 border">
-                            <p className="font-semibold">Jane Doe</p>
-                            <p className="text-sm text-muted-foreground">jane.doe@example.com</p>
-                            <p className="text-sm text-muted-foreground">+1 (555) 123-4567</p>
+                            <p className="font-semibold">{order.customer?.name || "N/A"}</p>
+                            <p className="text-sm text-muted-foreground">{order.customer?.country || "N/A"}</p>
                         </div>
                     </section>
 
@@ -56,7 +55,7 @@ const OrderDrawer = ({ order, isOpen, onClose }) => {
                         </h3>
                         <div className="bg-muted/30 p-4 rounded-xl border">
                             <p className="text-sm leading-relaxed text-muted-foreground">
-                                {order.shippingAddress}
+                                {order.shippingAddress || "N/A"}
                             </p>
                         </div>
                     </section>
@@ -78,7 +77,7 @@ const OrderDrawer = ({ order, isOpen, onClose }) => {
                             <Separator />
                             <div className="flex justify-between text-lg font-bold pt-1">
                                 <span>Total Amount</span>
-                                <span className="text-primary">${order.total.toFixed(2)}</span>
+                                <span className="text-primary">${order.total?.toFixed(2) || "0.00"}</span>
                             </div>
                         </div>
                     </section>
@@ -86,10 +85,10 @@ const OrderDrawer = ({ order, isOpen, onClose }) => {
                     {/* Items List */}
                     <section className="space-y-4">
                         <h3 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
-                            <Package className="h-4 w-4" /> Order Items ({order.items.length})
+                            <Package className="h-4 w-4" /> Order Items ({order.items?.length || 0})
                         </h3>
                         <div className="space-y-3">
-                            {order.items.map((item, i) => (
+                            {order.items?.map((item, i) => (
                                 <div key={i} className="flex gap-4 p-3 bg-muted/30 rounded-xl border">
                                     <div className="h-16 w-16 rounded-lg overflow-hidden border bg-background shrink-0">
                                         <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
@@ -98,11 +97,14 @@ const OrderDrawer = ({ order, isOpen, onClose }) => {
                                         <p className="text-sm font-bold line-clamp-1">{item.name}</p>
                                         <div className="flex justify-between items-center">
                                             <span className="text-xs text-muted-foreground">Qty: {item.quantity}</span>
-                                            <span className="text-sm font-semibold">${item.price.toFixed(2)}</span>
+                                            <span className="text-sm font-semibold">${item.price?.toFixed(2) || "0.00"}</span>
                                         </div>
                                     </div>
                                 </div>
                             ))}
+                            {(!order.items || order.items.length === 0) && (
+                                <p className="text-xs text-muted-foreground italic p-4 text-center">N/A (Synced from Supplier)</p>
+                            )}
                         </div>
                     </section>
 

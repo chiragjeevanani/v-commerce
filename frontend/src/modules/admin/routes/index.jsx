@@ -12,6 +12,7 @@ const Customers = lazy(() => import('../pages/Customers'));
 const Payments = lazy(() => import('../pages/Payments'));
 const Analytics = lazy(() => import('../pages/Analytics'));
 const Settings = lazy(() => import('../pages/Settings'));
+const ProductDetail = lazy(() => import('../pages/ProductDetail'));
 const AdminLogin = lazy(() => import('../pages/AdminLogin'));
 
 const LoadingFallback = () => (
@@ -39,6 +40,7 @@ const AdminRoutes = () => {
                         <Route index element={<Dashboard />} />
                         <Route path="orders" element={<Orders />} />
                         <Route path="products" element={<Products />} />
+                        <Route path="products/:id" element={<ProductDetail />} />
                         <Route path="customers" element={<Customers />} />
                         <Route path="payments" element={<Payments />} />
                         <Route path="analytics" element={<Analytics />} />

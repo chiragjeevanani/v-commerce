@@ -27,45 +27,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const Orders = () => {
     const [orders, setOrders] = useState([]);
-    const [filteredOrders, setFilteredOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+    const fetchOrders = async () => {
+        setLoading(true);
+        try {
+            const data = await ordersService.getAllOrders({
+                pageNum: page,
+                pageSize: 20
+            });
+            setOrders(data.orders);
+            setTotalPages(data.totalPages);
+            setTotalItems(data.total);
+        } catch (error) {
+            console.error("Failed to fetch orders:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const data = await ordersService.getAllOrders();
-                setOrders(data);
-                setFilteredOrders(data);
-            } catch (error) {
-                console.error("Failed to fetch orders:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchOrders();
-    }, []);
+    }, [page]);
 
-    useEffect(() => {
-        let result = orders;
-
-        if (statusFilter !== "all") {
-            result = result.filter(o => o.status.toLowerCase() === statusFilter.toLowerCase());
-        }
-
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(o =>
-                o.id.toLowerCase().includes(query) ||
-                o.paymentMethod.toLowerCase().includes(query)
-            );
-        }
-
-        setFilteredOrders(result);
-    }, [searchQuery, statusFilter, orders]);
+    // Local filter for status (since CJ list API might not support it directly in one call)
+    const filteredOrders = statusFilter === "all"
+        ? orders
+        : orders.filter(o => o.status.toLowerCase().includes(statusFilter.toLowerCase()));
 
     const handleRowClick = (order) => {
         setSelectedOrder(order);
@@ -154,8 +149,8 @@ const Orders = () => {
                                                 <td className="px-6 py-4 font-medium">{order.id}</td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="font-semibold text-xs">Jane Doe</span>
-                                                        <span className="text-[10px] text-muted-foreground">jane@example.com</span>
+                                                        <span className="font-semibold text-xs">{order.customer?.name || "Customer"}</span>
+                                                        <span className="text-[10px] text-muted-foreground">{order.customer?.country || "N/A"}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs whitespace-nowrap">
@@ -209,11 +204,44 @@ const Orders = () => {
 
                     {/* Pagination */}
                     <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/10">
-                        <span className="text-xs text-muted-foreground">Showing 1 to {filteredOrders.length} of {orders.length} orders</span>
+                        <span className="text-xs text-muted-foreground">Showing {(page - 1) * 20 + 1} to {Math.min(page * 20, totalItems)} of {totalItems} orders</span>
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon" disabled className="h-8 w-8"><ChevronLeft className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="sm" className="h-8 bg-primary text-primary-foreground">1</Button>
-                            <Button variant="outline" size="icon" disabled className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="h-8 w-8"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                                    const pageNum = i + 1; // Simplification for now
+                                    return (
+                                        <Button
+                                            key={pageNum}
+                                            variant={page === pageNum ? "primary" : "outline"}
+                                            size="sm"
+                                            className={`h-8 w-8 ${page === pageNum ? "bg-primary text-primary-foreground" : ""}`}
+                                            onClick={() => setPage(pageNum)}
+                                        >
+                                            {pageNum}
+                                        </Button>
+                                    );
+                                })}
+                            </div>
+
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                                className="h-8 w-8"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
                 </CardContent>

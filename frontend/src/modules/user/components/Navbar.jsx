@@ -114,13 +114,19 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full overflow-hidden border">
-                    <img src={user?.avatar} alt={user?.name} className="h-full w-full object-cover" />
+                    <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt={user.fullName} className="h-full w-full object-cover" />
+                      ) : (
+                        user?.fullName?.charAt(0) || 'U'
+                      )}
+                    </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 rounded-xl p-2 shadow-xl border-muted">
                   <DropdownMenuLabel className="p-2">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-black leading-none">{user?.name}</p>
+                      <p className="text-sm font-black leading-none">{user?.fullName}</p>
                       <p className="text-xs leading-none text-muted-foreground font-medium italic">
                         {user?.email}
                       </p>

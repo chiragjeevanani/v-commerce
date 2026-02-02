@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, Search, ChevronRight, Clock, CheckCircle2, Truck, AlertCircle, ShoppingBag, Calendar } from "lucide-react";
+import { Package, Search, ChevronRight, Clock, CheckCircle2, Truck, AlertCircle, ShoppingBag, Calendar, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,6 +63,9 @@ const OrderHistory = () => {
 
     return (
         <div className="container py-8 md:py-12 max-w-4xl">
+            <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate(-1)}>
+                <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back
+            </Button>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">My Orders</h1>

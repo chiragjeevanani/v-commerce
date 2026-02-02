@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, LayoutGrid, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
-import { api } from "@/services/api";
+import { productsService } from "@/modules/admin/services/products.service";
 import ProductCard from "@/modules/user/components/ProductCard";
 import SkeletonCard from "@/modules/user/components/SkeletonCard";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,10 @@ const banners = [
   },
 ];
 
+// Use a module-level variable to track if initial fetch has been ATTEMPTED
+// This persists across component remounts in development
+let initialFetchAttempted = false;
+
 const Home = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
   const [products, setProducts] = useState([]);
@@ -43,21 +47,37 @@ const Home = () => {
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
+    // Rely on productsService's atomic deduplication as the primary shield
+    // But also prevent state setting on unmounted components
+    let isMounted = true;
+
     const fetchData = async () => {
+      if (!initialFetchAttempted) {
+        setLoading(true);
+      }
+
       try {
-        const [productsData, categoriesData] = await Promise.all([
-          api.getProducts(),
-          api.getCategories(),
+        const [productsResult, categoriesResult] = await Promise.all([
+          productsService.getSupplierProducts({ page: 1, size: 24 }),
+          productsService.fetchCategories(),
         ]);
-        setProducts(productsData);
-        setCategories(categoriesData);
+
+        if (isMounted) {
+          if (productsResult?.products) setProducts(productsResult.products);
+          if (categoriesResult) setCategories(categoriesResult);
+        }
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          initialFetchAttempted = true;
+        }
       }
     };
+
     fetchData();
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
@@ -207,50 +227,67 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Categories Section */}
+      {/* Hierarchical Categories Section */}
       <section className="container py-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Shop by Category</h2>
-            <p className="text-muted-foreground mt-2">Explore our curated collections for every need.</p>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+              <LayoutGrid className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight">Browse Categories</h2>
+              <p className="text-muted-foreground text-sm uppercase font-bold tracking-tighter opacity-50">Discover by subcategory</p>
+            </div>
           </div>
-          <Link to="/shop" className="text-sm font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-opacity border-b-2 border-primary pb-1">
-            Browse All
+          <Link to="/shop" className="text-sm font-bold uppercase tracking-widest text-indigo-600 hover:opacity-70 transition-opacity flex items-center gap-2">
+            Explore All <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loading
-            ? Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonCard key={i} aspectRatio="portrait" />
+            ? Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-40 rounded-2xl bg-muted animate-pulse" />
             ))
-            : categories.map((cat, i) => (
+            : categories.slice(0, 6).map((cat, i) => (
               <motion.div
-                key={cat.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                key={cat.categoryFirstId}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
+                className="group relative overflow-hidden bg-white hover:bg-indigo-50/30 border border-slate-100 rounded-[2rem] p-6 transition-all duration-500 shadow-sm hover:shadow-xl hover:-translate-y-1"
               >
-                <Link
-                  to={`/shop?category=${cat.name}`}
-                  className="group relative block aspect-[3/4] overflow-hidden rounded-2xl bg-muted shadow-sm hover:shadow-xl transition-all duration-500"
-                >
-                  <img
-                    src={cat.image}
-                    alt={cat.name}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
-                  <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col items-center transform transition-transform duration-500">
-                    <span className="text-white font-bold text-xl tracking-wide group-hover:mb-2 transition-all">
-                      {cat.name}
-                    </span>
-                    <span className="text-white/0 group-hover:text-white/80 text-xs font-medium uppercase tracking-widest transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                      View Collection
-                    </span>
+                <div className="flex justify-between items-start mb-6">
+                  <div className="space-y-1">
+                    <Link to={`/shop?category=${cat.categoryFirstId}`}>
+                      <h3 className="text-xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase italic tracking-tighter">
+                        {cat.categoryFirstName}
+                      </h3>
+                    </Link>
+                    <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Popular Subcategories</p>
                   </div>
-                </Link>
+                  <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
+                    <Zap className="h-6 w-6" />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {cat.categoryFirstList?.slice(0, 5).map((sub, idx) => (
+                    <Link
+                      key={sub.categorySecondId}
+                      to={`/shop?category=${sub.categorySecondId}`}
+                      className="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-100 text-[11px] font-bold text-slate-600 hover:bg-indigo-600 hover:text-white hover:border-transparent transition-all duration-300"
+                    >
+                      {sub.categorySecondName}
+                    </Link>
+                  ))}
+                  {cat.categoryFirstList?.length > 5 && (
+                    <span className="text-[11px] font-bold text-indigo-600 py-1.5 px-2">
+                      +{cat.categoryFirstList.length - 5} More
+                    </span>
+                  )}
+                </div>
               </motion.div>
             ))}
         </div>
@@ -268,14 +305,17 @@ const Home = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-5">
+        <div
+          key={loading ? 'loading' : 'loaded'}
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-5"
+        >
           {loading
             ? Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))
             : products.slice(0, visibleProducts).map((product, i) => (
               <motion.div
-                key={product.id}
+                key={product.pid || product.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}

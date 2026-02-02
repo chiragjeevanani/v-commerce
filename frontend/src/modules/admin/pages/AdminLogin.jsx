@@ -21,13 +21,12 @@ import { Card, CardContent } from '@/components/ui/card';
 const AdminLogin = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState({ email: '', password: '' });
+    const [formData, setFormData] = useState({ email: 'admin@gmail.com', password: '123' });
 
     const { adminLogin } = useAuth();
     const { toast } = useToast();
     const navigate = useNavigate();
-    const location = useLocation();
-    const from = location.state?.from?.pathname || "/admin";
+    const from = "/admin";
 
     const handleSubmit = async (e) => {
         e.preventDefault();

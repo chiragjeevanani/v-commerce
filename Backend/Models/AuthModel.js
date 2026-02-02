@@ -47,6 +47,20 @@ const userSchema = new mongoose.Schema(
 
     resetToken: String,
     resetTokenExpire: Date,
+
+    addresses: [
+      {
+        fullName: String,
+        addressType: { type: String, default: "Home" }, // Home, Work, etc.
+        street: String,
+        city: String,
+        state: String,
+        country: { type: String, default: "India" },
+        zipCode: String,
+        phoneNumber: String,
+        isDefault: { type: Boolean, default: false }
+      }
+    ]
   },
   { timestamps: true },
 );

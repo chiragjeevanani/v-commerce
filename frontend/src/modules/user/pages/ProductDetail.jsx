@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, ShoppingCart, CreditCard, ArrowLeft } from "lucide-react";
-import { api } from "@/services/api";
+import { Minus, Plus, ShoppingCart, CreditCard, ArrowLeft, Info } from "lucide-react";
+import { productsService } from "@/modules/admin/services/products.service";
 import { useCart } from "@/modules/user/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,20 +29,53 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
-        const [targetProduct, allProducts] = await Promise.all([
-          api.getProductById(id),
-          api.getProducts()
-        ]);
+        const result = await productsService.getProductDetails(id);
 
-        if (targetProduct) {
-          setProduct(targetProduct);
-          // Related: Same category, excluding current
-          setRelatedProducts(allProducts.filter(p => p.category === targetProduct.category && p.id !== targetProduct.id).slice(0, 4));
-          // Recommended: Different category or popular, excluding current
-          setRecommendedProducts(allProducts.filter(p => p.id !== targetProduct.id).sort(() => 0.5 - Math.random()).slice(0, 4));
+        if (result.success && result.data) {
+          const detail = result.data;
+
+          // Normalize CJ product data
+          const normalizedProduct = {
+            id: detail.pid,
+            pid: detail.pid,
+            name: detail.productNameEn,
+            image: detail.productImage,
+            images: detail.productImageSet || [detail.productImage],
+            price: parseFloat(detail.sellPrice || 0) * 1.3, // 30% margin
+            discountPrice: detail.sellPrice ? parseFloat(detail.sellPrice) * 1.3 : null,
+            description: detail.productHtmlDescription || detail.productRemarks || "No description available.",
+            category: detail.categoryName || "General",
+            stock: detail.warehouseInventoryNum || 100,
+            sku: detail.productSku,
+            weight: detail.productWeight,
+            material: detail.material || "High Quality"
+          };
+
+          setProduct(normalizedProduct);
+
+          // Fetch real related products
+          const relatedResult = await productsService.getSupplierProducts({
+            categoryId: detail.categoryId,
+            size: 4
+          });
+
+          if (relatedResult?.products) {
+            setRelatedProducts(relatedResult.products.filter(p => p.pid !== id));
+          }
+
+          // Recommendations
+          const recommendedResult = await productsService.getSupplierProducts({ size: 8 });
+          if (recommendedResult?.products) {
+            setRecommendedProducts(recommendedResult.products.filter(p => p.pid !== id).slice(0, 4));
+          }
         }
       } catch (error) {
         console.error("Failed to load product", error);
+        toast({
+          title: "Error",
+          description: "Could not load product details.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -119,7 +152,7 @@ const ProductDetail = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
-            src={product.image}
+            src={product.images[activeImage] || product.image}
             alt={product.name}
             className="h-full w-full object-cover"
           />
@@ -156,7 +189,7 @@ const ProductDetail = () => {
 
               {/* Mobile Thumbnails (Moved Here) */}
               <div className="flex gap-3 overflow-x-auto py-2 scrollbar-none">
-                {[product.image, product.image, product.image].map((img, i) => (
+                {(product.images || [product.image]).slice(0, 5).map((img, i) => (
                   <button
                     key={i}
                     className={`relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-300 ${i === activeImage
@@ -224,7 +257,7 @@ const ProductDetail = () => {
               )}
             </motion.div>
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
-              {[product.image, product.image, product.image].map((img, i) => (
+              {(product.images || [product.image]).slice(0, 6).map((img, i) => (
                 <button
                   key={i}
                   className={`relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-3xl border-2 transition-all duration-300 ${i === activeImage
@@ -262,9 +295,10 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            <p className="text-xl text-muted-foreground leading-relaxed font-medium border-l-4 border-primary/20 pl-6">
-              {product.description}
-            </p>
+            <div
+              className="text-lg text-muted-foreground leading-relaxed font-medium border-l-4 border-primary/20 pl-6 product-description"
+              dangerouslySetInnerHTML={{ __html: product.description }}
+            />
 
             <div className="space-y-8 pt-6 border-t">
               <div className="flex flex-wrap items-center gap-8">

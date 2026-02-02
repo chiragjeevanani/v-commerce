@@ -6,35 +6,69 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/services/api";
-import { Truck, ChevronRight, Package, Eye } from "lucide-react";
+import { Truck, ChevronRight, Package, Eye, Plus, Trash2, MapPin, Check, ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { addressService } from "@/services/address.service";
+import { useAuth } from "@/modules/user/context/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 const Account = () => {
   const navigate = useNavigate();
+  const { user, logout: authLogout } = useAuth();
   const [orders, setOrders] = useState([]);
+  const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [addressLoading, setAddressLoading] = useState(false);
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const data = await api.getOrders();
-        setOrders(data);
+        const [ordersData, addressesData] = await Promise.all([
+          api.getOrders(),
+          addressService.getAddresses()
+        ]);
+        setOrders(ordersData);
+        setAddresses(addressesData);
       } catch (error) {
-        console.error("Error fetching orders", error);
+        console.error("Error fetching account data", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchOrders();
+    fetchData();
   }, []);
 
+  const handleDeleteAddress = async (id) => {
+    try {
+      const response = await addressService.deleteAddress(id);
+      setAddresses(response.data);
+      toast({ title: "Success", description: "Address deleted successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleSetDefault = async (id) => {
+    try {
+      const response = await addressService.setDefaultAddress(id);
+      setAddresses(response.data);
+      toast({ title: "Success", description: "Default address updated" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
   const handleLogout = () => {
-    // Mock logout
+    authLogout();
     navigate("/");
   };
 
   return (
     <div className="container py-8">
+      <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate(-1)}>
+        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back
+      </Button>
       <h1 className="text-3xl font-bold mb-8">My Account</h1>
 
       <Tabs defaultValue="orders" className="space-y-6">
@@ -135,21 +169,50 @@ const Account = () => {
 
         <TabsContent value="address">
           <Card>
-            <CardHeader>
-              <CardTitle>Saved Addresses</CardTitle>
-              <CardDescription>Manage your shipping addresses.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Saved Addresses</CardTitle>
+                <CardDescription>Manage your shipping addresses.</CardDescription>
+              </div>
+              <Button size="sm" className="gap-2" onClick={() => navigate('/checkout')}>
+                <Plus className="h-4 w-4" /> Add New
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="border rounded-lg p-4 relative">
-                <div className="font-semibold mb-1">Home</div>
-                <div className="text-sm text-muted-foreground">
-                  123 Main Street, Apt 4B<br />
-                  New York, NY 10001<br />
-                  United States
+              {addresses.length > 0 ? (
+                addresses.map((addr) => (
+                  <div key={addr._id} className={`border rounded-xl p-5 relative group transition-all ${addr.isDefault ? 'border-primary bg-primary/5' : 'hover:border-primary/30'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className={`h-4 w-4 ${addr.isDefault ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <span className="font-bold text-sm uppercase tracking-wider">{addr.addressType}</span>
+                      {addr.isDefault && <Badge className="text-[10px] font-black uppercase">Default</Badge>}
+                    </div>
+                    <div className="font-black text-lg mb-1">{addr.fullName}</div>
+                    <div className="text-sm text-muted-foreground leading-relaxed">
+                      {addr.street}<br />
+                      {addr.city}, {addr.state} {addr.zipCode}<br />
+                      {addr.country}
+                    </div>
+                    <div className="text-sm font-bold mt-2 text-foreground">📞 {addr.phoneNumber}</div>
+
+                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {!addr.isDefault && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10" onClick={() => handleSetDefault(addr._id)}>
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteAddress(addr._id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 border-2 border-dashed rounded-3xl">
+                  <MapPin className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm font-medium">No addresses saved yet.</p>
                 </div>
-                <Button variant="link" className="absolute top-2 right-2 h-auto p-0">Edit</Button>
-              </div>
-              <Button variant="outline" className="w-full">Add New Address</Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

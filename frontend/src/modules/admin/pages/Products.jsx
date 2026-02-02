@@ -1,15 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Search,
     Filter,
     LayoutGrid,
     List,
     ChevronRight,
+    ChevronLeft,
     ShieldCheck,
     TrendingUp,
     AlertTriangle,
     ExternalLink,
-    Edit2
+    Eye,
+    ArrowLeft,
+    FolderOpen
 } from 'lucide-react';
 import { productsService } from '../services/products.service';
 import PriceMarginModal from '../components/PriceMarginModal';
@@ -22,40 +26,146 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 
 const Products = () => {
+    const navigate = useNavigate();
     const { toast } = useToast();
+    const [viewState, setViewState] = useState('products'); // Default to products view
+    const [categoryPath, setCategoryPath] = useState([]); // Track hierarchy: [Level1Obj, Level2Obj]
     const [products, setProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
+    const [allCategories, setAllCategories] = useState([]); // Raw nested data from API
+    const [displayCategories, setDisplayCategories] = useState([]); // Categories to show in current view
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState('grid');
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("");
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // Use refs to prevent concurrent duplicate API calls
+    const fetchingProductsRef = useRef(false);
+    const fetchingCategoriesRef = useRef(false);
+
+    const fetchProducts = async () => {
+        if (fetchingProductsRef.current) return;
+        fetchingProductsRef.current = true;
+        setLoading(true);
+        try {
+            const data = await productsService.getSupplierProducts({
+                page,
+                size: 20,
+                keyWord: searchQuery,
+                categoryId: selectedCategory
+            });
+            setProducts(data.products);
+            setTotalPages(data.totalPages);
+        } catch (error) {
+            console.error("Failed to fetch products:", error);
+            toast({
+                title: "Error",
+                description: "Failed to fetch products from CJ API.",
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+            fetchingProductsRef.current = false;
+        }
+    };
+
+    const fetchCategories = async () => {
+        if (fetchingCategoriesRef.current) return;
+        fetchingCategoriesRef.current = true;
+        setLoading(true);
+        try {
+            const data = await productsService.fetchCategories();
+            setAllCategories(data);
+            setDisplayCategories(data.map(c => ({
+                id: c.categoryFirstId,
+                name: c.categoryFirstName,
+                subList: c.categoryFirstList,
+                level: 1
+            })));
+        } catch (error) {
+            console.error("Failed to fetch categories:", error);
+        } finally {
+            setLoading(false);
+            fetchingCategoriesRef.current = false;
+        }
+    };
+
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const data = await productsService.getSupplierProducts();
-                setProducts(data);
-                setFilteredProducts(data);
-            } catch (error) {
-                console.error("Failed to fetch products:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProducts();
+        fetchCategories();
     }, []);
 
     useEffect(() => {
-        const query = searchQuery.toLowerCase();
-        setFilteredProducts(
-            products.filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query))
-        );
-    }, [searchQuery, products]);
+        fetchProducts();
+    }, [page, selectedCategory]);
+
+    const handleCategorySelect = (cat) => {
+        if (cat.level === 1) {
+            // Drill into Level 2
+            setCategoryPath([cat]);
+            setDisplayCategories(cat.subList.map(s => ({
+                id: s.categorySecondId,
+                name: s.categorySecondName,
+                subList: s.categorySecondList,
+                level: 2
+            })));
+        } else if (cat.level === 2) {
+            // Drill into Level 3
+            setCategoryPath(prev => [...prev, cat]);
+            setDisplayCategories(cat.subList.map(t => ({
+                id: t.categoryId,
+                name: t.categoryName,
+                level: 3
+            })));
+        } else {
+            // Level 3 selected - show products
+            setSelectedCategory(cat.id);
+            setPage(1);
+            setViewState('products');
+        }
+    };
+
+    const handleBackCategory = () => {
+        if (categoryPath.length === 2) {
+            // From Level 3 back to Level 2
+            const level1 = categoryPath[0];
+            setCategoryPath([level1]);
+            setDisplayCategories(level1.subList.map(s => ({
+                id: s.categorySecondId,
+                name: s.categorySecondName,
+                subList: s.categorySecondList,
+                level: 2
+            })));
+        } else if (categoryPath.length === 1) {
+            // From Level 2 back to Level 1
+            resetToCategories();
+        }
+    };
+
+    const resetToCategories = () => {
+        setCategoryPath([]);
+        setSelectedCategory("");
+        setViewState('categories');
+        setSearchQuery("");
+        // Reset to Level 1
+        setDisplayCategories(allCategories.map(c => ({
+            id: c.categoryFirstId,
+            name: c.categoryFirstName,
+            subList: c.categoryFirstList,
+            level: 1
+        })));
+    };
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        setPage(1);
+        fetchProducts();
+    };
 
     const handleEditPricing = (product) => {
-        setSelectedProduct(product);
-        setIsModalOpen(true);
+        navigate(`/admin/products/${product.id}`);
     };
 
     const handleSavePricing = async (settings) => {
@@ -85,32 +195,34 @@ const Products = () => {
                     </div>
                     <p className="text-muted-foreground">Manage markups for products synced from the global dropship network.</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex bg-muted rounded-lg p-1 border">
-                        <Button
-                            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setViewMode('grid')}
-                        >
-                            <LayoutGrid className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setViewMode('list')}
-                        >
-                            <List className="h-4 w-4" />
-                        </Button>
+                {viewState === 'products' && (
+                    <div className="flex items-center gap-2">
+                        <div className="flex bg-muted rounded-lg p-1 border">
+                            <Button
+                                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setViewMode('grid')}
+                            >
+                                <LayoutGrid className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setViewMode('list')}
+                            >
+                                <List className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Filters Bar */}
             <Card className="border-none bg-muted/40 shadow-none">
                 <CardContent className="p-4 flex flex-col md:flex-row items-center gap-4">
-                    <div className="relative flex-1">
+                    <form onSubmit={handleSearch} className="relative flex-1 w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search by product name or global ID..."
@@ -118,18 +230,42 @@ const Products = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
-                    </div>
-                    <Button variant="outline" className="gap-2 shrink-0">
-                        <Filter className="h-4 w-4" /> Categories
-                    </Button>
-                    <Button className="gap-2 shrink-0 bg-indigo-600 hover:bg-indigo-700">
+                        <Button type="submit" className="hidden">Search</Button>
+                    </form>
+
+                    <select
+                        className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={selectedCategory}
+                        onChange={(e) => {
+                            setSelectedCategory(e.target.value);
+                            setPage(1);
+                        }}
+                    >
+                        <option value="">All Categories</option>
+                        {allCategories.map((first) => (
+                            <optgroup key={first.categoryFirstId} label={first.categoryFirstName}>
+                                {first.categoryFirstList?.map(second => (
+                                    <React.Fragment key={second.categorySecondId}>
+                                        <option value={second.categorySecondId}>-- {second.categorySecondName}</option>
+                                        {second.categorySecondList?.map(third => (
+                                            <option key={third.categoryId} value={third.categoryId}>
+                                                &nbsp;&nbsp;&nbsp;&nbsp;{third.categoryName}
+                                            </option>
+                                        ))}
+                                    </React.Fragment>
+                                ))}
+                            </optgroup>
+                        ))}
+                    </select>
+
+                    {/* <Button className="gap-2 shrink-0 bg-indigo-600 hover:bg-indigo-700">
                         <TrendingUp className="h-4 w-4" /> Bulk Margin Editor
-                    </Button>
+                    </Button> */}
                 </CardContent>
             </Card>
 
             {/* Products Display */}
-            {loading ? (
+            {loading && products.length === 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <div key={i} className="h-80 bg-card rounded-xl border animate-pulse" />
@@ -139,7 +275,7 @@ const Products = () => {
                 <AnimatePresence>
                     {viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {filteredProducts.map((product, i) => (
+                            {products.map((product, i) => (
                                 <motion.div
                                     layout
                                     initial={{ opacity: 0, scale: 0.9 }}
@@ -188,7 +324,7 @@ const Products = () => {
                                                 <span className="text-xs font-bold text-green-600">+{product.margin}%</span>
                                             </div>
                                             <Button size="sm" className="gap-2 rounded-full px-4" onClick={() => handleEditPricing(product)}>
-                                                <Edit2 className="h-3 w-3" /> Edit Pricing
+                                                <Eye className="h-3 w-3" /> View Product
                                             </Button>
                                         </div>
                                     </div>
@@ -212,7 +348,7 @@ const Products = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredProducts.map((product) => (
+                                            {products.map((product, i) => (
                                                 <tr key={product.id} className="border-b hover:bg-muted/50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
@@ -232,8 +368,8 @@ const Products = () => {
                                                         </Badge>
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditPricing(product)}>
-                                                            <Edit2 className="h-4 w-4" />
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-600" onClick={() => handleEditPricing(product)}>
+                                                            <Eye className="h-4 w-4" />
                                                         </Button>
                                                     </td>
                                                 </tr>
@@ -245,6 +381,51 @@ const Products = () => {
                         </Card>
                     )}
                 </AnimatePresence>
+            )}
+
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                    >
+                        <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) pageNum = i + 1;
+                            else if (page <= 3) pageNum = i + 1;
+                            else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
+                            else pageNum = page - 2 + i;
+
+                            return (
+                                <Button
+                                    key={pageNum}
+                                    variant={page === pageNum ? "primary" : "outline"}
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setPage(pageNum)}
+                                >
+                                    {pageNum}
+                                </Button>
+                            );
+                        })}
+                    </div>
+
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                    >
+                        Next <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                </div>
             )}
 
             {/* Sync Disclaimer */}

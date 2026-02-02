@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Plus, Minus, ArrowRight, ShoppingCart } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowRight, ShoppingCart, ArrowLeft } from "lucide-react";
 import { useCart } from "@/modules/user/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +31,9 @@ const Cart = () => {
 
   return (
     <div className="container py-8">
+      <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate(-1)}>
+        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back
+      </Button>
       <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -39,7 +42,7 @@ const Cart = () => {
             {cart.map((item) => (
               <motion.div
                 layout
-                key={item.id}
+                key={item.pid}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
@@ -65,7 +68,7 @@ const Cart = () => {
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive/90"
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(item.pid)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -77,7 +80,7 @@ const Cart = () => {
                             variant="ghost"
                             size="icon"
                             className="h-full w-8 rounded-none"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.pid, item.quantity - 1)}
                             disabled={item.quantity <= 1}
                           >
                             <Minus className="h-3 w-3" />
@@ -87,7 +90,7 @@ const Cart = () => {
                             variant="ghost"
                             size="icon"
                             className="h-full w-8 rounded-none"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.pid, item.quantity + 1)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>

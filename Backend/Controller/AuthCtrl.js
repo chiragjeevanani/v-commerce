@@ -7,7 +7,7 @@ import { sendOTPEmail } from "../Helpers/SendMail.js";
 // ================= REGISTER =================
 export const registerUser = async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, phoneNumber } = req.body;
 
     const userExists = await User.findOne({ email, isDeleted: false });
     if (userExists)
@@ -25,6 +25,7 @@ export const registerUser = async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
+      phoneNumber,
       otp,
       otpExpire: Date.now() + 10 * 60 * 1000,
     });
@@ -50,7 +51,7 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user)
       return res.status(400).json({ success: false, message: "Invalid credentials", data: null });
-    if (!user.isActive )
+    if (!user.isActive)
       return res.status(403).json({ success: false, message: "Account deactivated", data: null });
     if (user.isDeleted)
       return res.status(403).json({ success: false, message: "Account deleted", data: null });
@@ -241,6 +242,17 @@ export const userProfileById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     res.json({ success: true, message: "User profile fetched", data: user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", data: null });
+  }
+};
+
+// ================= GET ALL USERS (ADMIN) =================
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({ isDeleted: false, role: "user" }).sort({ createdAt: -1 });
+    res.json({ success: true, message: "Users fetched", data: users });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error", data: null });

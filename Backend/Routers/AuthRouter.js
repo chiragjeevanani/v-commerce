@@ -11,6 +11,7 @@ import {
     resendOTP,
     userProfile,
     userProfileById,
+    getAllUsers,
     setPassword,
 } from "../Controller/AuthCtrl.js";
 
@@ -36,6 +37,7 @@ router.delete("/soft-delete", AuthMiddleware, softDeleteUser);
 router.delete("/delete-profile/:id", AuthMiddleware, isAdmin, deleteProfile);
 router.put("/toggle-status/:id", AuthMiddleware, isAdmin, toggleUserStatus);
 router.get("/userProfile/:id", AuthMiddleware, isAdmin, userProfileById);
+router.get("/all-users", AuthMiddleware, isAdmin, getAllUsers);
 
 
 export default router;

@@ -13,7 +13,8 @@ import {
     ArrowRight,
     Check,
     ShieldCheck,
-    Loader2
+    Loader2,
+    ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,9 +26,9 @@ const Signup = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
-        name: '',
+        fullName: '',
         email: '',
-        phone: '',
+        phoneNumber: '',
         password: '',
         confirmPassword: '',
         agreeTerms: false
@@ -52,6 +53,15 @@ const Signup = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (formData.phoneNumber.length !== 10) {
+            toast({
+                title: "Validation Error",
+                description: "Phone number must be exactly 10 digits!",
+                variant: "destructive",
+            });
+            return;
+        }
+
         if (formData.password !== formData.confirmPassword) {
             toast({
                 title: "Validation Error",
@@ -75,7 +85,7 @@ const Signup = () => {
             await signup(formData);
             toast({
                 title: "Account Created!",
-                description: "Verify your phone number with the OTP sent.",
+                description: "Verify your email with the OTP sent.",
             });
             navigate('/verify-otp');
         } catch (error) {
@@ -89,6 +99,11 @@ const Signup = () => {
         }
     };
 
+    const handlePhoneChange = (e) => {
+        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+        setFormData({ ...formData, phoneNumber: value });
+    };
+
     const getStrengthConfig = () => {
         switch (passwordStrength) {
             case 1: return { color: 'bg-red-500', label: 'Weak', width: '33%' };
@@ -99,7 +114,13 @@ const Signup = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-muted/30 lg:bg-background p-4 lg:p-0 overflow-y-auto overflow-x-hidden">
+        <div className="min-h-screen relative flex items-center justify-center bg-muted/30 lg:bg-background p-4 lg:p-0 overflow-y-auto overflow-x-hidden">
+            {/* Absolute Back Button */}
+            <div className="absolute top-8 left-8 z-50">
+                <Button variant="ghost" className="hover:bg-transparent hover:text-primary transition-colors group p-0 text-white mix-blend-difference" onClick={() => navigate('/')}>
+                    <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Home
+                </Button>
+            </div>
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -153,30 +174,32 @@ const Signup = () => {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Full Name</Label>
+                                <Label htmlFor="fullName">Full Name</Label>
                                 <div className="relative group">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                     <Input
-                                        id="name"
+                                        id="fullName"
                                         placeholder="John Doe"
                                         className="pl-10 h-11 rounded-xl focus:ring-primary border-muted"
                                         required
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        value={formData.fullName}
+                                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="phone">Phone Number</Label>
+                                <Label htmlFor="phoneNumber">Phone Number</Label>
                                 <div className="relative group">
                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                     <Input
-                                        id="phone"
+                                        id="phoneNumber"
+                                        type="tel"
                                         placeholder="9876543210"
                                         className="pl-10 h-11 rounded-xl focus:ring-primary border-muted"
                                         required
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        value={formData.phoneNumber}
+                                        onChange={handlePhoneChange}
+                                        maxLength={10}
                                     />
                                 </div>
                             </div>
