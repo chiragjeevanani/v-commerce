@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, Search, ChevronRight, Clock, CheckCircle2, Truck, AlertCircle, ShoppingBag, Calendar, ArrowLeft } from "lucide-react";
+import {
+    Package,
+    Search,
+    ChevronRight,
+    Clock,
+    CheckCircle2,
+    Truck,
+    AlertCircle,
+    ShoppingBag,
+    Calendar,
+    ArrowLeft
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { api } from "@/services/api";
+import { ordersService } from "@/services/orders.service";
 import { cn } from "@/utils/utils";
 
 const OrderHistory = () => {
@@ -18,59 +30,91 @@ const OrderHistory = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const data = await api.getOrders();
-                setOrders(data);
+                const response = await ordersService.getMyOrders();
+
+                // ✅ Normalize backend response (CRITICAL FIX)
+                const ordersArray =
+                    Array.isArray(response)
+                        ? response
+                        : Array.isArray(response?.data)
+                            ? response.data
+                            : Array.isArray(response?.orders)
+                                ? response.orders
+                                : [];
+
+                setOrders(ordersArray);
             } catch (error) {
                 console.error("Failed to fetch orders:", error);
+                setOrders([]);
             } finally {
                 setLoading(false);
             }
         };
+
         fetchOrders();
     }, []);
 
-    const getStatusStyles = (status) => {
+    const getStatusStyles = (status = "") => {
         switch (status.toLowerCase()) {
-            case 'placed':
+            case "placed":
                 return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-            case 'confirmed':
+            case "confirmed":
                 return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
-            case 'shipped':
+            case "shipped":
                 return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
-            case 'delivered':
+            case "delivered":
                 return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-            case 'cancelled':
+            case "cancelled":
                 return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
             default:
                 return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
         }
     };
 
-    const getStatusIcon = (status) => {
+    const getStatusIcon = (status = "") => {
         switch (status.toLowerCase()) {
-            case 'placed': return <Clock className="w-3 h-3" />;
-            case 'confirmed': return <CheckCircle2 className="w-3 h-3" />;
-            case 'shipped': return <Truck className="w-3 h-3" />;
-            case 'delivered': return <CheckCircle2 className="w-3 h-3" />;
-            default: return <AlertCircle className="w-3 h-3" />;
+            case "placed":
+                return <Clock className="w-3 h-3" />;
+            case "confirmed":
+                return <CheckCircle2 className="w-3 h-3" />;
+            case "shipped":
+                return <Truck className="w-3 h-3" />;
+            case "delivered":
+                return <CheckCircle2 className="w-3 h-3" />;
+            default:
+                return <AlertCircle className="w-3 h-3" />;
         }
     };
 
-    const filteredOrders = orders.filter(order =>
-        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    // ✅ Defensive filtering (no crash ever)
+    const filteredOrders = Array.isArray(orders)
+        ? orders.filter(order =>
+            order?.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            order?.items?.some(item =>
+                item?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+        )
+        : [];
 
     return (
         <div className="container py-8 md:py-12 max-w-4xl">
-            <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate(-1)}>
-                <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back
+            <Button
+                variant="ghost"
+                className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0"
+                onClick={() => navigate(-1)}
+            >
+                <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                Back
             </Button>
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">My Orders</h1>
-                    <p className="text-muted-foreground mt-1">Manage and track your recent purchases.</p>
+                    <p className="text-muted-foreground mt-1">
+                        Manage and track your recent purchases.
+                    </p>
                 </div>
+
                 <div className="relative w-full md:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -96,7 +140,9 @@ const OrderHistory = () => {
                         </div>
                         <h3 className="text-xl font-bold mb-2">No orders found</h3>
                         <p className="text-muted-foreground max-w-xs mx-auto mb-6">
-                            {searchQuery ? "We couldn't find any orders matching your search." : "You haven't placed any orders yet."}
+                            {searchQuery
+                                ? "We couldn't find any orders matching your search."
+                                : "You haven't placed any orders yet."}
                         </p>
                         <Button asChild>
                             <Link to="/shop">Start Shopping</Link>
@@ -112,48 +158,81 @@ const OrderHistory = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.05 }}
                         >
-                            <Card className="group hover:border-primary/30 transition-all hover:shadow-md cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
+                            <Card
+                                className="group hover:border-primary/30 transition-all hover:shadow-md cursor-pointer"
+                                onClick={() => navigate(`/orders/${order.id}`)}
+                            >
                                 <CardContent className="p-0">
                                     <div className="flex flex-col sm:flex-row">
-                                        {/* Product Images Preview */}
+                                        {/* Images */}
                                         <div className="p-4 sm:p-6 sm:border-r border-border flex flex-row sm:flex-col gap-2 bg-muted/20">
                                             <div className="relative flex -space-x-3 overflow-hidden">
-                                                {order.items.slice(0, 3).map((item, i) => (
-                                                    <div key={i} className="inline-block h-12 w-12 rounded-full ring-2 ring-background overflow-hidden bg-white">
-                                                        <img src={item.image} alt="" className="h-full w-full object-cover" />
+                                                {order.items?.slice(0, 3).map((item, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="inline-block h-12 w-12 rounded-full ring-2 ring-background overflow-hidden bg-white"
+                                                    >
+                                                        <img
+                                                            src={item.image}
+                                                            alt=""
+                                                            className="h-full w-full object-cover"
+                                                        />
                                                     </div>
                                                 ))}
-                                                {order.items.length > 3 && (
+                                                {order.items?.length > 3 && (
                                                     <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted ring-2 ring-background text-xs font-medium">
                                                         +{order.items.length - 3}
                                                     </div>
                                                 )}
                                             </div>
+
                                             <div className="flex flex-col justify-center sm:mt-2">
-                                                <p className="text-xs font-medium text-muted-foreground uppercase">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</p>
-                                                <p className="text-sm font-bold text-foreground">${order.total.toFixed(2)}</p>
+                                                <p className="text-xs font-medium text-muted-foreground uppercase">
+                                                    {order.items?.length} item
+                                                    {order.items?.length !== 1 ? "s" : ""}
+                                                </p>
+                                                <p className="text-sm font-bold text-foreground">
+                                                    ${order.total?.toFixed(2)}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        {/* Order Details */}
+                                        {/* Details */}
                                         <div className="flex-1 p-4 sm:p-6 flex flex-col justify-between">
                                             <div className="flex items-start justify-between gap-4 mb-2">
                                                 <div>
-                                                    <p className="text-xs font-medium text-muted-foreground mb-1">ORDER ID</p>
-                                                    <h3 className="font-mono font-bold text-lg leading-none">{order.id}</h3>
+                                                    <p className="text-xs font-medium text-muted-foreground mb-1">
+                                                        ORDER ID
+                                                    </p>
+                                                    <h3 className="font-mono font-bold text-lg leading-none">
+                                                        {order.id}
+                                                    </h3>
                                                 </div>
-                                                <Badge className={cn("flex items-center gap-1 px-2 py-0.5 border-none", getStatusStyles(order.status))}>
+
+                                                <Badge
+                                                    className={cn(
+                                                        "flex items-center gap-1 px-2 py-0.5 border-none",
+                                                        getStatusStyles(order.status)
+                                                    )}
+                                                >
                                                     {getStatusIcon(order.status)}
-                                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                                    {order.status}
                                                 </Badge>
                                             </div>
 
                                             <div className="flex items-center justify-between mt-auto">
                                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Calendar className="w-4 h-4" />
-                                                    <span>{new Date(order.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                    <span>
+                                                        {new Date(order.date).toLocaleDateString()}
+                                                    </span>
                                                 </div>
-                                                <Button variant="ghost" size="sm" className="group-hover:text-primary p-0 h-auto">
+
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="group-hover:text-primary p-0 h-auto"
+                                                >
                                                     View Details
                                                     <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                                                 </Button>

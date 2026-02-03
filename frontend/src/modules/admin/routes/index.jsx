@@ -14,6 +14,9 @@ const Analytics = lazy(() => import('../pages/Analytics'));
 const Settings = lazy(() => import('../pages/Settings'));
 const ProductDetail = lazy(() => import('../pages/ProductDetail'));
 const AdminLogin = lazy(() => import('../pages/AdminLogin'));
+const HeroBanners = lazy(() => import('../pages/HeroBanners'));
+const OrderDetail = lazy(() => import('../pages/OrderDetail'));
+const CustomerDetail = lazy(() => import('../pages/CustomerDetail'));
 
 const LoadingFallback = () => (
     <div className="flex items-center justify-center h-screen bg-slate-950/20">
@@ -39,12 +42,15 @@ const AdminRoutes = () => {
                     >
                         <Route index element={<Dashboard />} />
                         <Route path="orders" element={<Orders />} />
+                        <Route path="orders/:id" element={<OrderDetail />} />
                         <Route path="products" element={<Products />} />
                         <Route path="products/:id" element={<ProductDetail />} />
                         <Route path="customers" element={<Customers />} />
+                        <Route path="customers/:id" element={<CustomerDetail />} />
                         <Route path="payments" element={<Payments />} />
                         <Route path="analytics" element={<Analytics />} />
                         <Route path="settings" element={<Settings />} />
+                        <Route path="hero-banners" element={<HeroBanners />} />
                     </Route>
 
                     {/* Redirect unknown routes */}

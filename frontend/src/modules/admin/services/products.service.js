@@ -1,9 +1,9 @@
-import axios from "axios";
+import apiClient from "@/lib/axios";
 import { products } from "../../../services/mockData";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const API_URL = 'http://localhost:3000/api/v1/cj';
+// const API_URL = 'http://localhost:3000/api/v1/cj';
 
 // Globally persistent cache (persists across HMR and module re-loads)
 const getGlobalCache = () => {
@@ -43,7 +43,8 @@ export const productsService = {
         const fetchPromise = (async () => {
             try {
                 console.log(`[Network Request] Products: ${cacheKey}`);
-                const response = await axios.get(`${API_URL}/list-products-v2`, {
+                console.log(`[Network Request] Products: ${cacheKey}`);
+                const response = await apiClient.get(`/cj/list-products-v2`, {
                     params: { page, size, keyWord, categoryId }
                 });
                 const result = response.data;
@@ -101,7 +102,8 @@ export const productsService = {
         const fetchPromise = (async () => {
             try {
                 console.log("[Network Request] Categories");
-                const response = await axios.get(`${API_URL}/get-categories`);
+                console.log("[Network Request] Categories");
+                const response = await apiClient.get(`/cj/get-categories`);
                 if (response.data.success && response.data.code === 200) {
                     const data = response.data.data;
                     globalCache.categories = data;
@@ -152,7 +154,8 @@ export const productsService = {
         const fetchPromise = (async () => {
             try {
                 console.log(`[Network Request] Product Detail: ${pid}`);
-                const response = await axios.get(`${API_URL}/product-details`, { params: { pid } });
+                console.log(`[Network Request] Product Detail: ${pid}`);
+                const response = await apiClient.get(`/cj/product-details`, { params: { pid } });
                 const result = response.data;
                 globalCache.products[cacheKey] = result;
                 return result;

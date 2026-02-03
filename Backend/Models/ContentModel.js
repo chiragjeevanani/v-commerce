@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const contentSchema = new mongoose.Schema(
   {
     content: {
-      type: [],
+      type: mongoose.Schema.Types.Mixed,
       required: true,
     },
 

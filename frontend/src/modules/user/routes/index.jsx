@@ -14,6 +14,7 @@ const TrackOrder = lazy(() => import('../pages/TrackOrder'));
 const OrderHistory = lazy(() => import('../pages/OrderHistory'));
 const OrderDetails = lazy(() => import('../pages/OrderDetails'));
 const Account = lazy(() => import('../pages/Account'));
+const AddAddress = lazy(() => import('../pages/AddAddress'));
 
 // Auth Pages
 const Login = lazy(() => import('../pages/Login'));
@@ -51,6 +52,7 @@ const UserRoutes = () => {
           <Route path="orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
           <Route path="orders/:orderId" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
           <Route path="account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+          <Route path="account/address/new" element={<ProtectedRoute><AddAddress /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

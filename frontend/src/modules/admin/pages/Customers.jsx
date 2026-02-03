@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Users,
     Search,
@@ -28,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const Customers = () => {
     const { toast } = useToast();
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -215,7 +217,7 @@ const Customers = () => {
                                                         <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="w-48">
-                                                        <DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => navigate(`/admin/customers/${customer._id}`)}>
                                                             <ArrowUpRight className="mr-2 h-4 w-4" /> View Details
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />

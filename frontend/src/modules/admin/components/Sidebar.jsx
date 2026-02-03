@@ -10,7 +10,8 @@ import {
     Settings,
     LogOut,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Image
 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const navItems = [
     { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
     { icon: Package, label: 'Products', path: '/admin/products' },
     { icon: Users, label: 'Customers', path: '/admin/customers' },
+    { icon: Image, label: 'Hero Banners', path: '/admin/hero-banners' },
     { icon: CreditCard, label: 'Payments', path: '/admin/payments' },
     { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' },

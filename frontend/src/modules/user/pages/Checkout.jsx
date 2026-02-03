@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import {Plus} from "lucide-react";
+import { Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, CreditCard, MapPin, Truck } from "lucide-react";
 import { useCart } from "@/modules/user/context/CartContext";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import AddressForm from "@/modules/user/components/AddressForm";
 import { Separator } from "@/components/ui/separator";
 import AnimatedNumber from "@/modules/user/components/AnimatedNumber";
 
@@ -46,6 +47,9 @@ const Checkout = () => {
     expiry: "",
     cvc: "",
   });
+
+  // State to hold new address form data before submission in Checkout flow
+  const [newAddressData, setNewAddressData] = useState(null);
 
   useEffect(() => {
     if (cart.length === 0 && !isOrderPlaced.current) {
@@ -245,76 +249,12 @@ const Checkout = () => {
                             <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase" onClick={() => setShowNewAddressForm(false)}>Use Saved Address</Button>
                           )}
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="firstName" className="font-bold uppercase text-[10px] tracking-widest opacity-70">First Name</Label>
-                            <Input
-                              id="firstName"
-                              name="firstName"
-                              value={formData.firstName}
-                              onChange={handleInputChange}
-                              className="rounded-xl bg-muted border-none p-6 focus-visible:ring-primary/20"
-                              placeholder="John"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="lastName" className="font-bold uppercase text-[10px] tracking-widest opacity-70">Last Name</Label>
-                            <Input
-                              id="lastName"
-                              name="lastName"
-                              value={formData.lastName}
-                              onChange={handleInputChange}
-                              className="rounded-xl bg-muted border-none p-6 focus-visible:ring-primary/20"
-                              placeholder="Doe"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="phoneNumber" className="font-bold uppercase text-[10px] tracking-widest opacity-70">Phone Number</Label>
-                          <Input
-                            id="phoneNumber"
-                            name="phoneNumber"
-                            value={formData.phoneNumber}
-                            onChange={handleInputChange}
-                            className="rounded-xl bg-muted border-none p-6 focus-visible:ring-primary/20"
-                            placeholder="+91 98765-43210"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="address" className="font-bold uppercase text-[10px] tracking-widest opacity-70">Street Address</Label>
-                          <Input
-                            id="address"
-                            name="address"
-                            value={formData.address}
-                            onChange={handleInputChange}
-                            className="rounded-xl bg-muted border-none p-6 focus-visible:ring-primary/20"
-                            placeholder="123 Main St"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="city" className="font-bold uppercase text-[10px] tracking-widest opacity-70">City</Label>
-                            <Input
-                              id="city"
-                              name="city"
-                              value={formData.city}
-                              onChange={handleInputChange}
-                              className="rounded-xl bg-muted border-none p-6 focus-visible:ring-primary/20"
-                              placeholder="Mumbai"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="zip" className="font-bold uppercase text-[10px] tracking-widest opacity-70">ZIP Code</Label>
-                            <Input
-                              id="zip"
-                              name="zip"
-                              value={formData.zip}
-                              onChange={handleInputChange}
-                              className="rounded-xl bg-muted border-none p-6 focus-visible:ring-primary/20"
-                              placeholder="400001"
-                            />
-                          </div>
-                        </div>
+
+                        <AddressForm
+                          formData={formData}
+                          handleChange={handleInputChange}
+                          showSubmitButton={false}
+                        />
                       </div>
                     )}
                   </motion.div>

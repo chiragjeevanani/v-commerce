@@ -1,19 +1,7 @@
-import axios from 'axios';
+import apiClient from "../lib/axios";
 
-const API_URL = 'http://localhost:3000/api/v1/cart';
-
-// Create axios instance with auth interceptor
-const cartApi = axios.create({
-    baseURL: API_URL,
-});
-
-cartApi.interceptors.request.use((config) => {
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
+// const API_URL = 'http://localhost:3000/api/v1/cart';
+// const cartApi = axios.create...
 
 // Deduplicate concurrent getCart calls
 let activeCartRequest = null;
@@ -24,7 +12,7 @@ export const cartService = {
 
         activeCartRequest = (async () => {
             try {
-                const response = await cartApi.get('/');
+                const response = await apiClient.get('/cart/');
                 return response.data.data;
             } catch (error) {
                 console.error("Fetch Cart Error:", error);
@@ -39,7 +27,7 @@ export const cartService = {
 
     addToCart: async (productData) => {
         try {
-            const response = await cartApi.post('/add', productData);
+            const response = await apiClient.post('/cart/add', productData);
             return response.data.data;
         } catch (error) {
             console.error("Add to Cart Error:", error);
@@ -49,7 +37,7 @@ export const cartService = {
 
     updateQuantity: async (pid, quantity) => {
         try {
-            const response = await cartApi.put('/update', { pid, quantity });
+            const response = await apiClient.put('/cart/update', { pid, quantity });
             return response.data.data;
         } catch (error) {
             console.error("Update Cart Error:", error);
@@ -59,7 +47,7 @@ export const cartService = {
 
     removeFromCart: async (pid) => {
         try {
-            const response = await cartApi.delete(`/remove/${pid}`);
+            const response = await apiClient.delete(`/cart/remove/${pid}`);
             return response.data.data;
         } catch (error) {
             console.error("Remove from Cart Error:", error);
@@ -69,7 +57,7 @@ export const cartService = {
 
     clearCart: async () => {
         try {
-            const response = await cartApi.delete('/clear');
+            const response = await apiClient.delete('/cart/clear');
             return response.data;
         } catch (error) {
             console.error("Clear Cart Error:", error);
@@ -79,7 +67,7 @@ export const cartService = {
 
     syncCart: async (items) => {
         try {
-            const response = await cartApi.post('/sync', { items });
+            const response = await apiClient.post('/cart/sync', { items });
             return response.data.data;
         } catch (error) {
             console.error("Sync Cart Error:", error);

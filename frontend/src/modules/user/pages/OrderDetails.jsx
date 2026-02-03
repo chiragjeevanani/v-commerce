@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import OrderTimeline from "../components/OrderTimeline";
-import { api } from "@/services/api";
+import { ordersService } from "@/services/orders.service";
 import { cn } from "@/utils/utils";
 
 const OrderDetails = () => {
@@ -24,7 +24,7 @@ const OrderDetails = () => {
         const fetchOrder = async () => {
             setLoading(true);
             try {
-                const data = await api.getOrderById(orderId);
+                const data = await ordersService.getOrderDetails(orderId);
                 if (data) {
                     setOrder(data);
                 } else {
@@ -188,7 +188,18 @@ const OrderDetails = () => {
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-medium text-muted-foreground">Shipping Address</p>
-                                    <p className="text-sm font-semibold">{order.shippingAddress || "N/A"}</p>
+                                    <p className="text-sm font-semibold">
+                                        {typeof order.shippingAddress === 'object' ? (
+                                            <>
+                                                {order.shippingAddress.fullName}<br />
+                                                {order.shippingAddress.street}<br />
+                                                {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}<br />
+                                                {order.shippingAddress.country}
+                                            </>
+                                        ) : (
+                                            order.shippingAddress || "N/A"
+                                        )}
+                                    </p>
                                 </div>
                             </div>
 

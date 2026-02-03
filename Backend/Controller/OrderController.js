@@ -152,3 +152,98 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
         data: orderData
     });
 });
+
+// ================= ADMIN CONTROLLERS =================
+
+/**
+ * Get all orders (Admin)
+ */
+export const getAllOrders = asyncHandler(async (req, res) => {
+    const page = Number(req.query.pageNum) || 1;
+    const pageSize = Number(req.query.pageSize) || 20;
+
+    const count = await Order.countDocuments({});
+
+    const orders = await Order.find({})
+        .populate("user", "name email")
+        .sort({ createdAt: -1 })
+        .limit(pageSize)
+        .skip(pageSize * (page - 1));
+
+    res.json({
+        success: true,
+        data: {
+            orders: orders.map(order => ({
+                id: order._id, // Mapping _id to id for frontend consistency
+                ...order.toObject()
+            })),
+            total: count,
+            page,
+            totalPages: Math.ceil(count / pageSize)
+        }
+    });
+});
+
+/**
+ * Get order details (Admin)
+ */
+export const getAdminOrderDetails = asyncHandler(async (req, res) => {
+    const order = await Order.findById(req.params.id).populate("user", "name email");
+
+    if (!order) {
+        return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Add timeline if not exists in DB (simulate standard timeline)
+    const orderData = order.toObject();
+    orderData.id = order._id; // Ensure ID availability
+    orderData.timeline = [
+        { status: "placed", label: "Order Placed", date: order.createdAt, completed: true },
+        { status: "confirmed", label: "Confirmed", date: order.status !== 'placed' ? order.updatedAt : null, completed: order.status !== 'placed' },
+        { status: "shipped", label: "Shipped", date: null, completed: ['shipped', 'delivered'].includes(order.status) },
+        { status: "delivered", label: "Delivered", date: null, completed: order.status === 'delivered' }
+    ];
+
+    res.json({
+        success: true,
+        data: orderData
+    });
+});
+
+/**
+ * Get orders by user ID (Admin)
+ */
+export const getOrdersByUserId = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const orders = await Order.find({ user: userId }).sort({ createdAt: -1 });
+
+    res.json({
+        success: true,
+        data: orders.map(order => ({
+            id: order._id, // Frontend consistency
+            ...order.toObject()
+        }))
+    });
+});
+
+/**
+ * Get recent orders (Admin - Top 5)
+ */
+export const getRecentOrders = asyncHandler(async (req, res) => {
+    const orders = await Order.find({})
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate("user", "name email");
+
+    res.json({
+        success: true,
+        data: orders.map(order => ({
+            id: order._id,
+            total: order.totalAmount,
+            status: order.status,
+            date: order.createdAt,
+            user: order.user,
+            ...order.toObject()
+        }))
+    });
+});

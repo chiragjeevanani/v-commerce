@@ -11,6 +11,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { addressService } from "@/services/address.service";
 import { useAuth } from "@/modules/user/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { ordersService } from "@/services/orders.service";
+import { authService } from "@/services/auth.service";
 
 const Account = () => {
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ const Account = () => {
       setLoading(true);
       try {
         const [ordersData, addressesData] = await Promise.all([
-          api.getOrders(),
+          ordersService.getMyOrders(),
           addressService.getAddresses()
         ]);
         setOrders(ordersData);
@@ -141,31 +143,8 @@ const Account = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Update your personal details.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" defaultValue="John Doe" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" defaultValue="john.doe@example.com" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" defaultValue="+1 234 567 890" />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Save Changes</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+        <ProfileTab user={user} />
+
 
         <TabsContent value="address">
           <Card>
@@ -174,7 +153,7 @@ const Account = () => {
                 <CardTitle>Saved Addresses</CardTitle>
                 <CardDescription>Manage your shipping addresses.</CardDescription>
               </div>
-              <Button size="sm" className="gap-2" onClick={() => navigate('/checkout')}>
+              <Button size="sm" className="gap-2" onClick={() => navigate('/account/address/new')}>
                 <Plus className="h-4 w-4" /> Add New
               </Button>
             </CardHeader>
@@ -231,6 +210,82 @@ const Account = () => {
 
       </Tabs>
     </div>
+  );
+};
+
+
+
+const ProfileTab = ({ user }) => {
+  const [formData, setFormData] = useState({
+    fullName: user?.fullName || "",
+    email: user?.email || "",
+    phoneNumber: user?.phoneNumber || ""
+  });
+  const [loading, setLoading] = useState(false);
+
+  // Update form when user data changes (e.g. initial load)
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.fullName || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || ""
+      });
+    }
+  }, [user]);
+
+  const handleUpdate = async () => {
+    setLoading(true);
+    try {
+      await authService.updateProfile(formData);
+      toast({ title: "Profile Updated", description: "Your profile has been updated successfully." });
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <TabsContent value="profile">
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
+          <CardDescription>Update your personal details.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              id="name"
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="phone">Phone</Label>
+            <Input
+              id="phone"
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+            />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleUpdate} disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
+        </CardFooter>
+      </Card>
+    </TabsContent>
   );
 };
 

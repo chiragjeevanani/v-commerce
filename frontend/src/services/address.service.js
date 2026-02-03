@@ -1,23 +1,12 @@
-import axios from 'axios';
+import apiClient from "../lib/axios";
 
-const API_URL = 'http://localhost:3000/api/v1/addresses';
-
-const api = axios.create({
-    baseURL: API_URL,
-});
-
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
+// const API_URL = 'http://localhost:3000/api/v1/addresses';
+// const api = axios.create...
 
 export const addressService = {
     getAddresses: async () => {
         try {
-            const response = await api.get('/');
+            const response = await apiClient.get('/addresses/');
             return response.data.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to fetch addresses");
@@ -26,7 +15,7 @@ export const addressService = {
 
     addAddress: async (addressData) => {
         try {
-            const response = await api.post('/add', addressData);
+            const response = await apiClient.post('/addresses/add', addressData);
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to add address");
@@ -35,7 +24,7 @@ export const addressService = {
 
     updateAddress: async (addressId, addressData) => {
         try {
-            const response = await api.put(`/${addressId}`, addressData);
+            const response = await apiClient.put(`/addresses/${addressId}`, addressData);
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to update address");
@@ -44,7 +33,7 @@ export const addressService = {
 
     deleteAddress: async (addressId) => {
         try {
-            const response = await api.delete(`/${addressId}`);
+            const response = await apiClient.delete(`/addresses/${addressId}`);
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to delete address");
@@ -53,7 +42,7 @@ export const addressService = {
 
     setDefaultAddress: async (addressId) => {
         try {
-            const response = await api.put(`/set-default/${addressId}`);
+            const response = await apiClient.put(`/addresses/set-default/${addressId}`);
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to set default address");

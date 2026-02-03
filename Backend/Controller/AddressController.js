@@ -21,6 +21,10 @@ export const addAddress = asyncHandler(async (req, res) => {
 
     const user = await User.findById(req.user._id);
 
+    if (user.addresses.length >= 3) {
+        return res.status(400).json({ success: false, message: "You can only add up to 3 addresses. Please delete one to add a new one." });
+    }
+
     // If this is the first address or user set it as default, handle default logic
     if (isDefault || user.addresses.length === 0) {
         user.addresses.forEach(addr => addr.isDefault = false);

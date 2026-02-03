@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Store,
     Settings as SettingsIcon,
@@ -9,7 +9,6 @@ import {
     Image as ImageIcon,
     CheckCircle2,
     RefreshCw,
-    Bell,
     Globe,
     Lock
 } from 'lucide-react';
@@ -20,20 +19,84 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { authService } from '@/services/auth.service';
+import { settingsService } from '../services/settings.service';
 
 const Settings = () => {
     const { toast } = useToast();
-    const [activeTab, setActiveTab] = useState("store");
+    const [activeTab, setActiveTab] = useState("account"); // Default to Account
     const [isTestLoading, setIsTestLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // State for Account Tab
+    const [storeSettings, setStoreSettings] = useState({
+        storeName: "",
+        storeUrl: "",
+        storeDescription: "",
+        storeLogo: "" // Just a string/URL for now
+    });
+    const [adminProfile, setAdminProfile] = useState({
+        fullName: "",
+        email: "",
+        avatar: ""
+    });
+
+    // References for file inputs
+    const storeLogoInputRef = React.useRef(null);
+    const avatarInputRef = React.useRef(null);
+
+    // State for Security Tab
+    const [passwordData, setPasswordData] = useState({
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+    });
+
+    // Fetch Initial Data
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                // 1. Load Admin Profile
+                const user = authService.getCurrentUser();
+                if (user) {
+                    setAdminProfile({
+                        fullName: user.fullName || "",
+                        email: user.email || "",
+                        avatar: user.avatar || ""
+                    });
+                }
+
+                // 2. Load Store Settings
+                const storeData = await settingsService.getStoreSettings();
+                if (storeData) {
+                    setStoreSettings({
+                        storeName: storeData.storeName || "",
+                        storeUrl: storeData.storeUrl || "",
+                        storeDescription: storeData.storeDescription || "",
+                        storeLogo: storeData.storeLogo || ""
+                    });
+                } else {
+                    // Default fallback if no settings exist yet
+                    setStoreSettings({
+                        storeName: "V-Commerce",
+                        storeUrl: "vcommerce.com",
+                        storeDescription: "Modern Shopping Experience for Lifestyle & Electronics."
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to load settings:", error);
+                toast({
+                    title: "Error",
+                    description: "Failed to load settings data.",
+                    variant: "destructive"
+                });
+            }
+        };
+
+        loadSettings();
+    }, []);
 
     const handleTestConnection = async () => {
         setIsTestLoading(true);
@@ -46,6 +109,126 @@ const Settings = () => {
         }, 1500);
     };
 
+    // --- Handlers ---
+
+    const handleUpdateStore = async () => {
+        setIsLoading(true);
+        try {
+            await settingsService.updateStoreSettings(storeSettings);
+            toast({
+                title: "Store Settings Updated",
+                description: "Your store details have been saved.",
+            });
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Failed to update store settings.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleUpdateProfile = async () => {
+        setIsLoading(true);
+        try {
+            await authService.updateProfile(adminProfile);
+            toast({
+                title: "Profile Updated",
+                description: "Your admin details have been saved.",
+            });
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error.message || "Failed to update profile.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleUpdatePassword = async () => {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            toast({
+                title: "Password Mismatch",
+                description: "New passwords do not match.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await authService.changePassword({
+                oldPassword: passwordData.oldPassword,
+                newPassword: passwordData.newPassword
+            });
+            toast({
+                title: "Password Changed",
+                description: "Your password has been updated successfully.",
+            });
+            setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" }); // Reset form
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error.message || "Failed to change password.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // --- Upload Handlers ---
+
+    const handleStoreLogoChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsLoading(true);
+        try {
+            const res = await settingsService.uploadStoreLogo(file);
+            setStoreSettings(prev => ({ ...prev, storeLogo: res.data.storeLogo }));
+            toast({
+                title: "Logo Uploaded",
+                description: "Store logo updated successfully.",
+            });
+        } catch (error) {
+            toast({
+                title: "Upload Failed",
+                description: "Could not upload logo.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsLoading(true);
+        try {
+            const res = await authService.uploadAvatar(file);
+            setAdminProfile(prev => ({ ...prev, avatar: res.data.avatar }));
+            toast({
+                title: "Avatar Uploaded",
+                description: "Profile picture updated successfully.",
+            });
+        } catch (error) {
+            toast({
+                title: "Upload Failed",
+                description: "Could not upload avatar.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6 pb-10 max-w-5xl">
             <div>
@@ -55,15 +238,15 @@ const Settings = () => {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="bg-muted/50 p-1 border">
-                    <TabsTrigger value="store" className="gap-2"><Store className="h-4 w-4" /> Store</TabsTrigger>
-                    <TabsTrigger value="api" className="gap-2"><Key className="h-4 w-4" /> API & Tools</TabsTrigger>
-                    <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" /> Account</TabsTrigger>
+                    <TabsTrigger value="account" className="gap-2"><User className="h-4 w-4" /> Account Settings</TabsTrigger>
                     <TabsTrigger value="security" className="gap-2"><Shield className="h-4 w-4" /> Security</TabsTrigger>
+                    <TabsTrigger value="api" className="gap-2"><Key className="h-4 w-4" /> API & Tools</TabsTrigger>
                 </TabsList>
 
-                {/* Store Settings */}
-                <TabsContent value="store">
+                {/* 1. Account Settings (Merged Store + Profile) */}
+                <TabsContent value="account">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {/* Store Section */}
                         <div className="space-y-1">
                             <h3 className="font-bold">Store Profile</h3>
                             <p className="text-sm text-muted-foreground">General information about your ecommerce platform.</p>
@@ -73,72 +256,190 @@ const Settings = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="store-name">Store Name</Label>
-                                        <Input id="store-name" defaultValue="V-Commerce" />
+                                        <Input
+                                            id="store-name"
+                                            value={storeSettings.storeName}
+                                            onChange={(e) => setStoreSettings({ ...storeSettings, storeName: e.target.value })}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="store-url">Store URL</Label>
                                         <div className="flex">
                                             <span className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-xs font-medium">https://</span>
-                                            <Input id="store-url" className="rounded-l-none" defaultValue="vcommerce.com" />
+                                            <Input
+                                                id="store-url"
+                                                className="rounded-l-none"
+                                                value={storeSettings.storeUrl}
+                                                onChange={(e) => setStoreSettings({ ...storeSettings, storeUrl: e.target.value })}
+                                            />
                                         </div>
                                     </div>
                                     <div className="space-y-2 sm:col-span-2">
                                         <Label htmlFor="store-desc">Store Description</Label>
-                                        <Input id="store-desc" defaultValue="Modern Shopping Experience for Lifestyle & Electronics." />
+                                        <Input
+                                            id="store-desc"
+                                            value={storeSettings.storeDescription}
+                                            onChange={(e) => setStoreSettings({ ...storeSettings, storeDescription: e.target.value })}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
                                     <Label>Store Logo</Label>
                                     <div className="flex items-center gap-6">
-                                        <div className="h-20 w-20 rounded-xl border-2 border-dashed flex items-center justify-center bg-muted">
-                                            <ImageIcon className="h-8 w-8 text-muted-foreground opacity-20" />
+                                        <div className="h-20 w-20 rounded-xl border-2 border-dashed flex items-center justify-center bg-muted overflow-hidden">
+                                            {storeSettings.storeLogo ? (
+                                                <img src={storeSettings.storeLogo} alt="Store Logo" className="h-full w-full object-cover" />
+                                            ) : (
+                                                <ImageIcon className="h-8 w-8 text-muted-foreground opacity-20" />
+                                            )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Button variant="outline" size="sm" className="gap-2">Change Logo</Button>
+                                            <input
+                                                type="file"
+                                                ref={storeLogoInputRef}
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleStoreLogoChange}
+                                            />
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-2"
+                                                onClick={() => storeLogoInputRef.current?.click()}
+                                                disabled={isLoading}
+                                            >
+                                                Change Logo
+                                            </Button>
                                             <p className="text-[10px] text-muted-foreground">Recommended size: 512x512px (PNG, SVG)</p>
                                         </div>
                                     </div>
                                 </div>
+                            </CardContent>
+                            <CardFooter className="border-t bg-muted/20 justify-end py-3">
+                                <Button className="gap-2" onClick={handleUpdateStore} disabled={isLoading}>
+                                    <Save className="h-4 w-4" /> Save Store Settings
+                                </Button>
+                            </CardFooter>
+                        </Card>
 
-                                <Separator />
+                        <Separator className="col-span-1 md:col-span-3 my-4" />
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {/* Admin Profile Section */}
+                        <div className="space-y-1">
+                            <h3 className="font-bold">Administrator Profile</h3>
+                            <p className="text-sm text-muted-foreground">Update your personal account details.</p>
+                        </div>
+                        <Card className="md:col-span-2">
+                            <CardContent className="pt-6 space-y-6">
+                                <div className="flex items-center gap-6 pb-4">
+                                    <div className="h-24 w-24 rounded-full border-4 border-muted overflow-hidden">
+                                        <img src={adminProfile.avatar || "https://github.com/shadcn.png"} className="h-full w-full object-cover" />
+                                    </div>
+                                    <input
+                                        type="file"
+                                        ref={avatarInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleAvatarChange}
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => avatarInputRef.current?.click()}
+                                        disabled={isLoading}
+                                    >
+                                        Change Avatar
+                                    </Button>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label>Default Currency</Label>
-                                        <Select defaultValue="USD">
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select Currency" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="USD">USD ($)</SelectItem>
-                                                <SelectItem value="INR">INR (₹)</SelectItem>
-                                                <SelectItem value="EUR">EUR (€)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <Label>Full Name</Label>
+                                        <Input
+                                            value={adminProfile.fullName}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, fullName: e.target.value })}
+                                        />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Language</Label>
-                                        <Select defaultValue="EN">
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select Language" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="EN">English</SelectItem>
-                                                <SelectItem value="HI">Hindi</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <Label>Email Address</Label>
+                                        <Input
+                                            value={adminProfile.email}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, email: e.target.value })}
+                                        />
                                     </div>
                                 </div>
                             </CardContent>
-                            <CardFooter className="border-t bg-muted/20 justify-end py-3">
-                                <Button className="gap-2"><Save className="h-4 w-4" /> Save Changes</Button>
+                            <CardFooter className="border-t py-3 justify-end gap-2">
+                                <Button onClick={handleUpdateProfile} disabled={isLoading}>Update Profile</Button>
                             </CardFooter>
                         </Card>
                     </div>
                 </TabsContent>
 
-                {/* API Settings */}
+                {/* 2. Security Tab */}
+                <TabsContent value="security">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="space-y-1">
+                            <h3 className="font-bold">Security & Login</h3>
+                            <p className="text-sm text-muted-foreground">Protect your administrative account.</p>
+                        </div>
+                        <div className="md:col-span-2 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <Lock className="h-4 w-4" /> Change Password
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>Current Password</Label>
+                                        <Input
+                                            type="password"
+                                            value={passwordData.oldPassword}
+                                            onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>New Password</Label>
+                                        <Input
+                                            type="password"
+                                            value={passwordData.newPassword}
+                                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Confirm New Password</Label>
+                                        <Input
+                                            type="password"
+                                            value={passwordData.confirmPassword}
+                                            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                        />
+                                    </div>
+                                    <Button className="w-full" onClick={handleUpdatePassword} disabled={isLoading}>
+                                        Update Password
+                                    </Button>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-red-100 dark:border-red-900/30">
+                                <CardHeader>
+                                    <CardTitle className="text-red-600 text-lg">Danger Zone</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center justify-between border-t pt-4 border-red-50 dark:border-red-900/10">
+                                        <div className="space-y-0.5">
+                                            <p className="text-sm font-bold">Resign as Admin</p>
+                                            <p className="text-xs text-muted-foreground">This will revoke all your management access.</p>
+                                        </div>
+                                        <Button variant="destructive" size="sm">Deactivate Account</Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </TabsContent>
+
+                {/* 3. API Settings (Unchanged Logic, just moved) */}
                 <TabsContent value="api">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="space-y-1">
@@ -204,89 +505,6 @@ const Settings = () => {
                                             <p className="text-xs text-muted-foreground">Notify me if supplier price increases above my markup.</p>
                                         </div>
                                         <Switch defaultChecked />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                </TabsContent>
-
-                {/* Profile Settings */}
-                <TabsContent value="profile">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="space-y-1">
-                            <h3 className="font-bold">Administrator Profile</h3>
-                            <p className="text-sm text-muted-foreground">Update your personal account details.</p>
-                        </div>
-                        <Card className="md:col-span-2">
-                            <CardContent className="pt-6 space-y-6">
-                                <div className="flex items-center gap-6 pb-4">
-                                    <div className="h-24 w-24 rounded-full border-4 border-muted overflow-hidden">
-                                        <img src="https://github.com/shadcn.png" className="h-full w-full object-cover" />
-                                    </div>
-                                    <Button variant="outline" size="sm">Change Avatar</Button>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Full Name</Label>
-                                        <Input defaultValue="Admin User" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Email Address</Label>
-                                        <Input defaultValue="admin@vcommerce.com" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="border-t py-3 justify-end gap-2">
-                                <Button variant="ghost">Discard</Button>
-                                <Button>Update Profile</Button>
-                            </CardFooter>
-                        </Card>
-                    </div>
-                </TabsContent>
-
-                {/* Security Settings */}
-                <TabsContent value="security">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="space-y-1">
-                            <h3 className="font-bold">Security & Login</h3>
-                            <p className="text-sm text-muted-foreground">Protect your administrative account.</p>
-                        </div>
-                        <div className="md:col-span-2 space-y-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                        <Lock className="h-4 w-4" /> Change Password
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Current Password</Label>
-                                        <Input type="password" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>New Password</Label>
-                                        <Input type="password" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Confirm New Password</Label>
-                                        <Input type="password" />
-                                    </div>
-                                    <Button className="w-full">Update Password</Button>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="border-red-100 dark:border-red-900/30">
-                                <CardHeader>
-                                    <CardTitle className="text-red-600 text-lg">Danger Zone</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex items-center justify-between border-t pt-4 border-red-50 dark:border-red-900/10">
-                                        <div className="space-y-0.5">
-                                            <p className="text-sm font-bold">Resign as Admin</p>
-                                            <p className="text-xs text-muted-foreground">This will revoke all your management access.</p>
-                                        </div>
-                                        <Button variant="destructive" size="sm">Deactivate Account</Button>
                                     </div>
                                 </CardContent>
                             </Card>

@@ -7,44 +7,37 @@ import ProductCard from "@/modules/user/components/ProductCard";
 import SkeletonCard from "@/modules/user/components/SkeletonCard";
 import { Button } from "@/components/ui/button";
 
-const banners = [
-  {
-    id: 1,
-    title: "Summer Collection 2024",
-    description: "Discover the hottest trends for the season.",
-    image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200&q=80",
-    cta: "Shop Now",
-    link: "/shop",
-  },
-  {
-    id: 2,
-    title: "Tech Revolution",
-    description: "Upgrade your gear with our latest electronics.",
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&q=80",
-    cta: "Explore Gadgets",
-    link: "/shop?category=Electronics",
-  },
-  {
-    id: 3,
-    title: "Home & Living",
-    description: "Make your home a sanctuary.",
-    image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=1200",
-    cta: "View Collection",
-    link: "/shop?category=Home & Living",
-  },
-];
-
 // Use a module-level variable to track if initial fetch has been ATTEMPTED
 // This persists across component remounts in development
 let initialFetchAttempted = false;
 
 const Home = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
+  const [banners, setBanners] = useState([]);
+  const [bannersLoading, setBannersLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [visibleProducts, setVisibleProducts] = useState(8);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Fetch hero banners
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/v1/hero-banners');
+        const data = await response.json();
+        if (data.success && data.data) {
+          setBanners(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch banners:', error);
+      } finally {
+        setBannersLoading(false);
+      }
+    };
+    fetchBanners();
+  }, []);
 
   useEffect(() => {
     // Rely on productsService's atomic deduplication as the primary shield
@@ -81,11 +74,12 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
+    if (banners.length === 0) return;
     const timer = setInterval(() => {
       setCurrentBanner((prev) => (prev + 1) % banners.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [banners.length]);
 
   // Infinite scroll effect
   useEffect(() => {
@@ -109,123 +103,127 @@ const Home = () => {
   }, [loadingMore, visibleProducts, products.length]);
 
   const nextBanner = () => {
+    if (banners.length === 0) return;
     setCurrentBanner((prev) => (prev + 1) % banners.length);
   };
 
   const prevBanner = () => {
+    if (banners.length === 0) return;
     setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length);
   };
 
   return (
     <div className="flex flex-col min-h-screen gap-10 pb-10">
       {/* Hero Section */}
-      <section className="relative h-[600px] w-full overflow-hidden bg-background">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentBanner}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="absolute inset-0"
-          >
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-[10s] ease-linear scale-110"
-              style={{
-                backgroundImage: `url(${banners[currentBanner].image})`,
-                backgroundColor: "hsl(var(--muted))",
-                animation: "kenburns 20s infinite alternate"
-              }}
+      {banners.length > 0 && (
+        <section className="relative h-[600px] w-full overflow-hidden bg-background">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentBanner}
+              initial={{ opacity: 0, scale: 1.1 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="absolute inset-0"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/40 to-transparent" />
-            </div>
-            <div className="relative container h-full flex flex-col justify-center items-start p-6 md:p-12">
-              <motion.div
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.6 }}
-                className="max-w-2xl"
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-[10s] ease-linear scale-110"
+                style={{
+                  backgroundImage: `url(${banners[currentBanner].image})`,
+                  backgroundColor: "hsl(var(--muted))",
+                  animation: "kenburns 20s infinite alternate"
+                }}
               >
-                <motion.span
-                  className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase mb-4"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  New Arrival
-                </motion.span>
-                <motion.h1
-                  className="text-5xl md:text-7xl font-bold mb-6 text-foreground leading-tight"
-                >
-                  {banners[currentBanner].title.split(' ').map((word, i) => (
-                    <motion.span
-                      key={i}
-                      className="inline-block mr-4"
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.5 + (i * 0.1) }}
-                    >
-                      {word}
-                    </motion.span>
-                  ))}
-                </motion.h1>
-                <motion.p
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.8 }}
-                  className="text-lg md:text-xl mb-10 text-muted-foreground max-w-lg leading-relaxed"
-                >
-                  {banners[currentBanner].description}
-                </motion.p>
+                <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/40 to-transparent" />
+              </div>
+              <div className="relative container h-full flex flex-col justify-center items-start p-6 md:p-12">
                 <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 1 }}
-                  className="flex gap-4"
+                  initial={{ x: -50, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.6 }}
+                  className="max-w-2xl"
                 >
-                  <Link to={banners[currentBanner].link}>
-                    <Button size="lg" className="text-lg px-8 py-7 rounded-full shadow-lg hover:shadow-primary/20 transition-all active:scale-95 group">
-                      {banners[currentBanner].cta}
-                      <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                    </Button>
-                  </Link>
+                  <motion.span
+                    className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase mb-4"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    New Arrival
+                  </motion.span>
+                  <motion.h1
+                    className="text-5xl md:text-7xl font-bold mb-6 text-foreground leading-tight"
+                  >
+                    {banners[currentBanner].title.split(' ').map((word, i) => (
+                      <motion.span
+                        key={i}
+                        className="inline-block mr-4"
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.5 + (i * 0.1) }}
+                      >
+                        {word}
+                      </motion.span>
+                    ))}
+                  </motion.h1>
+                  <motion.p
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                    className="text-lg md:text-xl mb-10 text-muted-foreground max-w-lg leading-relaxed"
+                  >
+                    {banners[currentBanner].description}
+                  </motion.p>
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 1 }}
+                    className="flex gap-4"
+                  >
+                    <Link to="/shop">
+                      <Button size="lg" className="text-lg px-8 py-7 rounded-full shadow-lg hover:shadow-primary/20 transition-all active:scale-95 group">
+                        {banners[currentBanner].cta}
+                        <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                      </Button>
+                    </Link>
+                  </motion.div>
                 </motion.div>
-              </motion.div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+              </div>
+            </motion.div>
+          </AnimatePresence>
 
-        <div className="absolute bottom-8 right-12 flex gap-4 z-10">
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full bg-background/20 backdrop-blur-md border-white/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-            onClick={prevBanner}
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full bg-background/20 backdrop-blur-md border-white/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-            onClick={nextBanner}
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-        </div>
+          <div className="absolute bottom-8 right-12 flex gap-4 z-10">
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full bg-background/20 backdrop-blur-md border-white/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+              onClick={prevBanner}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full bg-background/20 backdrop-blur-md border-white/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+              onClick={nextBanner}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          </div>
 
-        {/* Banner Indicators */}
-        <div className="absolute bottom-8 left-12 flex gap-2 z-10">
-          {banners.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentBanner(i)}
-              className={`h-1.5 transition-all duration-500 rounded-full ${i === currentBanner ? "w-8 bg-primary" : "w-2 bg-primary/20"
-                }`}
-            />
-          ))}
-        </div>
-      </section>
+          {/* Banner Indicators */}
+          <div className="absolute bottom-8 left-12 flex gap-2 z-10">
+            {banners.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentBanner(i)}
+                className={`h-1.5 transition-all duration-500 rounded-full ${i === currentBanner ? "w-8 bg-primary" : "w-2 bg-primary/20"
+                  }`}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Hierarchical Categories Section */}
       <section className="container py-12">

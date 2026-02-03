@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Search,
-    Filter,
     Download,
     MoreVertical,
     Eye,
     RefreshCw,
     SearchX,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    ArrowUpDown
 } from 'lucide-react';
 import { ordersService } from '../services/orders.service';
 import StatusBadge from '../components/StatusBadge';
-import OrderDrawer from '../components/OrderDrawer';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,8 +24,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 
 const Orders = () => {
+    const navigate = useNavigate();
+    const { toast } = useToast();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -33,8 +36,6 @@ const Orders = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [selectedOrder, setSelectedOrder] = useState(null);
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -48,6 +49,11 @@ const Orders = () => {
             setTotalItems(data.total);
         } catch (error) {
             console.error("Failed to fetch orders:", error);
+            toast({
+                title: "Error",
+                description: "Failed to load orders.",
+                variant: "destructive",
+            });
         } finally {
             setLoading(false);
         }
@@ -57,14 +63,22 @@ const Orders = () => {
         fetchOrders();
     }, [page]);
 
-    // Local filter for status (since CJ list API might not support it directly in one call)
+    // Local filter for status (backend supports pagination, so client-side filtering 
+    // is limited to the current page unless we implement server-side filtering params)
     const filteredOrders = statusFilter === "all"
         ? orders
         : orders.filter(o => o.status.toLowerCase().includes(statusFilter.toLowerCase()));
 
+    // Further filter by search query if present
+    const displayedOrders = searchQuery
+        ? filteredOrders.filter(o =>
+            o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            o.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        : filteredOrders;
+
     const handleRowClick = (order) => {
-        setSelectedOrder(order);
-        setIsDrawerOpen(true);
+        navigate(`/admin/orders/${order.id}`);
     };
 
     return (
@@ -78,8 +92,8 @@ const Orders = () => {
                     <Button variant="outline" className="gap-2">
                         <Download className="h-4 w-4" /> Export
                     </Button>
-                    <Button className="gap-2">
-                        <RefreshCw className="h-4 w-4" /> Sync Now
+                    <Button className="gap-2" onClick={fetchOrders} disabled={loading}>
+                        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Sync Now
                     </Button>
                 </div>
             </div>
@@ -103,7 +117,7 @@ const Orders = () => {
                                     key={status}
                                     variant={statusFilter === status ? "primary" : "ghost"}
                                     size="sm"
-                                    className="capitalize whitespace-nowrap"
+                                    className={`capitalize whitespace-nowrap ${statusFilter === status ? 'bg-primary text-primary-foreground' : ''}`}
                                     onClick={() => setStatusFilter(status)}
                                 >
                                     {status}
@@ -134,9 +148,9 @@ const Orders = () => {
                                             ))}
                                         </tr>
                                     ))
-                                ) : filteredOrders.length > 0 ? (
+                                ) : displayedOrders.length > 0 ? (
                                     <AnimatePresence>
-                                        {filteredOrders.map((order, i) => (
+                                        {displayedOrders.map((order, i) => (
                                             <motion.tr
                                                 layout
                                                 initial={{ opacity: 0 }}
@@ -146,18 +160,18 @@ const Orders = () => {
                                                 className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
                                                 onClick={() => handleRowClick(order)}
                                             >
-                                                <td className="px-6 py-4 font-medium">{order.id}</td>
+                                                <td className="px-6 py-4 font-medium">{order.id.slice(-6).toUpperCase()}</td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="font-semibold text-xs">{order.customer?.name || "Customer"}</span>
-                                                        <span className="text-[10px] text-muted-foreground">{order.customer?.country || "N/A"}</span>
+                                                        <span className="font-semibold text-xs">{order.user?.name || order.shippingAddress?.fullName || "Guest"}</span>
+                                                        <span className="text-[10px] text-muted-foreground">{order.shippingAddress?.country || "N/A"}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs whitespace-nowrap">
-                                                    {new Date(order.date).toLocaleDateString()}
+                                                    {new Date(order.date || order.createdAt).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-6 py-4 font-bold text-primary">
-                                                    ${order.total.toFixed(2)}
+                                                    ${(order.total || order.totalAmount || 0).toFixed(2)}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <StatusBadge status={order.status} />
@@ -175,9 +189,6 @@ const Orders = () => {
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem>
                                                                 <RefreshCw className="mr-2 h-4 w-4" /> Sync Supplier
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-red-500 focus:text-red-500">
-                                                                Cancel Order
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -204,7 +215,9 @@ const Orders = () => {
 
                     {/* Pagination */}
                     <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/10">
-                        <span className="text-xs text-muted-foreground">Showing {(page - 1) * 20 + 1} to {Math.min(page * 20, totalItems)} of {totalItems} orders</span>
+                        <span className="text-xs text-muted-foreground">
+                            Showing {(page - 1) * 20 + 1} to {Math.min(page * 20, totalItems)} of {totalItems} orders
+                        </span>
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="outline"
@@ -224,7 +237,7 @@ const Orders = () => {
                                             key={pageNum}
                                             variant={page === pageNum ? "primary" : "outline"}
                                             size="sm"
-                                            className={`h-8 w-8 ${page === pageNum ? "bg-primary text-primary-foreground" : ""}`}
+                                            className={`h-8 w-8 ${page === pageNum ? 'bg-primary text-primary-foreground' : ''}`}
                                             onClick={() => setPage(pageNum)}
                                         >
                                             {pageNum}
@@ -246,12 +259,6 @@ const Orders = () => {
                     </div>
                 </CardContent>
             </Card>
-
-            <OrderDrawer
-                order={selectedOrder}
-                isOpen={isDrawerOpen}
-                onClose={() => setIsDrawerOpen(false)}
-            />
         </div>
     );
 };

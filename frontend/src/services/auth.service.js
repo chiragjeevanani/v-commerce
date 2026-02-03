@@ -1,24 +1,13 @@
-import axios from 'axios';
+import apiClient from '../lib/axios';
 
-const API_URL = 'http://localhost:3000/api/v1/auth';
-
-const api = axios.create({
-    baseURL: API_URL,
-});
-
-// Interceptor to add auth token to requests
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
+// API URL is now handled by baseUrl in lib/axios.js + relative paths
+// const API_URL = 'http://localhost:3000/api/v1/auth';
+// const api = axios.create...
 
 export const authService = {
     login: async (email, password) => {
         try {
-            const response = await api.post('/login', { email, password });
+            const response = await apiClient.post('/auth/login', { email, password });
             const { data, token } = response.data;
 
             localStorage.setItem("auth_token", token);
@@ -32,7 +21,7 @@ export const authService = {
 
     adminLogin: async (email, password) => {
         try {
-            const response = await api.post('/login', { email, password });
+            const response = await apiClient.post('/auth/login', { email, password });
             const { data, token } = response.data;
 
             if (data.role !== "admin") {
@@ -50,7 +39,7 @@ export const authService = {
 
     signup: async (userData) => {
         try {
-            const response = await api.post('/register', userData);
+            const response = await apiClient.post('/auth/register', userData);
             // Store email temporarily for verification
             localStorage.setItem("pending_email", userData.email);
             return response.data;
@@ -64,7 +53,7 @@ export const authService = {
             const email = localStorage.getItem("pending_email");
             if (!email) throw new Error("No pending verification found. Please signup again.");
 
-            const response = await api.post('/verify', { email, otp });
+            const response = await apiClient.post('/auth/verify', { email, otp });
             const { data, token } = response.data;
 
             localStorage.setItem("auth_token", token);
@@ -79,7 +68,7 @@ export const authService = {
 
     resendOTP: async (email) => {
         try {
-            const response = await api.post('/resend-otp', { email });
+            const response = await apiClient.post('/auth/resend-otp', { email });
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to resend OTP");
@@ -102,7 +91,7 @@ export const authService = {
 
     getUsers: async () => {
         try {
-            const response = await api.get('/all-users');
+            const response = await apiClient.get('/auth/all-users');
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to fetch users");
@@ -111,10 +100,72 @@ export const authService = {
 
     toggleUserStatus: async (userId) => {
         try {
-            const response = await api.put(`/toggle-status/${userId}`);
+            const response = await apiClient.put(`/auth/toggle-status/${userId}`);
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to toggle user status");
+        }
+    },
+
+    getUserById: async (userId) => {
+        try {
+            const response = await apiClient.get(`/auth/userProfile/${userId}`);
+            return response.data;
+        } catch (error) {
+            console.error("Get User Error:", error);
+            throw new Error(error.response?.data?.message || "Failed to fetch user details");
+        }
+    },
+
+    updateProfile: async (userData) => {
+        try {
+            const response = await apiClient.put('/auth/update-profile', userData);
+            // Update local storage user if successful
+            if (response.data.success) {
+                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+                const updatedUser = { ...currentUser, ...response.data.data };
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+
+                if (response.data.token) {
+                    localStorage.setItem("auth_token", response.data.token);
+                }
+            }
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to update profile");
+        }
+    },
+
+    changePassword: async (passwordData) => {
+        try {
+            const response = await apiClient.post('/auth/change-password', passwordData);
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to change password");
+        }
+    },
+
+    uploadAvatar: async (file) => {
+        try {
+            const formData = new FormData();
+            formData.append("image", file); // 'image' matches Multer config
+
+            const response = await apiClient.post('/upload/admin/avatar', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.data.success) {
+                // Update local storage user avatar
+                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+                currentUser.avatar = response.data.data.avatar;
+                localStorage.setItem("user", JSON.stringify(currentUser));
+            }
+
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to upload avatar");
         }
     },
 

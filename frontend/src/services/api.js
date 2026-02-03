@@ -1,19 +1,8 @@
-import axios from "axios";
+import apiClient from "../lib/axios";
 
-const API_URL = 'http://localhost:3000/api/v1';
-
-const apiClient = axios.create({
-  baseURL: API_URL,
-});
-
-// Interceptor to add auth token to requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("auth_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Remove local instance creation and interceptor setup
+// const API_URL = 'http://localhost:3000/api/v1';
+// const apiClient = axios.create...
 
 export const api = {
   // Products (using existing CJ endpoints via our backend)
