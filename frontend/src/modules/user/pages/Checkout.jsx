@@ -29,7 +29,7 @@ const Checkout = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const isOrderPlaced = useRef(false);
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentMethod, setPaymentMethod] = useState("cod");
   const { user } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -48,7 +48,11 @@ const Checkout = () => {
     cvc: "",
   });
 
-  // State to hold new address form data before submission in Checkout flow
+  // State for shipping estimation
+  const [shippingMethods, setShippingMethods] = useState([]);
+  const [selectedShipping, setSelectedShipping] = useState(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [deliveryEstimate, setDeliveryEstimate] = useState("");
   const [newAddressData, setNewAddressData] = useState(null);
 
   useEffect(() => {
@@ -73,6 +77,36 @@ const Checkout = () => {
     };
     fetchAddresses();
   }, [cart, navigate]);
+
+  // Fetch shipping estimate when cart or address changes
+  useEffect(() => {
+    const getEstimate = async () => {
+      if (cart.length > 0) {
+        setShippingLoading(true);
+        try {
+          // Use the first item's PID for estimation (CJ usually groups or calculates per item)
+          const res = await api.estimateShipping({
+            pid: cart[0].pid,
+            quantity: cart[0].quantity,
+            countryCode: 'IN'
+          });
+
+          if (res.success && res.data && res.data.length > 0) {
+            setShippingMethods(res.data);
+            // Default to the first (usually cheapest/standard) method
+            const standard = res.data[0];
+            setSelectedShipping(standard);
+            setDeliveryEstimate(standard.time);
+          }
+        } catch (error) {
+          console.error("Shipping estimate failed", error);
+        } finally {
+          setShippingLoading(false);
+        }
+      }
+    };
+    getEstimate();
+  }, [cart]);
 
   if (cart.length === 0) {
     return null;
@@ -268,24 +302,28 @@ const Checkout = () => {
                     exit={{ opacity: 0, x: -20 }}
                     className="space-y-8"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
-                        { id: "upi", name: "UPI", icon: "📱" },
-                        { id: "card", name: "Card", icon: "💳" },
-                        { id: "cod", name: "Cash on Delivery", icon: "💵" },
+                        { id: "online", name: "Online Payment", icon: "💳", disabled: true },
+                        { id: "cod", name: "Cash on Delivery", icon: "💵", disabled: false },
                       ].map((method) => (
                         <button
                           key={method.id}
-                          onClick={() => setPaymentMethod(method.id)}
-                          className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-4 transition-all ${paymentMethod === method.id
+                          type="button"
+                          onClick={() => !method.disabled && setPaymentMethod(method.id)}
+                          disabled={method.disabled}
+                          className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-4 transition-all relative ${paymentMethod === method.id
                             ? "border-primary bg-primary/5 shadow-inner scale-105"
                             : "border-border hover:border-primary/50"
-                            }`}
+                            } ${method.disabled ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
                         >
                           <span className="text-3xl">{method.icon}</span>
                           <span className="font-black text-xs uppercase tracking-widest">{method.name}</span>
+                          {method.disabled && (
+                            <Badge variant="secondary" className="absolute -top-2 -right-2 text-[8px] py-0.5 px-2 bg-muted text-muted-foreground uppercase font-black border">Offline</Badge>
+                          )}
                           {paymentMethod === method.id && (
-                            <motion.div layoutId="active" className="h-2 w-2 rounded-full bg-primary" />
+                            <motion.div layoutId="active" className="h-2 w-2 rounded-full bg-primary mt-auto" />
                           )}
                         </button>
                       ))}
@@ -293,80 +331,18 @@ const Checkout = () => {
 
                     <div className="pt-6 border-t border-dashed">
                       <AnimatePresence mode="wait">
-                        {paymentMethod === "card" && (
-                          <motion.div
-                            key="card-info"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="space-y-6"
-                          >
-                            <div className="space-y-2">
-                              <Label htmlFor="cardNumber" className="font-bold uppercase text-[10px] tracking-widest opacity-70">Card Number</Label>
-                              <Input
-                                id="cardNumber"
-                                name="cardNumber"
-                                value={formData.cardNumber}
-                                onChange={handleInputChange}
-                                className="rounded-xl bg-muted border-none p-6 focus-visible:ring-primary/20"
-                                placeholder="0000 0000 0000 0000"
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="expiry" className="font-bold uppercase text-[10px] tracking-widest opacity-70">Expiry Date</Label>
-                                <Input
-                                  id="expiry"
-                                  name="expiry"
-                                  value={formData.expiry}
-                                  onChange={handleInputChange}
-                                  className="rounded-xl bg-muted border-none p-6 focus-visible:ring-primary/20"
-                                  placeholder="MM/YY"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="cvc" className="font-bold uppercase text-[10px] tracking-widest opacity-70">CVC</Label>
-                                <Input
-                                  id="cvc"
-                                  name="cvc"
-                                  value={formData.cvc}
-                                  onChange={handleInputChange}
-                                  className="rounded-xl bg-muted border-none p-6 focus-visible:ring-primary/20"
-                                  placeholder="123"
-                                />
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-
-                        {paymentMethod === "upi" && (
-                          <motion.div
-                            key="upi-info"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="p-8 rounded-[40px] bg-primary/5 flex flex-col items-center text-center space-y-4"
-                          >
-                            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl">📱</div>
-                            <div className="space-y-2">
-                              <h4 className="font-black text-xl">Pay via Any UPI App</h4>
-                              <p className="text-sm text-muted-foreground">Scan the QR code or enter your VPA on the review page to complete the payment.</p>
-                            </div>
-                          </motion.div>
-                        )}
-
                         {paymentMethod === "cod" && (
                           <motion.div
                             key="cod-info"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="p-8 rounded-[40px] bg-secondary/20 flex flex-col items-center text-center space-y-4"
+                            className="p-8 rounded-[40px] bg-green-500/5 flex flex-col items-center text-center space-y-4 border border-green-500/10"
                           >
-                            <div className="h-20 w-20 rounded-full bg-secondary/30 flex items-center justify-center text-3xl">💵</div>
+                            <div className="h-20 w-20 rounded-full bg-green-500/10 flex items-center justify-center text-3xl">💵</div>
                             <div className="space-y-2">
-                              <h4 className="font-black text-xl">Confirm Delivery Address</h4>
-                              <p className="text-sm text-muted-foreground">You will pay the amount to the delivery associate when your package arrives. Small COD fee might apply.</p>
+                              <h4 className="font-black text-xl">Cash on Delivery</h4>
+                              <p className="text-sm text-muted-foreground">Online payments are temporarily unavailable. Please pay the amount to the delivery associate when your package arrives.</p>
                             </div>
                           </motion.div>
                         )}
@@ -405,15 +381,9 @@ const Checkout = () => {
                       <div className="rounded-2xl border bg-muted/30 p-6 space-y-3">
                         <h4 className="font-black uppercase text-xs tracking-widest text-primary">Payment Via:</h4>
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">
-                            {paymentMethod === "upi" && "📱"}
-                            {paymentMethod === "card" && "💳"}
-                            {paymentMethod === "cod" && "💵"}
-                          </span>
+                          <span className="text-2xl">💵</span>
                           <p className="text-sm font-black uppercase tracking-widest">
-                            {paymentMethod === "upi" && "UPI / Net Banking"}
-                            {paymentMethod === "card" && `Card ending in ${formData.cardNumber.slice(-4) || "****"}`}
-                            {paymentMethod === "cod" && "Cash on Delivery"}
+                            Cash on Delivery
                           </p>
                         </div>
                       </div>
@@ -472,10 +442,21 @@ const Checkout = () => {
                   <span className="font-black">₹<AnimatedNumber value={cartTotal} decimals={2} /></span>
                 </div>
                 <div className="flex justify-between items-center text-primary">
-                  <span className="text-muted-foreground font-medium">Shipping</span>
-                  <span className="font-black">FREE</span>
+                  <span className="text-muted-foreground font-medium">Shipping Fee</span>
+                  <span className="font-black">
+                    {shippingLoading ? "..." : selectedShipping ? `₹${selectedShipping.fee}` : "Calculated at next step"}
+                  </span>
                 </div>
-                <div className="flex justify-between items-center">
+                {deliveryEstimate && (
+                  <div className="flex justify-between items-center text-green-600 bg-green-50 p-2 rounded-lg border border-green-100 mt-2">
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-3 w-3" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Est. Delivery</span>
+                    </div>
+                    <span className="text-[10px] font-black">{deliveryEstimate} Days</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center border-t pt-2">
                   <span className="text-muted-foreground">Tax (10%)</span>
                   <span className="font-black">₹<AnimatedNumber value={cartTotal * 0.1} decimals={2} /></span>
                 </div>
@@ -485,7 +466,7 @@ const Checkout = () => {
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Total Amount</span>
                   <span className="text-3xl font-black text-primary leading-none">
-                    ₹<AnimatedNumber value={cartTotal * 1.1} decimals={2} />
+                    ₹<AnimatedNumber value={(cartTotal * 1.1) + (selectedShipping?.fee || 0)} decimals={2} />
                   </span>
                 </div>
               </div>

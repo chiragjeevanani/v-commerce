@@ -128,11 +128,11 @@ const OrderDetail = () => {
                                             <p className="text-sm text-muted-foreground">SKU: {item.sku || item.pid || 'N/A'}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold">${(item.price || 0).toFixed(2)}</p>
+                                            <p className="font-bold">₹{(item.price || 0).toFixed(2)}</p>
                                             <p className="text-sm text-muted-foreground">x {item.quantity}</p>
                                         </div>
                                         <div className="text-right w-24 font-bold">
-                                            ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                                            ₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                                         </div>
                                     </div>
                                 ))}
@@ -214,20 +214,20 @@ const OrderDetail = () => {
                             <div className="space-y-2 pt-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Subtotal</span>
-                                    <span>${(order.total || order.totalAmount || 0).toFixed(2)}</span>
+                                    <span>₹{(order.total || order.totalAmount || 0).toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Shipping</span>
-                                    <span>$0.00</span>
+                                    <span>₹0.00</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Tax</span>
-                                    <span>$0.00</span>
+                                    <span>₹0.00</span>
                                 </div>
                                 <Separator className="my-2" />
                                 <div className="flex justify-between font-bold text-lg">
                                     <span>Total</span>
-                                    <span className="text-primary">${(order.total || order.totalAmount || 0).toFixed(2)}</span>
+                                    <span className="text-primary">₹{(order.total || order.totalAmount || 0).toFixed(2)}</span>
                                 </div>
                             </div>
                         </CardContent>

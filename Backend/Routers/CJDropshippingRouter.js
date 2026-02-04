@@ -31,7 +31,8 @@ import {
     calculateFreightTip,
     getSupplierLogisticsTemplate,
     getTrackInfo,
-    trackInfo
+    trackInfo,
+    estimateShipping
 } from "../Controller/CJDropshippingCtrl.js";
 import multer from "multer";
 
@@ -85,5 +86,6 @@ router.post("/freight-calculate-tip", calculateFreightTip);
 router.post("/logistics-template", getSupplierLogisticsTemplate);
 router.get("/track-info-v1", getTrackInfo);
 router.get("/track-info-v2", trackInfo);
+router.post("/estimate-shipping", estimateShipping);
 
 export default router;

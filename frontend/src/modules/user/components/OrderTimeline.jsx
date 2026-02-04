@@ -10,7 +10,23 @@ const OrderTimeline = ({ steps, currentStatus }) => {
                 {steps.map((step, index) => {
                     const isCompleted = step.completed;
                     const isLast = index === steps.length - 1;
-                    const isActive = !isCompleted && (index === 0 || steps[index - 1].completed);
+                    // Current status is the last completed step or the currentStatus from props
+                    const isCurrent = step.status === currentStatus;
+
+                    const formatDate = (dateStr) => {
+                        if (!dateStr) return null;
+                        try {
+                            return new Date(dateStr).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        } catch (e) {
+                            return dateStr;
+                        }
+                    };
 
                     return (
                         <div key={step.status} className="relative flex gap-4">
@@ -27,26 +43,19 @@ const OrderTimeline = ({ steps, currentStatus }) => {
                                 <motion.div
                                     initial={false}
                                     animate={{
-                                        scale: isCompleted || isActive ? 1 : 0.8,
-                                        backgroundColor: isCompleted ? "var(--primary)" : isActive ? "transparent" : "var(--muted)"
+                                        scale: isCompleted || isCurrent ? 1 : 0.8,
+                                        backgroundColor: isCompleted ? "hsl(var(--primary))" : isCurrent ? "transparent" : "hsl(var(--muted))"
                                     }}
                                     className={cn(
                                         "w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors",
                                         isCompleted ? "border-primary text-primary-foreground" :
-                                            isActive ? "border-primary text-primary" : "border-muted text-muted-foreground"
+                                            isCurrent ? "border-primary text-primary" : "border-muted text-muted-foreground"
                                     )}
                                 >
                                     {isCompleted ? (
-                                        <Check className="w-5 h-5" />
-                                    ) : isActive ? (
-                                        <motion.div
-                                            animate={{ scale: [1, 1.2, 1] }}
-                                            transition={{ repeat: Infinity, duration: 2 }}
-                                        >
-                                            <Circle className="w-5 h-5 fill-current" />
-                                        </motion.div>
+                                        <Check className="w-5 h-5 mx-auto" />
                                     ) : (
-                                        <Circle className="w-5 h-5" />
+                                        <Circle className="w-4 h-4 mx-auto fill-current opacity-20" />
                                     )}
                                 </motion.div>
                             </div>
@@ -54,23 +63,29 @@ const OrderTimeline = ({ steps, currentStatus }) => {
                             <div className="flex flex-col pb-2">
                                 <h4 className={cn(
                                     "font-bold text-lg leading-none mb-1",
-                                    isCompleted ? "text-foreground" : isActive ? "text-primary" : "text-muted-foreground"
+                                    isCompleted ? "text-foreground" : isCurrent ? "text-primary" : "text-muted-foreground"
                                 )}>
                                     {step.label}
                                 </h4>
                                 {step.date && (
-                                    <p className="text-sm text-muted-foreground font-medium">
-                                        {step.date}
+                                    <p className="text-xs text-muted-foreground font-medium">
+                                        {formatDate(step.date)}
                                     </p>
                                 )}
-                                {isActive && (
-                                    <motion.p
+                                {isCurrent && (
+                                    <motion.div
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        className="text-xs font-semibold text-primary mt-1 uppercase tracking-wider"
+                                        className="flex items-center gap-1.5 mt-1"
                                     >
-                                        Current Status
-                                    </motion.p>
+                                        <span className="relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                        </span>
+                                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">
+                                            Current Status
+                                        </span>
+                                    </motion.div>
                                 )}
                             </div>
                         </div>

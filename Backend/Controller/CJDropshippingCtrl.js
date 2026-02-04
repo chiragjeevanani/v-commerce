@@ -680,3 +680,58 @@ export const trackInfo = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+/**
+ * Estimate Shipping and Delivery Time
+ */
+export const estimateShipping = async (req, res) => {
+    try {
+        const { pid, quantity = 1, countryCode = 'IN' } = req.body;
+
+        if (!pid) {
+            return res.status(400).json({ success: false, message: "pid is required" });
+        }
+
+        // 1. Get Product Detail to find weight and attributes
+        const productDetail = await makeCJRequest('/product/query', 'GET', { pid });
+        if (!productDetail.success) {
+            return res.json(productDetail);
+        }
+
+        const detail = productDetail.data;
+
+        // 2. Prepare Freight Calculation Request
+        // We assume global warehouse (or the one in the product detail)
+        const freightRequest = {
+            startCountryCode: 'CN', // Usually shipped from China
+            endCountryCode: countryCode,
+            quantity: quantity,
+            productWeight: detail.productWeight || 100, // Default 100g if missing
+            productPid: pid,
+            // Logic: CJ uses these codes to determine shipping options
+            // If the product has specific categories, you'd add them here
+        };
+
+        const result = await makeCJRequest('/logistic/freightCalculate', 'POST', {}, freightRequest);
+
+        // Map the result to include a more user-friendly format
+        if (result.success && result.data) {
+            // Find the most common/reasonable shipping method
+            // CJ returns a list of methods, we can filter or just send them all
+            const methods = result.data.map(method => ({
+                name: method.logisticName,
+                fee: Math.round(parseFloat(method.freight) * 83), // USD to INR
+                time: method.aging,
+                id: method.logisticName
+            }));
+
+            return res.json({
+                success: true,
+                data: methods
+            });
+        }
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

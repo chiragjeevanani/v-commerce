@@ -62,5 +62,10 @@ export const api = {
   placeOrder: async (orderData) => {
     const response = await apiClient.post('/orders/place', orderData);
     return response.data;
+  },
+
+  estimateShipping: async (data) => {
+    const response = await apiClient.post('/cj/estimate-shipping', data);
+    return response.data;
   }
 };

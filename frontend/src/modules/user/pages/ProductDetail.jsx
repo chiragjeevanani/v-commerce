@@ -35,14 +35,42 @@ const ProductDetail = () => {
           const detail = result.data;
 
           // Normalize CJ product data
+          const parseImages = (imgData) => {
+            if (!imgData) return [];
+            if (Array.isArray(imgData)) return imgData;
+            try {
+              const parsed = JSON.parse(imgData);
+              return Array.isArray(parsed) ? parsed : [imgData];
+            } catch (e) {
+              return [imgData];
+            }
+          };
+
+          const allImages = detail.productImageSet || parseImages(detail.productImage);
+
+          const USD_TO_INR = 83;
+          const SELLING_MARGIN = 1.3; // 30% profit markup
+          const MRP_MARGIN = 1.8; // 80% markup for MRP display
+
+          const getBasePrice = (priceStr) => {
+            if (!priceStr) return 0;
+            const s = String(priceStr);
+            if (s.includes('--')) {
+              return parseFloat(s.split('--')[0].trim());
+            }
+            return parseFloat(s);
+          };
+
+          const basePrice = getBasePrice(detail.sellPrice);
+
           const normalizedProduct = {
             id: detail.pid,
             pid: detail.pid,
             name: detail.productNameEn,
-            image: detail.productImage,
-            images: detail.productImageSet || [detail.productImage],
-            price: parseFloat(detail.sellPrice || 0) * 1.3, // 30% margin
-            discountPrice: detail.sellPrice ? parseFloat(detail.sellPrice) * 1.3 : null,
+            image: allImages[0] || "",
+            images: allImages,
+            price: Math.round(basePrice * MRP_MARGIN * USD_TO_INR),
+            discountPrice: Math.round(basePrice * SELLING_MARGIN * USD_TO_INR),
             description: detail.productHtmlDescription || detail.productRemarks || "No description available.",
             category: detail.categoryName || "General",
             stock: detail.warehouseInventoryNum || 100,
@@ -244,7 +272,7 @@ const ProductDetail = () => {
               className="aspect-square overflow-hidden rounded-[40px] border bg-muted shadow-lg group relative"
             >
               <img
-                src={product.image}
+                src={product.images[activeImage] || product.image}
                 alt={product.name}
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
@@ -357,20 +385,7 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { label: "Free Shipping", sub: "Over ₹999", icon: "🚚" },
-                { label: "Check Stock", sub: "Real-time updates", icon: "📊" },
-              ].map((feature, i) => (
-                <div key={i} className="flex items-center gap-4 p-5 rounded-3xl bg-muted/30 border border-border/50">
-                  <span className="text-3xl">{feature.icon}</span>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-base leading-tight">{feature.label}</span>
-                    <span className="text-xs text-muted-foreground uppercase font-black tracking-tighter">{feature.sub}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+
           </div>
         </div>
       </div>

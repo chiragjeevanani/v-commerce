@@ -135,22 +135,37 @@ const TrackOrder = () => {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {order.items.map((item) => (
-                                        <div key={item.productId} className="flex items-center gap-4">
-                                            <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                    {order.items.map((item) => {
+                                        const parseImage = (imgData) => {
+                                            if (!imgData) return "";
+                                            if (typeof imgData !== 'string') return imgData;
+                                            try {
+                                                if (imgData.startsWith('[') || imgData.startsWith('{')) {
+                                                    const parsed = JSON.parse(imgData);
+                                                    return Array.isArray(parsed) ? parsed[0] : imgData;
+                                                }
+                                                return imgData;
+                                            } catch (e) {
+                                                return imgData;
+                                            }
+                                        };
+                                        return (
+                                            <div key={item.productId || item.pid} className="flex items-center gap-4">
+                                                <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                                                    <img src={parseImage(item.image)} alt={item.name} className="w-full h-full object-cover" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h4 className="font-medium leading-tight">{item.name}</h4>
+                                                    <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                                                </div>
+                                                <p className="font-bold">₹{(item.price * item.quantity).toFixed(2)}</p>
                                             </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-medium leading-tight">{item.name}</h4>
-                                                <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                                            </div>
-                                            <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                     <Separator className="my-4" />
                                     <div className="flex justify-between items-center pt-2">
                                         <p className="font-medium text-muted-foreground">Total Paid</p>
-                                        <p className="text-xl font-bold text-primary">${order.total.toFixed(2)}</p>
+                                        <p className="text-xl font-bold text-primary">₹{order.total.toFixed(2)}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -170,7 +185,17 @@ const TrackOrder = () => {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-muted-foreground mb-1">Shipping Address</p>
-                                        <p className="text-sm font-semibold">{order.shippingAddress}</p>
+                                        <p className="text-sm font-semibold">
+                                            {typeof order.shippingAddress === 'object' ? (
+                                                <>
+                                                    {order.shippingAddress.fullName}<br />
+                                                    {order.shippingAddress.street}<br />
+                                                    {order.shippingAddress.city}, {order.shippingAddress.zipCode}
+                                                </>
+                                            ) : (
+                                                order.shippingAddress
+                                            )}
+                                        </p>
                                     </div>
                                 </div>
 

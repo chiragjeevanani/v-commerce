@@ -151,7 +151,7 @@ const OrderSuccess = () => {
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
-                    <p className="text-2xl font-bold text-primary">${total.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-primary">₹{total.toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -163,26 +163,18 @@ const OrderSuccess = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          className="flex justify-center"
         >
           <Button
             size="lg"
-            className="w-full h-14 text-lg font-semibold shadow-lg shadow-primary/20"
-            onClick={() => navigate(`/track-order/${orderId}`)}
-          >
-            <Package className="mr-2 h-5 w-5" />
-            Track Order
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="w-full h-14 text-lg font-semibold"
+            variant="default"
+            className="w-full max-w-sm h-14 text-lg font-semibold shadow-lg shadow-primary/20"
             asChild
           >
             <Link to="/shop">
               <ShoppingBag className="mr-2 h-5 w-5" />
               Keep Shopping
-              <ChevronRight className="ml-2 h-4 h-4 text-muted-foreground" />
+              <ChevronRight className="ml-2 h-4 w-4 text-muted-foreground font-black" />
             </Link>
           </Button>
         </motion.div>

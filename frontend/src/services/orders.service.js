@@ -5,7 +5,14 @@ export const ordersService = {
     getMyOrders: async () => {
         try {
             const response = await apiClient.get('/orders/my-orders');
-            return response.data;
+            const data = response.data;
+
+            // Normalize backend response
+            if (Array.isArray(data)) return data;
+            if (data && Array.isArray(data.data)) return data.data;
+            if (data && Array.isArray(data.orders)) return data.orders;
+
+            return [];
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to fetch orders");
         }

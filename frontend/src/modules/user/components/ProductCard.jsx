@@ -14,9 +14,36 @@ const ProductCard = ({ product }) => {
 
   // Normalize CJ data for consistent UI
   const name = product.productNameEn || product.name;
-  const image = product.productImage || product.image;
+
+  const parseImage = (imgData) => {
+    if (!imgData) return "";
+    if (typeof imgData !== 'string') return imgData;
+    try {
+      if (imgData.startsWith('[') || imgData.startsWith('{')) {
+        const parsed = JSON.parse(imgData);
+        return Array.isArray(parsed) ? parsed[0] : imgData;
+      }
+      return imgData;
+    } catch (e) {
+      return imgData;
+    }
+  };
+
+  const image = parseImage(product.productImage || product.image);
   // Handle CJ price range vs single price
-  const displayPrice = product.sellPrice ? `₹${product.sellPrice}` : `₹${product.discountPrice || product.price}`;
+  const formatPrice = (price) => {
+    if (!price) return "₹0";
+    const s = String(price);
+    if (s.includes('--')) {
+      return s.split('--').map(p => `₹${p.trim()}`).join(' - ');
+    }
+    if (s.includes('-')) {
+      return s.split('-').map(p => `₹${p.trim()}`).join(' - ');
+    }
+    return `₹${s}`;
+  };
+
+  const displayPrice = product.sellPrice ? formatPrice(product.sellPrice) : formatPrice(product.discountPrice || product.price);
   const pid = product.pid || product.id;
   const categoryName = product.categoryName || product.category;
 

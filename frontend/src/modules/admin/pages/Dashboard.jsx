@@ -111,7 +111,7 @@ const Dashboard = () => {
                 <KPICard
                     index={1}
                     title="Total Revenue"
-                    value={`$${(stats?.revenue || 0).toLocaleString()}`}
+                    value={`₹${(stats?.revenue || 0).toLocaleString()}`}
                     icon={DollarSign}
                     trend="up"
                     trendValue={stats?.trends?.revenue || "0%"}
@@ -203,7 +203,7 @@ const Dashboard = () => {
                                         </td>
 
                                         <td className="p-4">
-                                            ${order.total?.toFixed(2)}
+                                            ₹{order.total?.toFixed(2)}
                                         </td>
 
                                         <td className="p-4">

@@ -53,19 +53,37 @@ export const productsService = {
                     const data = result.data;
                     const productList = data.content?.[0]?.productList || data.list || [];
                     const mappedData = {
-                        products: productList.map(product => ({
-                            id: product.id || product.pid,
-                            name: product.nameEn || product.productNameEn,
-                            image: product.bigImage || product.productImage,
-                            category: product.categoryName || product.oneCategoryName || 'General',
-                            categoryId: product.categoryId,
-                            sellPrice: product.sellPrice,
-                            supplierPrice: product.sellPrice,
-                            price: (parseFloat(product.sellPrice) * 1.3).toFixed(2),
-                            margin: 30,
-                            stock: product.warehouseInventoryNum || 'Global',
-                            pid: product.id || product.pid
-                        })),
+                        products: productList.map(product => {
+                            const USD_TO_INR = 83;
+                            const MARGIN = 1.3;
+
+                            const convertPrice = (priceStr, mult = 1) => {
+                                if (!priceStr) return "0.00";
+                                const s = String(priceStr);
+                                if (s.includes('--')) {
+                                    return s.split('--')
+                                        .map(p => Math.round(parseFloat(p.trim()) * mult * USD_TO_INR))
+                                        .join(' -- ');
+                                }
+                                return Math.round(parseFloat(s) * mult * USD_TO_INR).toString();
+                            };
+
+                            const sellPrice = convertPrice(product.sellPrice, MARGIN);
+
+                            return {
+                                id: product.id || product.pid,
+                                name: product.nameEn || product.productNameEn,
+                                image: product.bigImage || product.productImage,
+                                category: product.categoryName || product.oneCategoryName || 'General',
+                                categoryId: product.categoryId,
+                                sellPrice: sellPrice,
+                                supplierPrice: convertPrice(product.sellPrice, 1),
+                                price: sellPrice,
+                                margin: 30,
+                                stock: product.warehouseInventoryNum || 'Global',
+                                pid: product.id || product.pid
+                            };
+                        }),
                         totalPages: data.totalPages || Math.ceil((data.totalRecords || 0) / size) || 1,
                         totalItems: data.totalRecords || data.total || 0
                     };

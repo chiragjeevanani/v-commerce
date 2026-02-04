@@ -114,7 +114,8 @@ const ProductDetail = () => {
         );
     }
 
-    const sellingPrice = (parseFloat(product.sellPrice) * (1 + margin / 100)).toFixed(2);
+    const USD_TO_INR = 83;
+    const sellingPrice = (parseFloat(product.sellPrice) * USD_TO_INR * (1 + margin / 100)).toFixed(2);
 
     return (
         <div className="space-y-8 pb-20">
@@ -253,7 +254,7 @@ const ProductDetail = () => {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="space-y-1">
                                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Base Cost Range</p>
-                                    <p className="text-xl font-black text-muted-foreground">₹{product.sellPrice}</p>
+                                    <p className="text-xl font-black text-muted-foreground">₹{(parseFloat(product.sellPrice) * USD_TO_INR).toFixed(2)}</p>
                                 </div>
                                 <div className="space-y-2">
                                     <p className="text-[10px] text-indigo-600 uppercase font-bold tracking-widest">Global Markup</p>
@@ -272,11 +273,11 @@ const ProductDetail = () => {
                                     <p className="text-2xl font-black italic">
                                         {product.sellPrice.includes('-') ? (
                                             <>
-                                                ₹{(parseFloat(product.sellPrice.split('-')[0]) * (1 + margin / 100)).toFixed(2)} -
-                                                ₹{(parseFloat(product.sellPrice.split('-')[1]) * (1 + margin / 100)).toFixed(2)}
+                                                ₹{(parseFloat(product.sellPrice.split('-')[0]) * USD_TO_INR * (1 + margin / 100)).toFixed(2)} -
+                                                ₹{(parseFloat(product.sellPrice.split('-')[1]) * USD_TO_INR * (1 + margin / 100)).toFixed(2)}
                                             </>
                                         ) : (
-                                            `₹${(parseFloat(product.sellPrice) * (1 + margin / 100)).toFixed(2)}`
+                                            `₹${(parseFloat(product.sellPrice) * USD_TO_INR * (1 + margin / 100)).toFixed(2)}`
                                         )}
                                     </p>
                                 </div>
@@ -344,8 +345,8 @@ const ProductDetail = () => {
                                                 <td className="px-6 py-3 font-mono text-[9px] text-muted-foreground">{v.variantSku}</td>
                                                 <td className="px-6 py-3">
                                                     <div className="flex flex-col">
-                                                        <span className="font-bold text-indigo-600">₹{v.variantSellPrice}</span>
-                                                        <span className="text-[9px] text-green-600">Sug: ₹{v.variantSugSellPrice}</span>
+                                                        <span className="font-bold text-indigo-600">₹{(parseFloat(v.variantSellPrice) * USD_TO_INR).toFixed(2)}</span>
+                                                        <span className="text-[9px] text-green-600">Sug: ₹{(parseFloat(v.variantSugSellPrice) * USD_TO_INR).toFixed(2)}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-3 text-right">

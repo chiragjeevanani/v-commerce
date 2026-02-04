@@ -171,7 +171,7 @@ const Orders = () => {
                                                     {new Date(order.date || order.createdAt).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-6 py-4 font-bold text-primary">
-                                                    ${(order.total || order.totalAmount || 0).toFixed(2)}
+                                                    ₹{(order.total || order.totalAmount || 0).toFixed(2)}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <StatusBadge status={order.status} />

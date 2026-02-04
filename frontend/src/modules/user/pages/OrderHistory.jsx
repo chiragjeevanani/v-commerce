@@ -167,18 +167,33 @@ const OrderHistory = () => {
                                         {/* Images */}
                                         <div className="p-4 sm:p-6 sm:border-r border-border flex flex-row sm:flex-col gap-2 bg-muted/20">
                                             <div className="relative flex -space-x-3 overflow-hidden">
-                                                {order.items?.slice(0, 3).map((item, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className="inline-block h-12 w-12 rounded-full ring-2 ring-background overflow-hidden bg-white"
-                                                    >
-                                                        <img
-                                                            src={item.image}
-                                                            alt=""
-                                                            className="h-full w-full object-cover"
-                                                        />
-                                                    </div>
-                                                ))}
+                                                {order.items?.slice(0, 3).map((item, i) => {
+                                                    const parseImage = (imgData) => {
+                                                        if (!imgData) return "";
+                                                        if (typeof imgData !== 'string') return imgData;
+                                                        try {
+                                                            if (imgData.startsWith('[') || imgData.startsWith('{')) {
+                                                                const parsed = JSON.parse(imgData);
+                                                                return Array.isArray(parsed) ? parsed[0] : imgData;
+                                                            }
+                                                            return imgData;
+                                                        } catch (e) {
+                                                            return imgData;
+                                                        }
+                                                    };
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className="inline-block h-12 w-12 rounded-full ring-2 ring-background overflow-hidden bg-white"
+                                                        >
+                                                            <img
+                                                                src={parseImage(item.image)}
+                                                                alt=""
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
                                                 {order.items?.length > 3 && (
                                                     <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted ring-2 ring-background text-xs font-medium">
                                                         +{order.items.length - 3}
@@ -192,7 +207,7 @@ const OrderHistory = () => {
                                                     {order.items?.length !== 1 ? "s" : ""}
                                                 </p>
                                                 <p className="text-sm font-bold text-foreground">
-                                                    ${order.total?.toFixed(2)}
+                                                    ₹{order.total?.toFixed(2)}
                                                 </p>
                                             </div>
                                         </div>

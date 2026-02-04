@@ -91,17 +91,26 @@ const OrderDetails = () => {
                                 {order.status.toUpperCase()}
                             </Badge>
                         </div>
-                        <p className="text-muted-foreground">Placed on {new Date(order.date ?? order.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                        <div className="flex flex-col gap-1">
+                            <p className="text-muted-foreground text-sm">Placed on {new Date(order.date ?? order.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                            {order.cjResponse?.data?.orderId && (
+                                <p className="text-xs font-bold text-primary flex items-center gap-2">
+                                    <span className="text-muted-foreground font-medium uppercase tracking-tighter">Tracking ID:</span>
+                                    {order.cjResponse.data.orderId}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                    <Button variant="outline" size="sm" className="gap-2">
+                <div className="flex flex-wrap gap-3 no-print">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => window.print()}
+                    >
                         <Printer className="w-4 h-4" />
                         Print
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2">
-                        <Download className="w-4 h-4" />
-                        Invoice
                     </Button>
                 </div>
             </div>
@@ -110,11 +119,14 @@ const OrderDetails = () => {
                 {/* Left Column: Timeline and Items */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Status Timeline Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Order Tracking</CardTitle>
+                    <Card className="border-none shadow-xl bg-card rounded-3xl overflow-hidden">
+                        <CardHeader className="bg-primary/5 border-b border-primary/10">
+                            <CardTitle className="flex items-center gap-2">
+                                <Package className="w-5 h-5 text-primary" />
+                                Order Tracking
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-2">
+                        <CardContent className="pt-8 pb-8 px-6 md:px-10">
                             <OrderTimeline steps={order.timeline} currentStatus={order.status} />
                         </CardContent>
                     </Card>
@@ -126,26 +138,41 @@ const OrderDetails = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="divide-y divide-border">
-                                {order.items.map((item) => (
-                                    <div key={item.productId ?? item.pid} className="py-4 first:pt-0 last:pb-0 flex gap-4">
-                                        <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="flex-1 flex flex-col justify-between">
-                                            <div>
-                                                <h4 className="font-bold text-lg leading-tight mb-1">{item.name}</h4>
-                                                <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
+                                {order.items.map((item) => {
+                                    const parseImage = (imgData) => {
+                                        if (!imgData) return "";
+                                        if (typeof imgData !== 'string') return imgData;
+                                        try {
+                                            if (imgData.startsWith('[') || imgData.startsWith('{')) {
+                                                const parsed = JSON.parse(imgData);
+                                                return Array.isArray(parsed) ? parsed[0] : imgData;
+                                            }
+                                            return imgData;
+                                        } catch (e) {
+                                            return imgData;
+                                        }
+                                    };
+                                    return (
+                                        <div key={item.productId ?? item.pid} className="py-4 first:pt-0 last:pb-0 flex gap-4">
+                                            <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                                                <img src={parseImage(item.image)} alt={item.name} className="w-full h-full object-cover" />
                                             </div>
-                                            <div className="flex items-center justify-between sm:justify-start sm:gap-4 mt-2">
-                                                <p className="font-bold text-primary">${item.price.toFixed(2)} each</p>
-                                                <Button variant="ghost" size="sm" className="h-7 text-xs text-primary p-0 sm:px-2" asChild>
-                                                    <Link to={`/product/${item.productId ?? item.pid}`}>View Product</Link>
-                                                </Button>
+                                            <div className="flex-1 flex flex-col justify-between">
+                                                <div>
+                                                    <h4 className="font-bold text-lg leading-tight mb-1">{item.name}</h4>
+                                                    <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
+                                                </div>
+                                                <div className="flex items-center justify-between sm:justify-start sm:gap-4 mt-2">
+                                                    <p className="font-bold text-primary">₹{item.price.toFixed(2)} each</p>
+                                                    <Button variant="ghost" size="sm" className="h-7 text-xs text-primary p-0 sm:px-2" asChild>
+                                                        <Link to={`/product/${item.productId ?? item.pid}`}>View Product</Link>
+                                                    </Button>
+                                                </div>
                                             </div>
+                                            <p className="font-bold text-lg hidden sm:block">₹{(item.price * item.quantity).toFixed(2)}</p>
                                         </div>
-                                        <p className="font-bold text-lg hidden sm:block">${(item.price * item.quantity).toFixed(2)}</p>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </CardContent>
                     </Card>
@@ -161,7 +188,7 @@ const OrderDetails = () => {
                         <CardContent className="space-y-4">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span>${order.total.toFixed(2)}</span>
+                                <span>₹{order.total.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Shipping</span>
@@ -169,12 +196,12 @@ const OrderDetails = () => {
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Tax</span>
-                                <span>$0.00</span>
+                                <span>₹0.00</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between items-center text-lg font-bold">
                                 <span>Total</span>
-                                <span className="text-primary">${order.total.toFixed(2)}</span>
+                                <span className="text-primary">₹{order.total.toFixed(2)}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -228,7 +255,6 @@ const OrderDetails = () => {
                     {/* Reorder/Support Buttons */}
                     <div className="grid grid-cols-1 gap-3">
                         <Button className="w-full h-11">Reorder All Items</Button>
-                        <Button variant="outline" className="w-full h-11">Get Help with Order</Button>
                     </div>
                 </div>
             </div>

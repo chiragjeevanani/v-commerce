@@ -310,11 +310,11 @@ const Products = () => {
                                         <div className="grid grid-cols-2 gap-3 p-3 bg-muted/50 rounded-xl border border-muted-foreground/10 text-xs">
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Supplier Price</span>
-                                                <span className="font-medium text-muted-foreground">${product.supplierPrice}</span>
+                                                <span className="font-medium text-muted-foreground">₹{product.supplierPrice}</span>
                                             </div>
                                             <div className="flex flex-col gap-0.5 border-l pl-3 border-muted-foreground/20">
                                                 <span className="text-[10px] text-primary uppercase font-bold tracking-tighter italic">Your Price</span>
-                                                <span className="font-bold text-primary">${product.price}</span>
+                                                <span className="font-bold text-primary">₹{product.price}</span>
                                             </div>
                                         </div>
 
@@ -359,9 +359,9 @@ const Products = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 text-xs">{product.category}</td>
-                                                    <td className="px-6 py-4 text-muted-foreground">${product.supplierPrice}</td>
+                                                    <td className="px-6 py-4 text-muted-foreground">₹{product.supplierPrice}</td>
                                                     <td className="px-6 py-4 text-green-600 font-medium">+{product.margin}%</td>
-                                                    <td className="px-6 py-4 font-bold text-primary">${product.price}</td>
+                                                    <td className="px-6 py-4 font-bold text-primary">₹{product.price}</td>
                                                     <td className="px-6 py-4 text-right">
                                                         <Badge variant={product.stock > 10 ? "outline" : "destructive"} className="rounded-full">
                                                             {product.stock}
