@@ -9,7 +9,8 @@ import {
     ShoppingBag,
     Zap,
     ArrowUpRight,
-    ChevronDown
+    ChevronDown,
+    Map
 } from 'lucide-react';
 import { analyticsService } from '../services/analytics.service';
 import StatsChart from '../components/StatsChart';
@@ -20,17 +21,47 @@ import { motion } from 'framer-motion';
 
 const Analytics = () => {
     const [salesData, setSalesData] = useState([]);
+    const [statusData, setStatusData] = useState([]);
+    const [topProducts, setTopProducts] = useState([]);
+    const [regionalData, setRegionalData] = useState([]);
+    const [kpiData, setKpiData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [timeRange, setTimeRange] = useState("Month");
 
     useEffect(() => {
         const fetchAnalytics = async () => {
             try {
-                const charts = await analyticsService.getSalesChartData("month");
+                const [charts, status, products, regions, kpis] = await Promise.all([
+                    analyticsService.getSalesChartData("month"),
+                    analyticsService.getOrderStatusDistribution(),
+                    analyticsService.getTopProducts(),
+                    analyticsService.getRegionalSales(),
+                    analyticsService.getKPIData()
+                ]);
+
+                // 1. Sales Chart
                 setSalesData(charts.labels.map((label, i) => ({
                     label,
-                    value: charts.datasets[0].data[i] / 100
+                    value: charts.datasets[0].data[i]
                 })));
+
+                // 2. Status Distribution
+                setStatusData(status);
+
+                // 3. Top Products
+                setTopProducts(products.map(p => ({
+                    name: p.name,
+                    sales: p.sales,
+                    revenue: p.revenue,
+                    growth: "+0%" // Placeholder as we don't have historic data per product yet
+                })));
+
+                // 4. Regional Data
+                setRegionalData(regions);
+
+                // 5. KPIs
+                setKpiData(kpis);
+
             } catch (err) {
                 console.error(err);
             } finally {
@@ -40,12 +71,10 @@ const Analytics = () => {
         fetchAnalytics();
     }, []);
 
-    const topProducts = [
-        { name: "Wireless Headphones", sales: 450, growth: "+12.5%", revenue: 112500 },
-        { name: "Smart Watch S7", sales: 320, growth: "+8.2%", revenue: 128000 },
-        { name: "Denim Jacket", sales: 280, growth: "-2.4%", revenue: 16800 },
-        { name: "Minimalist Lamp", sales: 210, growth: "+15.8%", revenue: 18900 },
-    ];
+    // Calculate dynamic metrics
+    const avgOrderValue = kpiData && kpiData.totalOrders > 0
+        ? (kpiData.revenue / kpiData.totalOrders).toFixed(2)
+        : "0.00";
 
     if (loading) return <div className="h-96 flex items-center justify-center animate-pulse">Loading Analytics...</div>;
 
@@ -58,7 +87,7 @@ const Analytics = () => {
                 </div>
                 <div className="flex items-center gap-3">
                     <Badge variant="outline" className="px-3 py-1 gap-2 bg-background border-2">
-                        <Calendar className="h-3.5 w-3.5" /> {timeRange}: Oct 2023
+                        <Calendar className="h-3.5 w-3.5" /> {timeRange}: Current
                     </Badge>
                     <Button variant="outline" size="sm" className="gap-2">
                         <Download className="h-4 w-4" /> Reports <ChevronDown className="h-3 w-3" />
@@ -69,10 +98,10 @@ const Analytics = () => {
             {/* Conversion Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { icon: Target, label: "Conversion Rate", value: "3.24%", trend: "+0.4%", color: "text-blue-600", bg: "bg-blue-50" },
-                    { icon: MousePointer2, label: "Avg. Session", value: "4m 12s", trend: "+25s", color: "text-purple-600", bg: "bg-purple-50" },
-                    { icon: ShoppingBag, label: "Avg. Order Value", value: "$142.50", trend: "+$12", color: "text-green-600", bg: "bg-green-50" },
-                    { icon: Zap, label: "Churn Rate", value: "1.2%", trend: "-0.2%", color: "text-orange-600", bg: "bg-orange-50" },
+                    { icon: Target, label: "Total Orders", value: kpiData?.totalOrders || 0, trend: kpiData?.trends?.orders || "+0%", color: "text-blue-600", bg: "bg-blue-50" },
+                    { icon: MousePointer2, label: "New Customers", value: kpiData?.newCustomers || 0, trend: kpiData?.trends?.customers || "+0%", color: "text-purple-600", bg: "bg-purple-50" },
+                    { icon: ShoppingBag, label: "Avg. Order Value", value: `₹${avgOrderValue}`, trend: "+2.5%", color: "text-green-600", bg: "bg-green-50" },
+                    { icon: Zap, label: "Total Revenue", value: `₹${(kpiData?.revenue || 0).toLocaleString()}`, trend: kpiData?.trends?.revenue || "+0%", color: "text-orange-600", bg: "bg-orange-50" },
                 ].map((metric, i) => (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -108,26 +137,32 @@ const Analytics = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {topProducts.map((p, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-transparent hover:border-primary/20 hover:bg-muted/50 transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center font-bold text-primary">#{i + 1}</div>
-                                            <div>
-                                                <p className="font-bold text-sm">{p.name}</p>
-                                                <p className="text-[10px] text-muted-foreground">{p.sales} units sold</p>
+                                {topProducts.length > 0 ? (
+                                    topProducts.map((p, i) => (
+                                        <div key={i} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-transparent hover:border-primary/20 hover:bg-muted/50 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center font-bold text-primary">#{i + 1}</div>
+                                                <div>
+                                                    <p className="font-bold text-sm max-w-[150px] md:max-w-xs truncate" title={p.name}>{p.name}</p>
+                                                    <p className="text-[10px] text-muted-foreground">{p.sales} units sold</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-8">
+                                                <div className="text-right">
+                                                    <p className="font-black text-sm">₹{p.revenue.toLocaleString()}</p>
+                                                    <span className="text-[10px] font-bold text-green-500">Best Seller</span>
+                                                </div>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                                    <ArrowUpRight className="h-4 w-4" />
+                                                </Button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-8">
-                                            <div className="text-right">
-                                                <p className="font-black text-sm">${p.revenue.toLocaleString()}</p>
-                                                <span className={`text-[10px] font-bold ${p.growth.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>{p.growth}</span>
-                                            </div>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                                                <ArrowUpRight className="h-4 w-4" />
-                                            </Button>
-                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-10 text-muted-foreground">
+                                        No sales data available yet.
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -146,14 +181,21 @@ const Analytics = () => {
                             <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
                                 <p className="text-xs font-medium text-indigo-100">Revenue Opportunity</p>
                                 <p className="text-sm font-bold mt-1 text-pretty">
-                                    Electronics category is up <span className="text-green-300">22%</span> this week. Consider increasing your ad spend.
+                                    Your average order value is <span className="text-green-300">₹{avgOrderValue}</span>. Consider bundling products to increase this by 15%.
                                 </p>
                             </div>
                             <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
                                 <p className="text-xs font-medium text-indigo-100">Stock Alert</p>
-                                <p className="text-sm font-bold mt-1 text-pretty">
-                                    Denim Jackets are selling out <span className="text-orange-300">3x faster</span> than average.
-                                </p>
+                                {topProducts.length > 0 ? (
+                                    <p className="text-sm font-bold mt-1 text-pretty">
+                                        "{topProducts[0].name.slice(0, 20)}..." is selling fast. Check inventory levels now.
+                                    </p>
+                                ) : (
+                                    <p className="text-sm font-bold mt-1 text-pretty">
+                                        No critical stock alerts at the moment.
+                                    </p>
+                                )}
+
                             </div>
                             <Button className="w-full bg-white text-indigo-700 hover:bg-white/90 font-bold">
                                 Generate Full Report
@@ -161,37 +203,48 @@ const Analytics = () => {
                         </CardContent>
                     </Card>
 
+                    {/* Order Distribution Chart - Added Chart here */}
+                    <div className="h-[300px]">
+                        <StatsChart
+                            title="Order Distribution"
+                            data={statusData}
+                            type="pie"
+                        />
+                    </div>
+
                     <Card className="h-[432px]">
                         <CardHeader>
                             <CardTitle>Regional Sales</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col items-center justify-center h-full pt-0">
-                            <div className="h-48 w-full bg-muted/50 rounded-lg flex items-center justify-center border-2 border-dashed relative group">
-                                <p className="text-xs text-muted-foreground italic font-medium">Interactive Geo-Map Coming Soon</p>
-                                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-6 text-center">
-                                    <p className="text-[10px] text-primary font-bold">Connecting to global sales tracking matrix...</p>
-                                </div>
-                            </div>
-                            <div className="w-full mt-6 space-y-3">
-                                {[
-                                    { label: "North India", value: 45 },
-                                    { label: "South India", value: 30 },
-                                    { label: "International", value: 25 },
-                                ].map(reg => (
-                                    <div key={reg.label} className="space-y-1">
-                                        <div className="flex justify-between text-[10px] font-bold text-muted-foreground px-1 uppercase tracking-tighter">
-                                            <span>{reg.label}</span>
-                                            <span>{reg.value}%</span>
-                                        </div>
-                                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-primary"
-                                                style={{ width: `${reg.value}%` }}
-                                            />
-                                        </div>
+                            {regionalData.length > 0 ? (
+                                <div className="w-full h-full flex flex-col justify-between">
+                                    <div className="h-32 w-full bg-muted/20 rounded-lg flex items-center justify-center border border-dashed mb-4 relative overflow-hidden">
+                                        <Map className="h-12 w-12 text-muted-foreground/30" />
+                                        <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground">Heatmap</div>
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="space-y-3 overflow-y-auto max-h-[220px] pr-2 scrollbar-thin">
+                                        {regionalData.map(reg => (
+                                            <div key={reg.region} className="space-y-1">
+                                                <div className="flex justify-between text-[10px] font-bold text-muted-foreground px-1 uppercase tracking-tighter">
+                                                    <span className="truncate max-w-[150px]" title={reg.region}>{reg.region}</span>
+                                                    <span>{reg.value}%</span>
+                                                </div>
+                                                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-primary"
+                                                        style={{ width: `${reg.value}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center text-muted-foreground">
+                                    <p>No regional data available yet.</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

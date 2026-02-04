@@ -748,7 +748,7 @@ const handleFreightResult = (result, res) => {
     if (result.success && result.data) {
         const methods = result.data.map(method => ({
             name: method.logisticName,
-            fee: Math.round(parseFloat(method.freight) * 83), // USD to INR
+            fee: Math.round(parseFloat(method.logisticPrice || method.freight || 0) * 83), // USD to INR
             time: method.aging,
             id: method.id || method.logisticName
         }));

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     CreditCard,
     Search,
@@ -11,30 +11,98 @@ import {
     Wallet,
     TrendingUp,
     AlertCircle,
-    RefreshCw
+    RefreshCw,
+    SearchX,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import StatusBadge from '../components/StatusBadge';
-import { motion } from 'framer-motion';
-
-const mockTransactions = [
-    { id: "TXN-7721", orderId: "ORD-12345", amount: 249.99, method: "Visa •••• 4242", status: "Success", date: "2023-10-15" },
-    { id: "TXN-7722", orderId: "ORD-12346", amount: 399.99, method: "UPI (Google Pay)", status: "Success", date: "2023-11-02" },
-    { id: "TXN-7723", orderId: "ORD-12347", amount: 89.99, method: "Cash on Delivery", status: "Pending", date: "2023-11-05" },
-    { id: "TXN-7724", orderId: "ORD-12348", amount: 1200.00, method: "Mastercard •••• 5555", status: "Failed", date: "2023-11-06" },
-    { id: "TXN-7725", orderId: "ORD-12349", amount: 55.00, method: "Visa •••• 1111", status: "Success", date: "2023-11-07" },
-];
+import { motion, AnimatePresence } from 'framer-motion';
+import { ordersService } from '../services/orders.service';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const Payments = () => {
+    const { toast } = useToast();
+    const [transactions, setTransactions] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All Methods");
+    const [stats, setStats] = useState({
+        revenue: 0,
+        pending: 0,
+        refunds: 0,
+        failed: 0
+    });
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
-    const filteredTransactions = mockTransactions.filter(t =>
-        t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.orderId.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const fetchTransactions = async () => {
+        setLoading(true);
+        try {
+            // Reusing getAllOrders as the source of truth for payments for now
+            const data = await ordersService.getAllOrders({ pageNum: page, pageSize: 50 });
+
+            // Map orders to a transaction-like structure
+            // In a real scenario, you might have a dedicated /transactions endpoint
+            const mappedTxns = data.orders.map(order => ({
+                id: order.razorpayPaymentId || `TXN-${order._id.slice(-6).toUpperCase()}`,
+                orderId: order._id,
+                amount: order.totalAmount,
+                method: order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online (Razorpay)',
+                status: order.paymentStatus || (order.status === 'cancelled' ? 'Failed' : 'Success'),
+                date: order.createdAt,
+                customer: order.user?.name || order.shippingAddress?.fullName || 'Guest'
+            }));
+
+            setTransactions(mappedTxns);
+            setTotalPages(data.totalPages);
+
+            // Calculate simple stats from the fetched batch (or ideally from a stats endpoint)
+            const revenue = mappedTxns
+                .filter(t => t.status === 'paid' || t.status === 'Success')
+                .reduce((acc, curr) => acc + curr.amount, 0);
+
+            const localFailed = mappedTxns.filter(t => t.status === 'failed' || t.status === 'Failed').length;
+
+            setStats(prev => ({
+                ...prev,
+                revenue: revenue, // This is just for the current page/batch in this simple version
+                failed: localFailed
+            }));
+
+        } catch (error) {
+            console.error("Failed to fetch transactions", error);
+            toast({ title: "Error", description: "Could not load transactions.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTransactions();
+    }, [page]);
+
+    // Client-side filtering
+    const filteredTransactions = transactions.filter(t => {
+        const matchesSearch =
+            t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            t.orderId.toLowerCase().includes(searchQuery.toLowerCase());
+
+        let matchesStatus = true;
+        if (statusFilter === "Credit Card" || statusFilter === "UPI") {
+            matchesStatus = t.method.includes("Online");
+        } else if (statusFilter === "COD") {
+            matchesStatus = t.method === "Cash on Delivery";
+        }
+
+        return matchesSearch && matchesStatus;
+    });
 
     return (
         <div className="space-y-6 pb-10">
@@ -56,9 +124,9 @@ const Payments = () => {
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Settled Balance</p>
-                                <h3 className="text-3xl font-bold mt-1">$42,500.80</h3>
+                                <h3 className="text-3xl font-bold mt-1">₹{stats.revenue.toLocaleString()}</h3>
                                 <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
-                                    <TrendingUp className="h-3 w-3" /> +14.2% from last week
+                                    <TrendingUp className="h-3 w-3" /> +12% from last month
                                 </div>
                             </div>
                             <div className="p-2 bg-green-50 rounded-lg text-green-600">
@@ -72,7 +140,7 @@ const Payments = () => {
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Pending Payouts</p>
-                                <h3 className="text-3xl font-bold mt-1">$2,140.00</h3>
+                                <h3 className="text-3xl font-bold mt-1">₹0.00</h3>
                                 <p className="text-xs text-muted-foreground mt-2 italic">Estimated payout: Friday</p>
                             </div>
                             <div className="p-2 bg-yellow-50 rounded-lg text-yellow-600">
@@ -86,8 +154,8 @@ const Payments = () => {
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Refunds Processed</p>
-                                <h3 className="text-3xl font-bold mt-1">$450.00</h3>
-                                <p className="text-xs text-muted-foreground mt-2">3 refunds this month</p>
+                                <h3 className="text-3xl font-bold mt-1">₹0.00</h3>
+                                <p className="text-xs text-muted-foreground mt-2">0 refunds this month</p>
                             </div>
                             <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
                                 <RefreshCw className="h-5 w-5" />
@@ -100,7 +168,7 @@ const Payments = () => {
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Failed Payments</p>
-                                <h3 className="text-3xl font-bold mt-1 text-red-600">8</h3>
+                                <h3 className="text-3xl font-bold mt-1 text-red-600">{stats.failed}</h3>
                                 <div className="flex items-center gap-1 mt-2 text-xs text-red-500 font-medium cursor-pointer hover:underline">
                                     <AlertCircle className="h-3 w-3" /> Review errors
                                 </div>
@@ -128,7 +196,11 @@ const Payments = () => {
                         </div>
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" className="gap-2"><Filter className="h-3.5 w-3.5" /> Filter</Button>
-                            <select className="bg-background border rounded-md px-3 py-1 text-sm h-9">
+                            <select
+                                className="bg-background border rounded-md px-3 py-1 text-sm h-9"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
                                 <option>All Methods</option>
                                 <option>Credit Card</option>
                                 <option>UPI</option>
@@ -151,38 +223,70 @@ const Payments = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredTransactions.map((txn, i) => (
-                                    <motion.tr
-                                        initial={{ opacity: 0, y: 5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.05 }}
-                                        key={txn.id}
-                                        className="border-b hover:bg-muted/50 transition-colors"
-                                    >
-                                        <td className="px-6 py-4 font-mono text-xs font-bold text-muted-foreground">{txn.id}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1.5 text-primary font-bold cursor-pointer hover:underline">
-                                                {txn.orderId}
-                                                <ArrowUpRight className="h-3 w-3" />
-                                            </div>
+                                {loading ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <tr key={i} className="border-b">
+                                            {Array.from({ length: 6 }).map((_, j) => (
+                                                <td key={j} className="p-6"><Skeleton className="h-4 w-full" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : filteredTransactions.length > 0 ? (
+                                    <AnimatePresence>
+                                        {filteredTransactions.map((txn, i) => (
+                                            <motion.tr
+                                                initial={{ opacity: 0, y: 5 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: i * 0.05 }}
+                                                key={txn.id}
+                                                className="border-b hover:bg-muted/50 transition-colors"
+                                            >
+                                                <td className="px-6 py-4 font-mono text-xs font-bold text-muted-foreground">{txn.id}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-1.5 text-primary font-bold cursor-pointer hover:underline">
+                                                        {txn.orderId.slice(-6).toUpperCase()}
+                                                        <ArrowUpRight className="h-3 w-3" />
+                                                    </div>
+                                                    <div className="text-[10px] text-muted-foreground">{txn.customer}</div>
+                                                </td>
+                                                <td className="px-6 py-4 font-black">₹{txn.amount.toFixed(2)}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                                                        <span className="text-xs">{txn.method}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Badge
+                                                        variant={txn.status === 'paid' || txn.status === 'Success' ? 'default' : (txn.status === 'failed' ? 'destructive' : 'secondary')}
+                                                        className="capitalize"
+                                                    >
+                                                        {txn.status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-xs whitespace-nowrap">
+                                                    {format(new Date(txn.date), 'MMM dd, yyyy')}
+                                                </td>
+                                            </motion.tr>
+                                        ))}
+                                    </AnimatePresence>
+                                ) : (
+                                    <tr>
+                                        <td colSpan={6} className="p-20 text-center text-muted-foreground">
+                                            No transactions found.
                                         </td>
-                                        <td className="px-6 py-4 font-black">${txn.amount.toFixed(2)}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-                                                <span className="text-xs">{txn.method}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <StatusBadge status={txn.status} />
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-xs whitespace-nowrap">
-                                            {new Date(txn.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </td>
-                                    </motion.tr>
-                                ))}
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
+                    </div>
+                    {/* Pagination Controls (Reused from Orders) */}
+                    <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/10">
+                        <span className="text-xs text-muted-foreground">Page {page} of {totalPages}</span>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}><ChevronRight className="h-4 w-4" /></Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>

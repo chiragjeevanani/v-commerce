@@ -146,3 +146,65 @@ export const getOrderStatusDistribution = asyncHandler(async (req, res) => {
         data: data
     });
 });
+
+/**
+ * Get Top Products
+ * GET /api/v1/admin/analytics/top-products
+ */
+export const getTopProducts = asyncHandler(async (req, res) => {
+    const topProducts = await Order.aggregate([
+        // Unwind items array to treat each item as a document
+        { $unwind: "$items" },
+        // Group by product ID (or name if ID not consistent)
+        {
+            $group: {
+                _id: "$items.pid",
+                name: { $first: "$items.name" },
+                sales: { $sum: "$items.quantity" },
+                revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
+            }
+        },
+        // Sort by sales descending
+        { $sort: { sales: -1 } },
+        // Limit to top 5
+        { $limit: 5 }
+    ]);
+
+    res.json({
+        success: true,
+        data: topProducts
+    });
+});
+
+/**
+ * Get Regional Sales
+ * GET /api/v1/admin/analytics/regional-sales
+ */
+export const getRegionalSales = asyncHandler(async (req, res) => {
+    const regionalData = await Order.aggregate([
+        {
+            $group: {
+                _id: "$shippingAddress.state",
+                sales: { $sum: 1 },
+                revenue: { $sum: "$totalAmount" }
+            }
+        },
+        { $sort: { sales: -1 } },
+        { $limit: 10 }
+    ]);
+
+    // Calculate total for percentage
+    const totalSales = regionalData.reduce((acc, curr) => acc + curr.sales, 0);
+
+    const formattedData = regionalData.map(item => ({
+        region: item._id || "Unknown",
+        value: totalSales > 0 ? Math.round((item.sales / totalSales) * 100) : 0,
+        sales: item.sales,
+        revenue: item.revenue
+    }));
+
+    res.json({
+        success: true,
+        data: formattedData
+    });
+});
