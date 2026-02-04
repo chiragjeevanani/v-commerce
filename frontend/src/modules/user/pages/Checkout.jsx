@@ -108,9 +108,17 @@ const Checkout = () => {
     getEstimate();
   }, [cart]);
 
-  if (cart.length === 0) {
-    return null;
-  }
+  // Load Razorpay Script
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -130,14 +138,12 @@ const Checkout = () => {
       let shippingAddress = null;
 
       if (showNewAddressForm) {
-        // Validation
         if (!formData.address || !formData.city || !formData.zip) {
           toast({ title: "Error", description: "Please fill all shipping details", variant: "destructive" });
           setLoading(false);
           return;
         }
 
-        // Save new address to backend
         const addrResponse = await addressService.addAddress({
           fullName: `${formData.firstName} ${formData.lastName}`,
           street: formData.address,
@@ -148,7 +154,6 @@ const Checkout = () => {
           isDefault: addresses.length === 0
         });
 
-        // Find the newly created address ID or use the last one in the returned data
         const newAddresses = addrResponse.data;
         shippingAddress = newAddresses[newAddresses.length - 1];
       } else {
@@ -161,28 +166,106 @@ const Checkout = () => {
         return;
       }
 
-      const res = await api.placeOrder({
-        items: cart,
-        total: cartTotal,
-        shipping: shippingAddress,
-        paymentMethod: paymentMethod,
-      });
+      const totalAmount = (cartTotal * 1.1) + (selectedShipping?.fee || 0);
 
-      isOrderPlaced.current = true;
-      clearCart();
-      navigate("/order-success", {
-        state: {
-          orderId: res.orderId,
-          total: cartTotal * 1.1,
-          paymentMethod: paymentMethod === 'card' ? `Card ending in ${formData.cardNumber.slice(-4) || '****'}` : paymentMethod.toUpperCase(),
-          orderData: res.orderData
+      // Branching logic for Payment Method
+      if (paymentMethod === 'cod') {
+        const res = await api.placeOrder({
+          items: cart,
+          total: totalAmount,
+          shipping: shippingAddress,
+          paymentMethod: paymentMethod,
+        });
+
+        isOrderPlaced.current = true;
+        clearCart();
+        navigate("/order-success", {
+          state: {
+            orderId: res.orderId,
+            total: totalAmount,
+            paymentMethod: "Cash on Delivery",
+            orderData: res.orderData
+          }
+        });
+      } else if (paymentMethod === 'online') {
+        // 1. Create Razorpay Order on Backend
+        const rzpOrderRes = await api.createRazorpayOrder(totalAmount);
+
+        if (!rzpOrderRes.success) {
+          throw new Error("Failed to create payment order");
         }
-      });
+
+        const rzpOrder = rzpOrderRes.order;
+
+        // 2. Open Razorpay Checkout
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_YOUR_KEY_ID", // Fallback for dev
+          amount: rzpOrder.amount,
+          currency: rzpOrder.currency,
+          name: "V-Commerce",
+          description: "Order Payment",
+          order_id: rzpOrder.id,
+          handler: async function (response) {
+            // 3. Verify Payment on Backend
+            setLoading(true);
+            try {
+              const verifyRes = await api.verifyRazorpayPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                orderData: {
+                  items: cart,
+                  total: totalAmount,
+                  shipping: shippingAddress
+                }
+              });
+
+              if (verifyRes.success) {
+                isOrderPlaced.current = true;
+                clearCart();
+                navigate("/order-success", {
+                  state: {
+                    orderId: verifyRes.orderId,
+                    total: totalAmount,
+                    paymentMethod: "Online (Razorpay)",
+                    orderData: verifyRes.orderData
+                  }
+                });
+              } else {
+                toast({ title: "Payment Verification Failed", description: verifyRes.message, variant: "destructive" });
+              }
+            } catch (err) {
+              console.error("Verification failed", err);
+              toast({ title: "Verification Error", description: err.message, variant: "destructive" });
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: shippingAddress.fullName,
+            email: JSON.parse(localStorage.getItem("user"))?.email || "",
+            contact: shippingAddress.phoneNumber,
+          },
+          theme: {
+            color: "#000000",
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+          toast({ title: "Payment Failed", description: response.error.description, variant: "destructive" });
+        });
+        rzp.open();
+        setLoading(false); // Stop main loading so user can interact with RZP
+      }
+
     } catch (error) {
       console.error("Order failed", error);
-      toast({ title: "Order Failed", description: "Something went wrong. Please try again.", variant: "destructive" });
+      toast({ title: "Order Failed", description: error.message || "Something went wrong. Please try again.", variant: "destructive" });
     } finally {
-      setLoading(false);
+      if (paymentMethod !== 'online') {
+        setLoading(false);
+      }
     }
   };
 
@@ -304,7 +387,7 @@ const Checkout = () => {
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
-                        { id: "online", name: "Online Payment", icon: "💳", disabled: true },
+                        { id: "online", name: "Online Payment", icon: "💳", disabled: false },
                         { id: "cod", name: "Cash on Delivery", icon: "💵", disabled: false },
                       ].map((method) => (
                         <button
@@ -319,9 +402,6 @@ const Checkout = () => {
                         >
                           <span className="text-3xl">{method.icon}</span>
                           <span className="font-black text-xs uppercase tracking-widest">{method.name}</span>
-                          {method.disabled && (
-                            <Badge variant="secondary" className="absolute -top-2 -right-2 text-[8px] py-0.5 px-2 bg-muted text-muted-foreground uppercase font-black border">Offline</Badge>
-                          )}
                           {paymentMethod === method.id && (
                             <motion.div layoutId="active" className="h-2 w-2 rounded-full bg-primary mt-auto" />
                           )}
@@ -342,7 +422,22 @@ const Checkout = () => {
                             <div className="h-20 w-20 rounded-full bg-green-500/10 flex items-center justify-center text-3xl">💵</div>
                             <div className="space-y-2">
                               <h4 className="font-black text-xl">Cash on Delivery</h4>
-                              <p className="text-sm text-muted-foreground">Online payments are temporarily unavailable. Please pay the amount to the delivery associate when your package arrives.</p>
+                              <p className="text-sm text-muted-foreground">Pay the amount to the delivery associate when your package arrives at your doorstep.</p>
+                            </div>
+                          </motion.div>
+                        )}
+                        {paymentMethod === "online" && (
+                          <motion.div
+                            key="online-info"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="p-8 rounded-[40px] bg-primary/5 flex flex-col items-center text-center space-y-4 border border-primary/10"
+                          >
+                            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl">💳</div>
+                            <div className="space-y-2">
+                              <h4 className="font-black text-xl">Secure Online Payment</h4>
+                              <p className="text-sm text-muted-foreground">Pay securely using Cards, NetBanking, UPI, or Wallets via Razorpay.</p>
                             </div>
                           </motion.div>
                         )}
@@ -381,9 +476,9 @@ const Checkout = () => {
                       <div className="rounded-2xl border bg-muted/30 p-6 space-y-3">
                         <h4 className="font-black uppercase text-xs tracking-widest text-primary">Payment Via:</h4>
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">💵</span>
+                          <span className="text-2xl">{paymentMethod === 'online' ? '💳' : '💵'}</span>
                           <p className="text-sm font-black uppercase tracking-widest">
-                            Cash on Delivery
+                            {paymentMethod === 'online' ? 'Online Payment' : 'Cash on Delivery'}
                           </p>
                         </div>
                       </div>
@@ -391,8 +486,8 @@ const Checkout = () => {
                     <div className="space-y-4">
                       <h4 className="font-black uppercase text-xs tracking-widest text-primary">Items in Order:</h4>
                       <div className="space-y-3">
-                        {cart.map((item) => (
-                          <div key={item.id} className="flex justify-between items-center text-sm p-3 bg-muted/30 rounded-xl">
+                        {cart.map((item, index) => (
+                          <div key={item.pid || item.id || index} className="flex justify-between items-center text-sm p-3 bg-muted/30 rounded-xl">
                             <span className="font-medium">
                               <span className="text-primary font-black mr-2">{item.quantity}x</span> {item.name}
                             </span>

@@ -9,6 +9,7 @@ import HeroBannerRouter from "./Routers/HeroBannerRouter.js";
 import AnalyticsRouter from "./Routers/AnalyticsRouter.js";
 import ContentRouter from "./Routers/ContentRouter.js";
 import UploadRouter from "./Routers/UploadRouter.js";
+import RazorpayRouter from "./Routers/RazorpayRouter.js";
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use("/api/v1/hero-banners", HeroBannerRouter);
 router.use("/api/v1/admin/analytics", AnalyticsRouter);
 router.use("/api/v1/content", ContentRouter);
 router.use("/api/v1/upload", UploadRouter);
+router.use("/api/v1/razorpay", RazorpayRouter);
 
 export default router;

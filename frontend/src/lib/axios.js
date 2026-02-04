@@ -1,10 +1,7 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:3000/api/v1';
-// const BASE_URL = 'https://v-commerce.onrender.com/api/v1';
-
 const apiClient = axios.create({
-    baseURL: BASE_URL,
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1',
 });
 
 // Interceptor to add auth token to requests
@@ -18,7 +15,7 @@ apiClient.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
-// Response interceptor for global error handling (optional, matches zero-breakage rule by doing nothing specific yet)
+// Response interceptor for global error handling
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {

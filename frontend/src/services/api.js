@@ -67,5 +67,16 @@ export const api = {
   estimateShipping: async (data) => {
     const response = await apiClient.post('/cj/estimate-shipping', data);
     return response.data;
+  },
+
+  // Razorpay
+  createRazorpayOrder: async (amount) => {
+    const response = await apiClient.post('/razorpay/create-order', { amount });
+    return response.data;
+  },
+
+  verifyRazorpayPayment: async (paymentData) => {
+    const response = await apiClient.post('/razorpay/verify-payment', paymentData);
+    return response.data;
   }
 };

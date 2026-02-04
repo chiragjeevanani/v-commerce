@@ -25,7 +25,7 @@ const Home = () => {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const response = await fetch('https://v-commerce.onrender.com/api/v1/hero-banners');
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/hero-banners`);
         const data = await response.json();
         if (data.success && data.data) {
           setBanners(data.data);

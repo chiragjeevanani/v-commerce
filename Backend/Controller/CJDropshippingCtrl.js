@@ -691,47 +691,72 @@ export const estimateShipping = async (req, res) => {
             return res.status(400).json({ success: false, message: "pid is required" });
         }
 
-        // 1. Get Product Detail to find weight and attributes
-        const productDetail = await makeCJRequest('/product/query', 'GET', { pid });
-        if (!productDetail.success) {
-            return res.json(productDetail);
+        // 1. Get Variants to find a valid vid
+        const variantResponse = await makeCJRequest('/product/variant/query', 'GET', { pid });
+
+        let vid = null;
+        let variantSku = null;
+
+        if (variantResponse.success && variantResponse.data && variantResponse.data.length > 0) {
+            // Find the first variant that has a different vid from pid if possible, 
+            // or just take the first one.
+            const bestVariant = variantResponse.data.find(v => v.vid !== pid) || variantResponse.data[0];
+            vid = bestVariant.vid;
+            variantSku = bestVariant.variantSku;
         }
 
-        const detail = productDetail.data;
-
         // 2. Prepare Freight Calculation Request
-        // We assume global warehouse (or the one in the product detail)
+        // Ensure we send valid payload structure for CJ
         const freightRequest = {
-            startCountryCode: 'CN', // Usually shipped from China
+            startCountryCode: 'CN', // Default to China
             endCountryCode: countryCode,
-            quantity: quantity,
-            productWeight: detail.productWeight || 100, // Default 100g if missing
-            productPid: pid,
-            // Logic: CJ uses these codes to determine shipping options
-            // If the product has specific categories, you'd add them here
+            products: [{
+                quantity: quantity,
+                // CJ API prefers vid over sku for accuracy, but sku works if vid is missing
+                ...(vid ? { vid } : { sku: variantSku })
+            }]
         };
 
         const result = await makeCJRequest('/logistic/freightCalculate', 'POST', {}, freightRequest);
 
-        // Map the result to include a more user-friendly format
-        if (result.success && result.data) {
-            // Find the most common/reasonable shipping method
-            // CJ returns a list of methods, we can filter or just send them all
-            const methods = result.data.map(method => ({
-                name: method.logisticName,
-                fee: Math.round(parseFloat(method.freight) * 83), // USD to INR
-                time: method.aging,
-                id: method.logisticName
-            }));
-
-            return res.json({
-                success: true,
-                data: methods
-            });
+        // If it still fails, try with just SKU if available
+        if (!result.success && variantSku) {
+            const retryRequest = {
+                startCountryCode: 'CN',
+                endCountryCode: countryCode,
+                products: [{
+                    sku: variantSku,
+                    quantity: quantity
+                }]
+            };
+            const retryResult = await makeCJRequest('/logistic/freightCalculate', 'POST', {}, retryRequest);
+            return handleFreightResult(retryResult, res);
         }
 
-        res.json(result);
+        return handleFreightResult(result, res);
+
     } catch (error) {
+        console.error("Estimate Shipping Error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
+};
+
+/**
+ * Helper to process CJ freight results
+ */
+const handleFreightResult = (result, res) => {
+    if (result.success && result.data) {
+        const methods = result.data.map(method => ({
+            name: method.logisticName,
+            fee: Math.round(parseFloat(method.freight) * 83), // USD to INR
+            time: method.aging,
+            id: method.id || method.logisticName
+        }));
+
+        return res.json({
+            success: true,
+            data: methods
+        });
+    }
+    return res.json(result);
 };

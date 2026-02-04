@@ -43,6 +43,17 @@ const orderSchema = new mongoose.Schema({
     },
     cjResponse: {
         type: Object
+    },
+    paymentStatus: {
+        type: String,
+        enum: ["pending", "paid", "failed"],
+        default: "pending"
+    },
+    razorpayOrderId: {
+        type: String
+    },
+    razorpayPaymentId: {
+        type: String
     }
 }, { timestamps: true });
 
