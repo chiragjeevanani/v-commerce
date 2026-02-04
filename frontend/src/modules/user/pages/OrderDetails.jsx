@@ -91,7 +91,7 @@ const OrderDetails = () => {
                                 {order.status.toUpperCase()}
                             </Badge>
                         </div>
-                        <p className="text-muted-foreground">Placed on {new Date(order.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-muted-foreground">Placed on {new Date(order.date ?? order.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -127,7 +127,7 @@ const OrderDetails = () => {
                         <CardContent>
                             <div className="divide-y divide-border">
                                 {order.items.map((item) => (
-                                    <div key={item.productId} className="py-4 first:pt-0 last:pb-0 flex gap-4">
+                                    <div key={item.productId ?? item.pid} className="py-4 first:pt-0 last:pb-0 flex gap-4">
                                         <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                                             <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                                         </div>
@@ -139,7 +139,7 @@ const OrderDetails = () => {
                                             <div className="flex items-center justify-between sm:justify-start sm:gap-4 mt-2">
                                                 <p className="font-bold text-primary">${item.price.toFixed(2)} each</p>
                                                 <Button variant="ghost" size="sm" className="h-7 text-xs text-primary p-0 sm:px-2" asChild>
-                                                    <Link to={`/product/${item.productId}`}>View Product</Link>
+                                                    <Link to={`/product/${item.productId ?? item.pid}`}>View Product</Link>
                                                 </Button>
                                             </div>
                                         </div>

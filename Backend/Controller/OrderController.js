@@ -125,7 +125,11 @@ export const getMyOrders = asyncHandler(async (req, res) => {
     const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json({
         success: true,
-        data: orders
+        data: orders.map(order => ({
+            id: order._id, // BUG FIX 1: Map _id to id
+            total: order.totalAmount, // BUG FIX 2: Map totalAmount to total
+            ...order.toObject()
+        }))
     });
 });
 
@@ -140,6 +144,11 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
 
     // Add a default timeline if it doesn't exist
     const orderData = order.toObject();
+
+    // BUG FIXES: Map fields for frontend consistency
+    orderData.id = order._id; // BUG FIX 1
+    orderData.total = order.totalAmount; // BUG FIX 2
+
     orderData.timeline = [
         { status: "placed", label: "Order Placed", date: order.createdAt, completed: true },
         { status: "confirmed", label: "Confirmed", date: order.status !== 'placed' ? order.updatedAt : null, completed: order.status !== 'placed' },

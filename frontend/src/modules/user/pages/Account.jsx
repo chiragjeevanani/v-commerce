@@ -116,7 +116,7 @@ const Account = () => {
                           </Badge>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {new Date(order.date).toLocaleDateString()} • {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                          {new Date(order.date ?? order.createdAt).toLocaleDateString()} • {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                         </div>
                       </div>
                     </div>

@@ -224,7 +224,7 @@ const OrderHistory = () => {
                                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Calendar className="w-4 h-4" />
                                                     <span>
-                                                        {new Date(order.date).toLocaleDateString()}
+                                                        {new Date(order.date ?? order.createdAt).toLocaleDateString()}
                                                     </span>
                                                 </div>
 

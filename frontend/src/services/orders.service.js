@@ -15,7 +15,7 @@ export const ordersService = {
     getOrderDetails: async (orderId) => {
         try {
             const response = await apiClient.get(`/orders/${orderId}`);
-            return response.data;
+            return response.data.data; // BUG FIX 3: Return direct order object
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to fetch order details");
         }
