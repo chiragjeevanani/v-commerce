@@ -31,7 +31,7 @@ const ProductDetail = () => {
       try {
         const result = await productsService.getProductDetails(id);
 
-        if (result.success && result.data) {
+        if ((result.success || result.result || result.code === 200) && result.data) {
           const detail = result.data;
 
           // Normalize CJ product data
@@ -81,21 +81,31 @@ const ProductDetail = () => {
 
           setProduct(normalizedProduct);
 
-          // Fetch real related products
-          const relatedResult = await productsService.getSupplierProducts({
-            categoryId: detail.categoryId,
-            size: 4
-          });
-
-          if (relatedResult?.products) {
-            setRelatedProducts(relatedResult.products.filter(p => p.pid !== id));
+          // Fetch secondary data concurrently without blocking the main product display
+          // Use try-catch for each so one failure doesn't kill the whole page
+          try {
+            const relatedResult = await productsService.getSupplierProducts({
+              categoryId: detail.categoryId,
+              size: 4
+            });
+            if (relatedResult?.products) {
+              setRelatedProducts(relatedResult.products.filter(p => p.pid !== id));
+            }
+          } catch (e) {
+            console.error("Related products fetch failed", e);
           }
 
-          // Recommendations
-          const recommendedResult = await productsService.getSupplierProducts({ size: 8 });
-          if (recommendedResult?.products) {
-            setRecommendedProducts(recommendedResult.products.filter(p => p.pid !== id).slice(0, 4));
+          try {
+            const recommendedResult = await productsService.getSupplierProducts({ size: 8 });
+            if (recommendedResult?.products) {
+              setRecommendedProducts(recommendedResult.products.filter(p => p.pid !== id).slice(0, 4));
+            }
+          } catch (e) {
+            console.error("Recommended products fetch failed", e);
           }
+        } else {
+          // Handle case where API returns 200 but success/result is false
+          throw new Error(result.message || "Product data not found");
         }
       } catch (error) {
         console.error("Failed to load product", error);

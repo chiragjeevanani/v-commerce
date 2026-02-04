@@ -170,9 +170,30 @@ export const authService = {
     },
 
     forgotPassword: async (email) => {
-        // Implement forgot password if backend supports it
-        console.log(`Reset link request for ${email}`);
-        return { success: true };
+        try {
+            const response = await apiClient.post('/auth/forgot-password', { email });
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to send OTP");
+        }
+    },
+
+    verifyForgotOTP: async (email, otp) => {
+        try {
+            const response = await apiClient.post('/auth/verify-forgot-otp', { email, otp });
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Invalid or expired OTP");
+        }
+    },
+
+    resetPassword: async (email, resetToken, newPassword) => {
+        try {
+            const response = await apiClient.post('/auth/reset-password', { email, resetToken, newPassword });
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to reset password");
+        }
     }
 };
 

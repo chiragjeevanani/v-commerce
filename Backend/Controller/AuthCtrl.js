@@ -273,3 +273,85 @@ export const setPassword = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", data: null });
   }
 };
+
+// ================= FORGOT PASSWORD =================
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email, isDeleted: false });
+
+    if (!user)
+      return res.status(404).json({ success: false, message: "User not found with this email", data: null });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    await user.save();
+
+    await sendOTPEmail(email, otp);
+
+    res.json({ success: true, message: "OTP sent to your email", data: null });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", data: null });
+  }
+};
+
+// ================= VERIFY FORGOT PASSWORD OTP =================
+export const verifyForgotPasswordOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({
+      email,
+      otp,
+      otpExpire: { $gt: Date.now() },
+    });
+
+    if (!user)
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP", data: null });
+
+    // Generate a temporary reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetToken = resetToken;
+    user.resetTokenExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    user.otp = undefined;
+    user.otpExpire = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "OTP verified. You can now reset your password.",
+      data: { resetToken }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", data: null });
+  }
+};
+
+// ================= RESET PASSWORD =================
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, resetToken, newPassword } = req.body;
+
+    const user = await User.findOne({
+      email,
+      resetToken,
+      resetTokenExpire: { $gt: Date.now() },
+    });
+
+    if (!user)
+      return res.status(400).json({ success: false, message: "Invalid or expired reset session", data: null });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetToken = undefined;
+    user.resetTokenExpire = undefined;
+    await user.save();
+
+    res.json({ success: true, message: "Password reset successful. You can now login.", data: null });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", data: null });
+  }
+};

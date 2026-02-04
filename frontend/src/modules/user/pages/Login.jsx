@@ -9,8 +9,6 @@ import {
     Mail,
     Lock,
     ArrowRight,
-    Chrome,
-    Apple,
     Loader2,
     ArrowLeft
 } from 'lucide-react';
@@ -159,41 +157,24 @@ const Login = () => {
 
                         <Button
                             type="submit"
-                            className="w-full h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 transition-all text-base gap-2"
+                            className="w-full h-14 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 group relative overflow-hidden mt-4"
                             disabled={isLoading}
                         >
                             {isLoading ? (
-                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <Loader2 className="h-6 w-6 animate-spin" />
                             ) : (
-                                <>Sign In <ArrowRight className="h-5 w-5" /></>
+                                <div className="flex items-center justify-center gap-2">
+                                    <span>Sign into Experience</span>
+                                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                </div>
                             )}
                         </Button>
                     </form>
 
-                    {/* Divider */}
-                    <div className="relative my-8">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-muted" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-card px-3 text-muted-foreground font-medium italic">Or continue with</span>
-                        </div>
-                    </div>
-
-                    {/* Social Logins */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <Button variant="outline" className="h-12 rounded-xl gap-2 hover:bg-muted/50 border-muted">
-                            <Chrome className="h-5 w-5 text-red-500" /> Google
-                        </Button>
-                        <Button variant="outline" className="h-12 rounded-xl gap-2 hover:bg-muted/50 border-muted">
-                            <Apple className="h-5 w-5" /> Apple
-                        </Button>
-                    </div>
-
-                    <p className="mt-8 text-center text-sm text-muted-foreground font-medium">
-                        Don't have an account?{' '}
-                        <Link to="/signup" className="text-primary font-bold hover:underline">
-                            Create one for free
+                    <p className="mt-10 text-center text-sm text-muted-foreground font-medium border-t border-muted/50 pt-8">
+                        New to V-Commerce?{' '}
+                        <Link to="/signup" className="text-primary font-black hover:underline underline-offset-4 tracking-tight">
+                            Create your free account
                         </Link>
                     </p>
                 </div>
