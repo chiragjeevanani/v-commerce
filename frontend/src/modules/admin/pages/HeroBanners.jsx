@@ -48,7 +48,7 @@ const HeroBanners = () => {
     const fetchBanners = async () => {
         setLoading(true);
         try {
-            const result = await heroBannerService.getHeroBanners();
+            const result = await heroBannerService.getAdminHeroBanners();
             if (result.success) {
                 setBanners(result.data);
             }

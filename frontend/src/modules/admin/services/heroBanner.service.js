@@ -14,6 +14,16 @@ export const heroBannerService = {
         }
     },
 
+    getAdminHeroBanners: async () => {
+        try {
+            const response = await apiClient.get('/hero-banners/admin');
+            return response.data;
+        } catch (error) {
+            console.error("Fetch Admin Hero Banners Error:", error);
+            throw error;
+        }
+    },
+
     createHeroBanner: async (data) => {
         try {
             const response = await apiClient.post('/hero-banners/', data);

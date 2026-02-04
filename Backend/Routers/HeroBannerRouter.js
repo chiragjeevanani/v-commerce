@@ -1,6 +1,7 @@
 import express from "express";
 import {
     getActiveBanners,
+    getAllBanners,
     createBanner,
     updateBanner,
     deleteBanner,
@@ -32,6 +33,7 @@ const upload = multer({ storage: storage });
 
 // Public route - no authentication required
 router.get("/", getActiveBanners);
+router.get("/admin", AuthMiddleware, isAdmin, getAllBanners);
 
 // Admin routes - require authentication and admin role
 // Note: 'image' is the field name for the file upload

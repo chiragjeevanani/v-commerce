@@ -25,6 +25,28 @@ export const getActiveBanners = async (req, res) => {
     }
 };
 
+// ================= GET ALL BANNERS (ADMIN) =================
+export const getAllBanners = async (req, res) => {
+    try {
+        const banners = await HeroBanner.find()
+            .sort({ order: 1, createdAt: -1 })
+            .select("-__v");
+
+        res.json({
+            success: true,
+            message: "All banners fetched successfully",
+            data: banners,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            data: null,
+        });
+    }
+};
+
 // ================= CREATE BANNER (ADMIN) =================
 export const createBanner = async (req, res) => {
     try {
