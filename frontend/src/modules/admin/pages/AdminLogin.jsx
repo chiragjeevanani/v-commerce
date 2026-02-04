@@ -21,7 +21,7 @@ import { Card, CardContent } from '@/components/ui/card';
 const AdminLogin = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState({ email: 'admin@gmail.com', password: '123' });
+    const [formData, setFormData] = useState({ email: '', password: '' });
 
     const { adminLogin } = useAuth();
     const { toast } = useToast();
