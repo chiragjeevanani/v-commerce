@@ -27,14 +27,19 @@ app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
-// API
-app.use("/api", routes);
+/* ================= API FIRST ================= */
+app.use("/", routes);
 
-// Frontend dist
-app.use(express.static(path.join(__dirname, "../frontend/dist")));
+/* ================= FRONTEND ================= */
+const distPath = path.join(__dirname, "../frontend/dist");
+app.use(express.static(distPath));
 
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+/* ========== SPA FALLBACK (EXPRESS v5 SAFE) ========== */
+app.use((req, res, next) => {
+  if (req.originalUrl.startsWith("/api")) {
+    return next(); // let API 404 handle
+  }
+  res.sendFile(path.join(distPath, "index.html"));
 });
 
 // Error handler
