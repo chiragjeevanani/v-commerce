@@ -12,6 +12,9 @@ const Layout = () => {
   const location = useLocation();
   const outlet = useOutlet();
   const isProductDetail = location.pathname.startsWith("/product/");
+  const authPages = ["/login", "/signup", "/forgot-password", "/verify-otp"];
+  const currentPath = location.pathname.toLowerCase().replace(/\/$/, "");
+  const isAuthPage = authPages.includes(currentPath) || authPages.includes(location.pathname);
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -19,10 +22,12 @@ const Layout = () => {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {(!isProductDetail) ? <Navbar /> : (
-        <div className="hidden md:block">
-          <Navbar />
-        </div>
+      {!isAuthPage && (
+        (!isProductDetail) ? <Navbar /> : (
+          <div className="hidden md:block">
+            <Navbar />
+          </div>
+        )
       )}
       <main className="flex-1 pb-16 md:pb-0 relative overflow-x-hidden">
         <AnimatePresence mode="wait" initial={false}>
@@ -31,8 +36,8 @@ const Layout = () => {
           </PageTransition>
         </AnimatePresence>
       </main>
-      <Footer />
-      <MobileBottomNav />
+      {!isAuthPage && <Footer />}
+      {!isAuthPage && <MobileBottomNav />}
     </div>
   );
 };

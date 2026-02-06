@@ -18,7 +18,8 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [visibleProducts, setVisibleProducts] = useState(8);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Fetch hero banners
@@ -39,11 +40,9 @@ const Home = () => {
     fetchBanners();
   }, []);
 
+  // Fetch initial products and categories
   useEffect(() => {
-    // Rely on productsService's atomic deduplication as the primary shield
-    // But also prevent state setting on unmounted components
     let isMounted = true;
-
     const fetchData = async () => {
       if (!initialFetchAttempted) {
         setLoading(true);
@@ -51,12 +50,15 @@ const Home = () => {
 
       try {
         const [productsResult, categoriesResult] = await Promise.all([
-          productsService.getSupplierProducts({ page: 1, size: 24 }),
+          productsService.getSupplierProducts({ page: 1, size: 20 }),
           productsService.fetchCategories(),
         ]);
 
         if (isMounted) {
-          if (productsResult?.products) setProducts(productsResult.products);
+          if (productsResult?.products) {
+            setProducts(productsResult.products);
+            setHasMore(productsResult.products.length >= 20);
+          }
           if (categoriesResult) setCategories(categoriesResult);
         }
       } catch (error) {
@@ -81,26 +83,47 @@ const Home = () => {
     return () => clearInterval(timer);
   }, [banners.length]);
 
-  // Infinite scroll effect
+  // Infinite scroll logic
+  const loadMoreProducts = async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    const nextPage = page + 1;
+
+    try {
+      const response = await productsService.getSupplierProducts({
+        page: nextPage,
+        size: 20
+      });
+
+      if (response?.products && response.products.length > 0) {
+        setProducts(prev => [...prev, ...response.products]);
+        setPage(nextPage);
+        setHasMore(response.products.length >= 20);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Failed to load more products:", error);
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
     const handleScroll = () => {
-      if (loadingMore || visibleProducts >= products.length) return;
-
       const scrollPosition = window.innerHeight + window.scrollY;
-      const threshold = document.documentElement.scrollHeight - 500;
+      const threshold = document.documentElement.scrollHeight - 600;
 
       if (scrollPosition >= threshold) {
-        setLoadingMore(true);
-        setTimeout(() => {
-          setVisibleProducts(prev => Math.min(prev + 8, products.length));
-          setLoadingMore(false);
-        }, 500);
+        loadMoreProducts();
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [loadingMore, visibleProducts, products.length]);
+  }, [loadingMore, hasMore, page]);
 
   const nextBanner = () => {
     if (banners.length === 0) return;
@@ -308,16 +331,16 @@ const Home = () => {
           className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-5"
         >
           {loading
-            ? Array.from({ length: 8 }).map((_, i) => (
+            ? Array.from({ length: 10 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))
-            : products.slice(0, visibleProducts).map((product, i) => (
+            : products.map((product, i) => (
               <motion.div
                 key={product.pid || product.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: i * 0.05, duration: 0.4 }}
+                transition={{ delay: (i % 20) * 0.05, duration: 0.4 }}
               >
                 <ProductCard product={product} />
               </motion.div>
@@ -335,7 +358,7 @@ const Home = () => {
         )}
 
         {/* End message when all products are shown */}
-        {!loading && visibleProducts >= products.length && products.length > 8 && (
+        {!loading && !hasMore && products.length > 0 && (
           <p className="text-center text-muted-foreground text-sm mt-8">
             You've reached the end of our collection
           </p>

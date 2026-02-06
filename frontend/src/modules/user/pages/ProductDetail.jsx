@@ -221,7 +221,7 @@ const ProductDetail = () => {
                   <span className="text-destructive font-black text-xs uppercase tracking-widest animate-pulse">Limited Deal</span>
                 )}
               </div>
-              <h1 className="text-3xl font-black text-foreground tracking-tighter leading-tight">
+              <h1 className="text-2xl font-black text-foreground tracking-tight leading-tight">
                 {product.name}
               </h1>
 
@@ -252,7 +252,7 @@ const ProductDetail = () => {
             <div className="flex flex-col">
               <span className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground mb-2">Pricing</span>
               <div className="flex items-baseline gap-4">
-                <span className="text-5xl font-black text-primary">
+                <span className="text-3xl font-black text-primary">
                   ₹<AnimatedNumber value={product.discountPrice || product.price} />
                 </span>
                 {product.discountPrice && (
@@ -261,7 +261,7 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            <p className="text-lg text-muted-foreground leading-relaxed font-medium line-clamp-3">
+            <p className="text-base text-muted-foreground leading-relaxed font-medium line-clamp-3">
               {product.description}
             </p>
           </motion.div>
@@ -313,15 +313,15 @@ const ProductDetail = () => {
           {/* Desktop Right: Content Info */}
           <div className="col-span-12 lg:col-span-5 space-y-10">
             <div className="space-y-4">
-              <span className="text-sm font-bold text-primary uppercase tracking-[0.3em]">
+              <span className="text-xs font-bold text-primary uppercase tracking-[0.2em]">
                 {product.category}
               </span>
-              <h1 className="text-5xl xl:text-7xl font-black text-foreground tracking-tighter leading-[0.9]">
+              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-foreground tracking-tight break-words">
                 {product.name}
               </h1>
               <div className="flex items-center gap-6 py-4">
                 <div className="flex flex-col">
-                  <span className="text-5xl xl:text-6xl font-black text-primary">
+                  <span className="text-3xl xl:text-4xl font-black text-primary">
                     ₹<AnimatedNumber value={product.discountPrice || product.price} />
                   </span>
                   {product.discountPrice && (
@@ -334,7 +334,7 @@ const ProductDetail = () => {
             </div>
 
             <div
-              className="text-lg text-muted-foreground leading-relaxed font-medium border-l-4 border-primary/20 pl-6 product-description"
+              className="text-base text-muted-foreground leading-relaxed font-medium border-l-4 border-primary/20 pl-6 product-description"
               dangerouslySetInnerHTML={{ __html: product.description }}
             />
 
@@ -377,20 +377,20 @@ const ProductDetail = () => {
               <div className="flex flex-col xl:flex-row gap-4">
                 <Button
                   size="lg"
-                  className="flex-1 h-20 text-xl font-black rounded-[30px] shadow-2xl hover:shadow-primary/30 transition-all active:scale-95 px-8"
+                  className="flex-1 h-14 text-lg font-black rounded-[20px] shadow-xl hover:shadow-primary/30 transition-all active:scale-95 px-8"
                   onClick={handleAddToCart}
                   disabled={product.stock === 0}
                 >
-                  <ShoppingCart className="mr-3 h-6 w-6" /> Add to Cart
+                  <ShoppingCart className="mr-3 h-5 w-5" /> Add to Cart
                 </Button>
                 <Button
                   size="lg"
                   variant="secondary"
-                  className="flex-1 h-20 text-xl font-black rounded-[30px] border shadow-sm hover:bg-muted transition-all active:scale-95"
+                  className="flex-1 h-14 text-lg font-black rounded-[20px] border shadow-sm hover:bg-muted transition-all active:scale-95"
                   onClick={handleBuyNow}
                   disabled={product.stock === 0}
                 >
-                  <CreditCard className="mr-3 h-6 w-6" /> Buy Now
+                  <CreditCard className="mr-3 h-5 w-5" /> Buy Now
                 </Button>
               </div>
             </div>
@@ -434,8 +434,8 @@ const ProductDetail = () => {
             >
               {activeTab === "description" && (
                 <div className="space-y-6">
-                  <h3 className="text-2xl font-bold">Product Experience</h3>
-                  <p className="text-muted-foreground leading-relaxed text-lg">
+                  <h3 className="text-xl font-bold">Product Experience</h3>
+                  <p className="text-muted-foreground leading-relaxed text-base">
                     {product.description}. This premium {product.category} is designed for those who value quality and performance. Our team has meticulously selected materials that ensure durability while maintaining a sleek, modern aesthetic.
                   </p>
                   <div className="grid sm:grid-cols-2 gap-8 mt-10">
@@ -543,7 +543,7 @@ const ProductDetail = () => {
           <section className="mt-32">
             <div className="flex items-end justify-between mb-10">
               <div>
-                <h2 className="text-3xl font-black tracking-tight">Related Products</h2>
+                <h2 className="text-2xl font-black tracking-tight">Related Products</h2>
                 <p className="text-muted-foreground mt-2">More items from the {product.category} collection.</p>
               </div>
             </div>
@@ -568,7 +568,7 @@ const ProductDetail = () => {
           <section className="mt-24">
             <div className="flex items-end justify-between mb-10">
               <div>
-                <h2 className="text-3xl font-black tracking-tight">You May Also Like</h2>
+                <h2 className="text-2xl font-black tracking-tight">You May Also Like</h2>
                 <p className="text-muted-foreground mt-2">Personalized recommendations just for you.</p>
               </div>
             </div>
