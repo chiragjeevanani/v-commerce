@@ -28,7 +28,7 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
 /* ================= API FIRST ================= */
-app.use("/", routes);
+app.use("/api", routes);
 
 /* ================= FRONTEND ================= */
 const distPath = path.join(__dirname, "../frontend/dist");

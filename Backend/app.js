@@ -13,15 +13,15 @@ import RazorpayRouter from "./Routers/RazorpayRouter.js";
 
 const router = Router();
 
-router.use("/api/v1/auth", AuthRouter);
-router.use("/api/v1/cj", CJDropshippingRouter);
-router.use("/api/v1/cart", CartRouter);
-router.use("/api/v1/addresses", AddressRouter);
-router.use("/api/v1/orders", OrderRouter);
-router.use("/api/v1/hero-banners", HeroBannerRouter);
-router.use("/api/v1/admin/analytics", AnalyticsRouter);
-router.use("/api/v1/content", ContentRouter);
-router.use("/api/v1/upload", UploadRouter);
-router.use("/api/v1/razorpay", RazorpayRouter);
+router.use("/v1/auth", AuthRouter);
+router.use("/v1/cj", CJDropshippingRouter);
+router.use("/v1/cart", CartRouter);
+router.use("/v1/addresses", AddressRouter);
+router.use("/v1/orders", OrderRouter);
+router.use("/v1/hero-banners", HeroBannerRouter);
+router.use("/v1/admin/analytics", AnalyticsRouter);
+router.use("/v1/content", ContentRouter);
+router.use("/v1/upload", UploadRouter);
+router.use("/v1/razorpay", RazorpayRouter);
 
 export default router;
