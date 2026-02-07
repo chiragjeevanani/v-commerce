@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Filter, SlidersHorizontal, Loader2 } from "lucide-react";
 import { productsService } from "@/modules/admin/services/products.service";
@@ -29,15 +29,18 @@ const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   // Filters
   const [priceRange, setPriceRange] = useState([0, 1000]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [sortOption, setSortOption] = useState("featured");
   const [visibleCount, setVisibleCount] = useState(20);
+  const observerTarget = useRef(null);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -63,73 +66,82 @@ const Shop = () => {
     fetchInitialData();
   }, []);
 
+  const fetchProducts = async (pageNumber, isInitial = false) => {
+    if (isInitial) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const categoryParam = searchParams.get("category");
+      const searchParam = searchParams.get("search");
+
+      const params = {
+        page: pageNumber,
+        size: 20,
+        categoryId: categoryParam || undefined,
+        keyWord: searchParam || undefined
+      };
+
+      const result = await productsService.getSupplierProducts(params);
+
+      if (result && result.products) {
+        if (pageNumber === 1) {
+          setProducts(result.products);
+        } else {
+          setProducts(prev => [...prev, ...result.products]);
+        }
+        setHasMore(result.products.length === 20);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Error fetching products", error);
+      toast({
+        title: "Error",
+        description: "Failed to load products.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      try {
-        const categoryParam = searchParams.get("category");
-        const searchParam = searchParams.get("search");
+    setPage(1);
+    fetchProducts(1, true);
+  }, [searchParams]);
 
-        // Update local state if URL contains category
-        if (categoryParam && !selectedCategories.includes(categoryParam)) {
-          setSelectedCategories([categoryParam]);
-        } else if (!categoryParam && selectedCategories.length > 0) {
-          // If category param is removed from URL, clear selected categories
-          setSelectedCategories([]);
-        }
+  useEffect(() => {
+    if (page > 1) {
+      fetchProducts(page);
+    }
+  }, [page]);
 
-        const params = {
-          page: 1,
-          size: 60,
-          categoryId: categoryParam || undefined,
-          keyWord: searchParam || undefined
-        };
+  useEffect(() => {
+    const handleScroll = () => {
+      if (loading || loadingMore || !hasMore) return;
 
-        const productsResult = await productsService.getSupplierProducts(params);
+      const windowHeight = window.innerHeight;
+      const scrollY = window.scrollY;
+      const bodyHeight = document.documentElement.scrollHeight;
 
-        if (productsResult && productsResult.products) {
-          setProducts(productsResult.products);
-        }
-      } catch (error) {
-        console.error("Error fetching products", error);
-        toast({
-          title: "Network Error",
-          description: "Unable to load products.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      // When within 500px of bottom
+      if (windowHeight + scrollY >= bodyHeight - 500) {
+        console.log("Triggering next page", page + 1);
+        setPage(prev => prev + 1);
       }
     };
 
-    fetchProducts();
-  }, [searchParams]); // Re-fetch when URL params change
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, loadingMore, hasMore, page]);
 
-  useEffect(() => {
+  // Apply local filtering to the products we have (Price & Sort)
+  const filteredProducts = React.useMemo(() => {
     let result = [...products];
-    const searchParam = searchParams.get("search");
-
-    // Search
-    if (searchParam) {
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(searchParam.toLowerCase()) ||
-        p.productNameEn.toLowerCase().includes(searchParam.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchParam.toLowerCase())
-      );
-    }
-
-    // Category Filter
-    // If we have a category in the URL, the backend already filtered it.
-    // We only apply local filtering if multiple categories are selected manually in the sidebar
-    // AND we are not already filtered by a specific parent category from the URL.
-    const urlCategory = searchParams.get("category");
-    if (selectedCategories.length > 0 && !urlCategory) {
-      result = result.filter(p => selectedCategories.includes(p.categoryId));
-    }
 
     // Price Filter
     result = result.filter(p => {
-      // Handle potential price range strings from CJ
       const priceStr = String(p.sellPrice || '0');
       const minPrice = priceStr.includes('-') ? parseFloat(priceStr.split('-')[0]) : parseFloat(priceStr);
       return minPrice >= priceRange[0] && minPrice <= priceRange[1];
@@ -149,15 +161,9 @@ const Shop = () => {
         return pB - pA;
       });
     }
-    // "featured" is default order
 
-    setFilteredProducts(result);
-    setVisibleCount(20); // Reset visible count on filter change
-  }, [products, selectedCategories, priceRange, sortOption, searchParams]);
-
-  const loadMore = () => {
-    setVisibleCount((prev) => prev + 20);
-  };
+    return result;
+  }, [products, priceRange, sortOption]);
 
   const toggleCategory = (categoryId) => {
     const newParams = new URLSearchParams(searchParams);
@@ -267,35 +273,25 @@ const Shop = () => {
                 className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6"
               >
                 <AnimatePresence mode="popLayout">
-                  {filteredProducts.slice(0, visibleCount).map((product, i) => (
+                  {filteredProducts.map((product, i) => (
                     <motion.div
                       layout
-                      key={product.id}
+                      key={product.id || i}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.3, delay: i < 20 ? i * 0.05 : 0 }}
+                      transition={{ duration: 0.3, delay: i % 20 * 0.05 }}
                     >
                       <ProductCard product={product} />
                     </motion.div>
                   ))}
                 </AnimatePresence>
               </motion.div>
-              {visibleCount < filteredProducts.length && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  className="mt-12 text-center"
-                >
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full px-8 hover:bg-primary hover:text-white transition-all"
-                    onClick={loadMore}
-                  >
-                    Explore More
-                  </Button>
-                </motion.div>
+              {(hasMore || loadingMore) && (
+                <div className="h-20 flex items-center justify-center mt-8 mb-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Loading more products...</span>
+                </div>
               )}
             </>
           ) : (
