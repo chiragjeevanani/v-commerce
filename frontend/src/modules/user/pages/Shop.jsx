@@ -37,7 +37,7 @@ const Shop = () => {
   const [priceRange, setPriceRange] = useState([0, 1000]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [sortOption, setSortOption] = useState("featured");
-  const [visibleCount, setVisibleCount] = useState(6);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -152,11 +152,11 @@ const Shop = () => {
     // "featured" is default order
 
     setFilteredProducts(result);
-    setVisibleCount(6); // Reset visible count on filter change
+    setVisibleCount(20); // Reset visible count on filter change
   }, [products, selectedCategories, priceRange, sortOption, searchParams]);
 
   const loadMore = () => {
-    setVisibleCount((prev) => prev + 6);
+    setVisibleCount((prev) => prev + 20);
   };
 
   const toggleCategory = (categoryId) => {
@@ -256,7 +256,7 @@ const Shop = () => {
 
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-              {Array.from({ length: 8 }).map((_, i) => (
+              {Array.from({ length: 20 }).map((_, i) => (
                 <SkeletonCard key={i} />
               ))}
             </div>
@@ -274,7 +274,7 @@ const Shop = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.3, delay: i < 6 ? i * 0.05 : 0 }}
+                      transition={{ duration: 0.3, delay: i < 20 ? i * 0.05 : 0 }}
                     >
                       <ProductCard product={product} />
                     </motion.div>
