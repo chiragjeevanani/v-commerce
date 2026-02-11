@@ -16,6 +16,13 @@ const OrderDetails = lazy(() => import('../pages/OrderDetails'));
 const Account = lazy(() => import('../pages/Account'));
 const AddAddress = lazy(() => import('../pages/AddAddress'));
 
+// Policy & Info Pages
+const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
+const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
+const Contact = lazy(() => import('../pages/Contact'));
+const About = lazy(() => import('../pages/About'));
+
+
 // Auth Pages
 const Login = lazy(() => import('../pages/Login'));
 const Signup = lazy(() => import('../pages/Signup'));
@@ -53,6 +60,13 @@ const UserRoutes = () => {
           <Route path="orders/:orderId" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
           <Route path="account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
           <Route path="account/address/new" element={<ProtectedRoute><AddAddress /></ProtectedRoute>} />
+
+          {/* Policy & Info Pages */}
+          <Route path="privacy" element={<PrivacyPolicy />} />
+          <Route path="refund-policy" element={<RefundPolicy />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="about" element={<About />} />
+
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
