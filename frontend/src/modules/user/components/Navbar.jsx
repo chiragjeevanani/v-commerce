@@ -61,6 +61,9 @@ const Navbar = () => {
             <Link to="/shop" className="transition-colors hover:text-foreground">
               Shop
             </Link>
+            <Link to="/store-products" className="transition-colors hover:text-foreground">
+              Store Products
+            </Link>
           </div>
         </div>
 
@@ -187,6 +190,7 @@ const Navbar = () => {
                     {[
                       { to: "/", label: "Home", icon: Home },
                       { to: "/shop", label: "Shop", icon: Package },
+                      { to: "/store-products", label: "Store Products", icon: Package },
                       { to: "/cart", label: "Cart", icon: ShoppingCart },
                       { to: "/orders", label: "My Orders", icon: Package },
                       { to: "/account", label: "Profile", icon: User },

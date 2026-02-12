@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Grid, ShoppingCart, User } from "lucide-react";
+import { Home, Grid, ShoppingCart, User, Store } from "lucide-react";
 import { useCart } from "@/modules/user/context/CartContext";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/utils";
@@ -11,20 +11,21 @@ const MobileBottomNav = () => {
   const { pathname } = location;
 
   // Hide on product detail pages to avoid conflict with sticky "Add to Cart" bar
-  if (pathname.startsWith("/product/")) {
+  if (pathname.startsWith("/product/") || pathname.startsWith("/store-product/")) {
     return null;
   }
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: Grid, label: "Shop", path: "/shop" },
+    { icon: Store, label: "Store", path: "/store-products" },
     { icon: ShoppingCart, label: "Cart", path: "/cart", badge: cartCount },
     { icon: User, label: "Account", path: "/account" },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-background border-t md:hidden no-print">
-      <div className="grid h-full grid-cols-4 mx-auto">
+      <div className="grid h-full grid-cols-5 mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.path;
           return (
@@ -47,7 +48,7 @@ const MobileBottomNav = () => {
                   </Badge>
                 )}
               </div>
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className="text-[10px] font-medium leading-tight">{item.label}</span>
             </Link>
           );
         })}

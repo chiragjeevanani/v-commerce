@@ -83,7 +83,8 @@ export const CartProvider = ({ children }) => {
       price: product.discountPrice || product.price,
       quantity: product.quantity || 1,
       category: product.categoryName || product.category,
-      sku: product.productSku || product.sku
+      sku: product.productSku || product.sku,
+      isStoreProduct: product.isStoreProduct || false // Flag for store products
     };
 
     if (isAuthenticated) {

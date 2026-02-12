@@ -11,7 +11,7 @@ import PageTransition from "../components/PageTransition";
 const Layout = () => {
   const location = useLocation();
   const outlet = useOutlet();
-  const isProductDetail = location.pathname.startsWith("/product/");
+  const isProductDetail = location.pathname.startsWith("/product/") || location.pathname.startsWith("/store-product/");
   const authPages = ["/login", "/signup", "/forgot-password", "/verify-otp"];
   const currentPath = location.pathname.toLowerCase().replace(/\/$/, "");
   const isAuthPage = authPages.includes(currentPath) || authPages.includes(location.pathname);

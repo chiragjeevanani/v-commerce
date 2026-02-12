@@ -10,6 +10,8 @@ import AnalyticsRouter from "./Routers/AnalyticsRouter.js";
 import ContentRouter from "./Routers/ContentRouter.js";
 import UploadRouter from "./Routers/UploadRouter.js";
 import RazorpayRouter from "./Routers/RazorpayRouter.js";
+import CategoryRouter from "./Routers/CategoryRouter.js";
+import ProductRouter from "./Routers/ProductRouter.js";
 
 const router = Router();
 
@@ -23,5 +25,7 @@ router.use("/v1/admin/analytics", AnalyticsRouter);
 router.use("/v1/content", ContentRouter);
 router.use("/v1/upload", UploadRouter);
 router.use("/v1/razorpay", RazorpayRouter);
+router.use("/v1/categories", CategoryRouter);
+router.use("/v1/store-products", ProductRouter);
 
 export default router;

@@ -7,6 +7,8 @@ import ProtectedRoute from '../components/ProtectedRoute';
 const Home = lazy(() => import('../pages/Home'));
 const Shop = lazy(() => import('../pages/Shop'));
 const ProductDetail = lazy(() => import('../pages/ProductDetail'));
+const StoreProducts = lazy(() => import('../pages/StoreProducts'));
+const StoreProductDetail = lazy(() => import('../pages/StoreProductDetail'));
 const Cart = lazy(() => import('../pages/Cart'));
 const Checkout = lazy(() => import('../pages/Checkout'));
 const OrderSuccess = lazy(() => import('../pages/OrderSuccess'));
@@ -43,6 +45,8 @@ const UserRoutes = () => {
           <Route index element={<Home />} />
           <Route path="shop" element={<Shop />} />
           <Route path="product/:id" element={<ProductDetail />} />
+          <Route path="store-products" element={<StoreProducts />} />
+          <Route path="store-product/:id" element={<StoreProductDetail />} />
 
           {/* Auth Routes */}
           <Route path="login" element={<Login />} />

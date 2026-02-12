@@ -15,6 +15,8 @@ const Settings = lazy(() => import('../pages/Settings'));
 const ProductDetail = lazy(() => import('../pages/ProductDetail'));
 const AdminLogin = lazy(() => import('../pages/AdminLogin'));
 const HeroBanners = lazy(() => import('../pages/HeroBanners'));
+const Categories = lazy(() => import('../pages/Categories'));
+const StoreProducts = lazy(() => import('../pages/StoreProducts'));
 const OrderDetail = lazy(() => import('../pages/OrderDetail'));
 const CustomerDetail = lazy(() => import('../pages/CustomerDetail'));
 
@@ -51,6 +53,8 @@ const AdminRoutes = () => {
                         <Route path="analytics" element={<Analytics />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="hero-banners" element={<HeroBanners />} />
+                        <Route path="categories" element={<Categories />} />
+                        <Route path="store-products" element={<StoreProducts />} />
                     </Route>
 
                     {/* Redirect unknown routes */}

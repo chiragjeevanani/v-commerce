@@ -82,12 +82,32 @@ const Checkout = () => {
   useEffect(() => {
     const getEstimate = async () => {
       if (cart.length > 0) {
+        // Check if cart has any CJ products (non-store products)
+        const cjItems = cart.filter(item => !item.isStoreProduct);
+        
+        // If only store products, set default shipping
+        if (cjItems.length === 0) {
+          setShippingMethods([{
+            name: "Standard Shipping",
+            price: 0,
+            time: "5-7 business days"
+          }]);
+          setSelectedShipping({
+            name: "Standard Shipping",
+            price: 0,
+            time: "5-7 business days"
+          });
+          setDeliveryEstimate("5-7 business days");
+          return;
+        }
+
+        // For CJ products, estimate shipping
         setShippingLoading(true);
         try {
-          // Use the first item's PID for estimation (CJ usually groups or calculates per item)
+          // Use the first CJ item's PID for estimation
           const res = await api.estimateShipping({
-            pid: cart[0].pid,
-            quantity: cart[0].quantity,
+            pid: cjItems[0].pid,
+            quantity: cjItems[0].quantity,
             countryCode: 'IN'
           });
 
@@ -100,6 +120,17 @@ const Checkout = () => {
           }
         } catch (error) {
           console.error("Shipping estimate failed", error);
+          // Fallback for store products or if estimation fails
+          setShippingMethods([{
+            name: "Standard Shipping",
+            price: 0,
+            time: "5-7 business days"
+          }]);
+          setSelectedShipping({
+            name: "Standard Shipping",
+            price: 0,
+            time: "5-7 business days"
+          });
         } finally {
           setShippingLoading(false);
         }

@@ -58,7 +58,10 @@ export const placeOrder = asyncHandler(async (req, res) => {
                 return pid; // Fallback
             };
 
-            const cjProducts = await Promise.all(items.map(async (item) => {
+            // Filter out store products - they don't need CJ order creation
+            const cjItems = items.filter(item => !item.isStoreProduct);
+            
+            const cjProducts = await Promise.all(cjItems.map(async (item) => {
                 const vid = item.vid || await getVidForPid(item.pid);
                 return {
                     vid: vid,
@@ -67,43 +70,50 @@ export const placeOrder = asyncHandler(async (req, res) => {
                 };
             }));
 
-            const cjOrderData = {
-                orderNumber: newOrder._id.toString(),
-                shippingZip: shipping.zipCode,
-                shippingCountryCode: "IN", // Assuming India for now
-                shippingCountry: shipping.country || "India",
-                shippingProvince: shipping.state,
-                shippingCity: shipping.city,
-                shippingPhone: shipping.phoneNumber,
-                shippingCustomerName: shipping.fullName,
-                shippingAddress: shipping.street,
-                platform: "shopify",
-                fromCountryCode: "CN",
-                logisticName: "CJPacket Sensitive",
-                shopLogisticsType: 2,
-                storageId: "201e67f6ba4644c0a36d63bf4989dd70",
-                products: cjProducts
-            };
+            // Only create CJ order if there are CJ products
+            if (cjProducts.length > 0) {
+                const cjOrderData = {
+                    orderNumber: newOrder._id.toString(),
+                    shippingZip: shipping.zipCode,
+                    shippingCountryCode: "IN", // Assuming India for now
+                    shippingCountry: shipping.country || "India",
+                    shippingProvince: shipping.state,
+                    shippingCity: shipping.city,
+                    shippingPhone: shipping.phoneNumber,
+                    shippingCustomerName: shipping.fullName,
+                    shippingAddress: shipping.street,
+                    platform: "shopify",
+                    fromCountryCode: "CN",
+                    logisticName: "CJPacket Sensitive",
+                    shopLogisticsType: 2,
+                    storageId: "201e67f6ba4644c0a36d63bf4989dd70",
+                    products: cjProducts
+                };
 
-            const cjResponse = await fetch('https://developers.cjdropshipping.com/api2.0/v1/shopping/order/createOrderV2', {
-                method: 'POST',
-                headers: {
-                    'CJ-Access-Token': accessToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(cjOrderData)
-            });
+                const cjResponse = await fetch('https://developers.cjdropshipping.com/api2.0/v1/shopping/order/createOrderV2', {
+                    method: 'POST',
+                    headers: {
+                        'CJ-Access-Token': accessToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cjOrderData)
+                });
 
-            const cjResult = await cjResponse.json();
+                const cjResult = await cjResponse.json();
 
-            if (cjResult.success) {
-                newOrder.cjOrderId = cjResult.data?.[0]?.cjOrderId;
-                newOrder.cjResponse = cjResult;
-                newOrder.status = "confirmed";
-                await newOrder.save();
+                if (cjResult.success) {
+                    newOrder.cjOrderId = cjResult.data?.[0]?.cjOrderId;
+                    newOrder.cjResponse = cjResult;
+                    newOrder.status = "confirmed";
+                    await newOrder.save();
+                } else {
+                    console.error("CJ Order Creation Failed:", cjResult);
+                    newOrder.cjResponse = cjResult;
+                    await newOrder.save();
+                }
             } else {
-                console.error("CJ Order Creation Failed:", cjResult);
-                newOrder.cjResponse = cjResult;
+                // Only store products - mark as confirmed directly
+                newOrder.status = "confirmed";
                 await newOrder.save();
             }
         }

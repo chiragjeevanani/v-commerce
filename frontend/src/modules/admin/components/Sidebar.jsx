@@ -11,7 +11,9 @@ import {
     LogOut,
     ChevronLeft,
     ChevronRight,
-    Image
+    Image,
+    FolderTree,
+    ShoppingCart
 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { Button } from '@/components/ui/button';
@@ -19,10 +21,12 @@ import { cn } from '@/utils/utils';
 
 const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', end: true },
-    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
-    { icon: Package, label: 'Products', path: '/admin/products' },
-    { icon: Users, label: 'Customers', path: '/admin/customers' },
+    { icon: Package, label: 'Dropshipping Products', path: '/admin/products' },
+    { icon: ShoppingCart, label: 'Store Products', path: '/admin/store-products' },
+    { icon: FolderTree, label: 'Categories', path: '/admin/categories' },
     { icon: Image, label: 'Hero Banners', path: '/admin/hero-banners' },
+    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
+    { icon: Users, label: 'Customers', path: '/admin/customers' },
     { icon: CreditCard, label: 'Payments', path: '/admin/payments' },
     { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' },
