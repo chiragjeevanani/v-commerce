@@ -27,4 +27,4 @@ npm run dev
 ## Deployment
 
 This project is optimized for deployment on [Vercel](https://vercel.com). The root configuration automatically handles building the `frontend` subfolder.
-////
+/////
