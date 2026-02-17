@@ -1,5 +1,4 @@
 import apiClient from "@/lib/axios";
-import { products } from "../../../services/mockData";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
