@@ -246,6 +246,89 @@ export const getOrdersByUserId = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Update order status (Admin)
+ */
+export const updateOrderStatus = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ["placed", "confirmed", "shipped", "delivered", "cancelled"];
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+            success: false,
+            message: `Invalid status. Must be one of: ${validStatuses.join(", ")}`
+        });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+        return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Validate status transition
+    const statusFlow = ["placed", "confirmed", "shipped", "delivered"];
+    const currentIndex = statusFlow.indexOf(order.status);
+    const newIndex = statusFlow.indexOf(status);
+
+    // Allow cancellation from any status
+    if (status === "cancelled") {
+        order.status = "cancelled";
+        await order.save();
+        return res.json({
+            success: true,
+            message: "Order cancelled successfully",
+            data: order
+        });
+    }
+
+    // Prevent backward status changes (except cancellation)
+    if (newIndex !== -1 && newIndex < currentIndex) {
+        return res.status(400).json({
+            success: false,
+            message: `Cannot change status from ${order.status} to ${status}. Status can only move forward.`
+        });
+    }
+
+    order.status = status;
+    await order.save();
+
+    // Populate user data before sending response
+    await order.populate("user", "fullName email phoneNumber");
+
+    // Create timeline for response (matching getAdminOrderDetails format)
+    const orderData = order.toObject();
+    orderData.id = order._id;
+    
+    const statusLabels = {
+        placed: "Order Placed",
+        confirmed: "Confirmed",
+        shipped: "Shipped",
+        delivered: "Delivered",
+        cancelled: "Cancelled"
+    };
+
+    // Reuse statusFlow from above (line 270)
+    orderData.timeline = statusFlow.map((s, index) => {
+        const isCompleted = statusFlow.indexOf(order.status) >= index;
+        const isCurrentStatus = order.status === s;
+        
+        return {
+            status: s,
+            label: statusLabels[s],
+            date: isCurrentStatus ? order.updatedAt : (isCompleted ? order.updatedAt : null),
+            completed: isCompleted
+        };
+    });
+
+    res.json({
+        success: true,
+        message: `Order status updated to ${status}`,
+        data: orderData
+    });
+});
+
+/**
  * Get recent orders (Admin - Top 5)
  */
 export const getRecentOrders = asyncHandler(async (req, res) => {

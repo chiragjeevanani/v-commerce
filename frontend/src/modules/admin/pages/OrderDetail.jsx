@@ -9,7 +9,10 @@ import {
     CreditCard,
     Calendar,
     Receipt,
-    Loader2
+    Loader2,
+    CheckCircle2,
+    TruckIcon,
+    CheckCircle
 } from 'lucide-react';
 import { ordersService } from '../services/orders.service';
 import StatusBadge from '../components/StatusBadge';
@@ -18,6 +21,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 const OrderDetail = () => {
     const { id } = useParams();
@@ -25,6 +36,8 @@ const OrderDetail = () => {
     const { toast } = useToast();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [statusDialog, setStatusDialog] = useState({ open: false, newStatus: null });
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -47,6 +60,44 @@ const OrderDetail = () => {
             fetchOrder();
         }
     }, [id]);
+
+    const handleStatusUpdate = async (newStatus) => {
+        setUpdatingStatus(true);
+        try {
+            const updatedOrder = await ordersService.updateOrderStatus(id, newStatus);
+            setOrder(updatedOrder);
+            toast({
+                title: "Success",
+                description: `Order status updated to ${newStatus}`,
+            });
+            setStatusDialog({ open: false, newStatus: null });
+        } catch (error) {
+            console.error("Failed to update status:", error);
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || "Failed to update order status.",
+                variant: "destructive",
+            });
+        } finally {
+            setUpdatingStatus(false);
+        }
+    };
+
+    const getNextStatus = () => {
+        const statusFlow = ["placed", "confirmed", "shipped", "delivered"];
+        const currentIndex = statusFlow.indexOf(order?.status);
+        if (currentIndex === -1 || currentIndex === statusFlow.length - 1) return null;
+        return statusFlow[currentIndex + 1];
+    };
+
+    const getStatusButton = (status) => {
+        const buttons = {
+            confirmed: { label: "Confirm Order", icon: CheckCircle2, variant: "default" },
+            shipped: { label: "Mark as Shipped", icon: TruckIcon, variant: "default" },
+            delivered: { label: "Mark as Delivered", icon: CheckCircle, variant: "default" },
+        };
+        return buttons[status];
+    };
 
     if (loading) {
         return (
@@ -94,6 +145,21 @@ const OrderDetail = () => {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    {getNextStatus() && (() => {
+                        const nextStatus = getNextStatus();
+                        const buttonConfig = getStatusButton(nextStatus);
+                        if (!buttonConfig) return null;
+                        return (
+                            <Button
+                                variant={buttonConfig.variant}
+                                className="gap-2"
+                                onClick={() => setStatusDialog({ open: true, newStatus: nextStatus })}
+                                disabled={updatingStatus}
+                            >
+                                <buttonConfig.icon className="h-4 w-4" /> {buttonConfig.label}
+                            </Button>
+                        );
+                    })()}
                     <Button variant="outline" className="gap-2">
                         <Receipt className="h-4 w-4" /> Invoice
                     </Button>
@@ -234,6 +300,40 @@ const OrderDetail = () => {
                     </Card>
                 </div>
             </div>
+
+            {/* Status Update Dialog */}
+            <Dialog open={statusDialog.open} onOpenChange={(open) => !open && setStatusDialog({ open: false, newStatus: null })}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Update Order Status</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to update this order status to <strong>{statusDialog.newStatus}</strong>?
+                            {statusDialog.newStatus === "delivered" && " This action cannot be undone."}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setStatusDialog({ open: false, newStatus: null })}
+                            disabled={updatingStatus}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => handleStatusUpdate(statusDialog.newStatus)}
+                            disabled={updatingStatus}
+                        >
+                            {updatingStatus ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...
+                                </>
+                            ) : (
+                                "Update Status"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

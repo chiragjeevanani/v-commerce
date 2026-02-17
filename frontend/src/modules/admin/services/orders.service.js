@@ -58,6 +58,19 @@ export const ordersService = {
         }
     },
 
+    updateOrderStatus: async (orderId, status) => {
+        try {
+            const response = await apiClient.put(`/orders/admin/${orderId}/status`, { status });
+            if (response.data.success) {
+                return response.data.data;
+            }
+            throw new Error(response.data.message || "Failed to update order status");
+        } catch (error) {
+            console.error("Update Order Status Error:", error);
+            throw error;
+        }
+    },
+
     getRecentOrders: async () => {
         try {
             const response = await apiClient.get('/orders/admin/recent');

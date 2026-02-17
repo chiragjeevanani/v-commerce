@@ -9,6 +9,7 @@ export const registerUser = async (req, res) => {
   try {
     const { fullName, email, password, phoneNumber } = req.body;
 
+    // Check for non-deleted user with same email
     const userExists = await User.findOne({ email, isDeleted: false });
     if (userExists)
       return res.status(400).json({
@@ -16,6 +17,12 @@ export const registerUser = async (req, res) => {
         message: "User already exists",
         data: null,
       });
+
+    // If deleted user exists with same email, permanently delete it first
+    const deletedUser = await User.findOne({ email, isDeleted: true });
+    if (deletedUser) {
+      await User.findByIdAndDelete(deletedUser._id);
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -44,18 +51,31 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user)
+    // Find non-deleted user first, if not found, check all users
+    let user = await User.findOne({ email, isDeleted: false });
+    
+    // If no non-deleted user found, check if any user exists with this email
+    if (!user) {
+      const deletedUser = await User.findOne({ email, isDeleted: true });
+      if (deletedUser) {
+        return res.status(403).json({ success: false, message: "Account deleted", data: null });
+      }
       return res.status(400).json({ success: false, message: "Invalid credentials", data: null });
+    }
+
     if (!user.isActive)
       return res.status(403).json({ success: false, message: "Account deactivated", data: null });
-    if (user.isDeleted)
-      return res.status(403).json({ success: false, message: "Account deleted", data: null });
-    if (!user.isVerified)
-      return res.status(403).json({ success: false, message: "Account not verified", data: null });
+    
+    // Email verification check removed - users can login directly
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
       return res.status(400).json({ success: false, message: "Invalid credentials", data: null });
+
+    // Auto-verify user if not already verified (for backward compatibility)
+    if (!user.isVerified) {
+      user.isVerified = true;
+      await user.save();
+    }
 
     res.json({
       success: true,
