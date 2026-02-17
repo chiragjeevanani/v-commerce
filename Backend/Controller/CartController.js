@@ -17,18 +17,47 @@ export const getCart = asyncHandler(async (req, res) => {
     });
 });
 
+// Helper function to parse price (handles price ranges like "1378 -- 1915")
+const parsePrice = (price) => {
+    if (typeof price === 'number') return price;
+    if (typeof price !== 'string') return 0;
+    
+    // Handle price ranges like "1378 -- 1915" or "1378-1915"
+    const priceStr = price.trim();
+    if (priceStr.includes('--') || priceStr.includes('-')) {
+        const parts = priceStr.split(/--|-/).map(p => p.trim());
+        // Use the first (minimum) price
+        const minPrice = parseFloat(parts[0]) || 0;
+        return minPrice;
+    }
+    
+    // Regular price string
+    const parsed = parseFloat(priceStr);
+    return isNaN(parsed) ? 0 : parsed;
+};
+
 // @desc    Add item to cart or update quantity
 // @route   POST /api/v1/cart/add
 // @access  Private
 export const addToCart = asyncHandler(async (req, res) => {
     const { pid, name, image, price, quantity, category, sku } = req.body;
 
+    // Parse price to handle price ranges
+    const parsedPrice = parsePrice(price);
+    
+    if (!parsedPrice || parsedPrice <= 0) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid price. Price must be a valid number."
+        });
+    }
+
     let cart = await Cart.findOne({ userId: req.user._id });
 
     if (!cart) {
         cart = await Cart.create({
             userId: req.user._id,
-            items: [{ pid, name, image, price, quantity: quantity || 1, category, sku }]
+            items: [{ pid, name, image, price: parsedPrice, quantity: quantity || 1, category, sku }]
         });
     } else {
         const itemIndex = cart.items.findIndex(item => item.pid === pid);
@@ -38,7 +67,7 @@ export const addToCart = asyncHandler(async (req, res) => {
             cart.items[itemIndex].quantity += (quantity || 1);
         } else {
             // New item
-            cart.items.push({ pid, name, image, price, quantity: quantity || 1, category, sku });
+            cart.items.push({ pid, name, image, price: parsedPrice, quantity: quantity || 1, category, sku });
         }
         await cart.save();
     }
@@ -122,17 +151,27 @@ export const clearCart = asyncHandler(async (req, res) => {
 export const syncCart = asyncHandler(async (req, res) => {
     const { items } = req.body;
 
+    // Parse prices for all items
+    const parsedItems = items.map(item => ({
+        ...item,
+        price: parsePrice(item.price)
+    })).filter(item => item.price > 0); // Filter out invalid prices
+
     let cart = await Cart.findOne({ userId: req.user._id });
 
     if (!cart) {
-        cart = await Cart.create({ userId: req.user._id, items });
+        cart = await Cart.create({ userId: req.user._id, items: parsedItems });
     } else {
         // Simple merge logic: if item exists in remote, take max quantity or remote quantity
         // For simplicity, let's just append new items or update count
-        items.forEach(localItem => {
+        parsedItems.forEach(localItem => {
             const index = cart.items.findIndex(remoteItem => remoteItem.pid === localItem.pid);
             if (index > -1) {
                 cart.items[index].quantity = Math.max(cart.items[index].quantity, localItem.quantity);
+                // Update price if it's different
+                if (localItem.price) {
+                    cart.items[index].price = localItem.price;
+                }
             } else {
                 cart.items.push(localItem);
             }
