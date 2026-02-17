@@ -11,8 +11,8 @@ export const dbConnect = async () => {
       connectTimeoutMS: 30000, // 30 seconds connection timeout
       maxPoolSize: 10, // Maintain up to 10 socket connections
       minPoolSize: 5, // Maintain at least 5 socket connections
-      bufferMaxEntries: 0, // Disable mongoose buffering
-      bufferCommands: false, // Disable mongoose buffering
+      // Note: bufferMaxEntries and bufferCommands are deprecated in newer Mongoose versions
+      // Mongoose automatically handles buffering now
     });
     console.log("Database Connected Successfully ✅✅✅✅");
   } catch (error) {
