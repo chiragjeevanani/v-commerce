@@ -60,14 +60,22 @@ export const ordersService = {
 
     updateOrderStatus: async (orderId, status) => {
         try {
+            console.log("Calling API to update order status:", { orderId, status });
             const response = await apiClient.put(`/orders/admin/${orderId}/status`, { status });
+            console.log("API Response:", response.data);
             if (response.data.success) {
                 return response.data.data;
             }
             throw new Error(response.data.message || "Failed to update order status");
         } catch (error) {
             console.error("Update Order Status Error:", error);
-            throw error;
+            console.error("Error Response:", error.response?.data);
+            console.error("Error Status:", error.response?.status);
+            // Re-throw with more details
+            const errorMessage = error.response?.data?.message || error.message || "Failed to update order status";
+            const enhancedError = new Error(errorMessage);
+            enhancedError.response = error.response;
+            throw enhancedError;
         }
     },
 
@@ -82,12 +90,6 @@ export const ordersService = {
             console.error("Fetch Recent Orders Error:", error);
             throw error;
         }
-    },
-
-    updateOrderStatus: async (id, status) => {
-        // Placeholder for future implementation
-        console.log(`Order ${id} status update requested: ${status}`);
-        return { success: true };
     },
 
     syncWithSupplier: async (id) => {

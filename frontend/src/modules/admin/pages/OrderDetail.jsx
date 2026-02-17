@@ -62,9 +62,16 @@ const OrderDetail = () => {
     }, [id]);
 
     const handleStatusUpdate = async (newStatus) => {
+        if (!newStatus) {
+            console.error("No status provided");
+            return;
+        }
+        
+        console.log("Updating order status:", { orderId: id, newStatus });
         setUpdatingStatus(true);
         try {
             const updatedOrder = await ordersService.updateOrderStatus(id, newStatus);
+            console.log("Status updated successfully:", updatedOrder);
             setOrder(updatedOrder);
             toast({
                 title: "Success",
@@ -73,9 +80,10 @@ const OrderDetail = () => {
             setStatusDialog({ open: false, newStatus: null });
         } catch (error) {
             console.error("Failed to update status:", error);
+            console.error("Error details:", error.response?.data || error.message);
             toast({
                 title: "Error",
-                description: error.response?.data?.message || "Failed to update order status.",
+                description: error.response?.data?.message || error.message || "Failed to update order status.",
                 variant: "destructive",
             });
         } finally {
@@ -145,7 +153,7 @@ const OrderDetail = () => {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    {getNextStatus() && (() => {
+                    {order && getNextStatus() && (() => {
                         const nextStatus = getNextStatus();
                         const buttonConfig = getStatusButton(nextStatus);
                         if (!buttonConfig) return null;
@@ -153,8 +161,11 @@ const OrderDetail = () => {
                             <Button
                                 variant={buttonConfig.variant}
                                 className="gap-2"
-                                onClick={() => setStatusDialog({ open: true, newStatus: nextStatus })}
-                                disabled={updatingStatus}
+                                onClick={() => {
+                                    console.log("Button clicked, opening dialog with status:", nextStatus);
+                                    setStatusDialog({ open: true, newStatus: nextStatus });
+                                }}
+                                disabled={updatingStatus || loading}
                             >
                                 <buttonConfig.icon className="h-4 w-4" /> {buttonConfig.label}
                             </Button>
@@ -302,7 +313,12 @@ const OrderDetail = () => {
             </div>
 
             {/* Status Update Dialog */}
-            <Dialog open={statusDialog.open} onOpenChange={(open) => !open && setStatusDialog({ open: false, newStatus: null })}>
+            <Dialog open={statusDialog.open} onOpenChange={(open) => {
+                console.log("Dialog open state changed:", open);
+                if (!open) {
+                    setStatusDialog({ open: false, newStatus: null });
+                }
+            }}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Update Order Status</DialogTitle>
@@ -314,14 +330,29 @@ const OrderDetail = () => {
                     <DialogFooter>
                         <Button
                             variant="outline"
-                            onClick={() => setStatusDialog({ open: false, newStatus: null })}
+                            onClick={() => {
+                                console.log("Cancel clicked");
+                                setStatusDialog({ open: false, newStatus: null });
+                            }}
                             disabled={updatingStatus}
                         >
                             Cancel
                         </Button>
                         <Button
-                            onClick={() => handleStatusUpdate(statusDialog.newStatus)}
-                            disabled={updatingStatus}
+                            onClick={() => {
+                                console.log("Update button clicked, status:", statusDialog.newStatus);
+                                if (statusDialog.newStatus) {
+                                    handleStatusUpdate(statusDialog.newStatus);
+                                } else {
+                                    console.error("No status to update");
+                                    toast({
+                                        title: "Error",
+                                        description: "No status selected",
+                                        variant: "destructive",
+                                    });
+                                }
+                            }}
+                            disabled={updatingStatus || !statusDialog.newStatus}
                         >
                             {updatingStatus ? (
                                 <>
