@@ -29,7 +29,7 @@ const Checkout = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const isOrderPlaced = useRef(false);
-  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [paymentMethod, setPaymentMethod] = useState("online");
   const { user } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -84,7 +84,7 @@ const Checkout = () => {
       if (cart.length > 0) {
         // Check if cart has any CJ products (non-store products)
         const cjItems = cart.filter(item => !item.isStoreProduct);
-        
+
         // If only store products, set default shipping
         if (cjItems.length === 0) {
           setShippingMethods([{
@@ -416,23 +416,22 @@ const Checkout = () => {
                     exit={{ opacity: 0, x: -20 }}
                     className="space-y-8"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex justify-center py-4">
                       {[
                         { id: "online", name: "Online Payment", icon: "💳", disabled: false },
-                        { id: "cod", name: "Cash on Delivery", icon: "💵", disabled: false },
                       ].map((method) => (
                         <button
                           key={method.id}
                           type="button"
                           onClick={() => !method.disabled && setPaymentMethod(method.id)}
                           disabled={method.disabled}
-                          className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-4 transition-all relative ${paymentMethod === method.id
-                            ? "border-primary bg-primary/5 shadow-inner scale-105"
+                          className={`w-full max-w-[280px] p-8 rounded-[32px] border-2 flex flex-col items-center gap-4 transition-all relative ${paymentMethod === method.id
+                            ? "border-primary bg-primary/5 shadow-[0_0_25px_rgba(var(--primary-rgb),0.1)] scale-105"
                             : "border-border hover:border-primary/50"
                             } ${method.disabled ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
                         >
-                          <span className="text-3xl">{method.icon}</span>
-                          <span className="font-black text-xs uppercase tracking-widest">{method.name}</span>
+                          <span className="text-4xl">{method.icon}</span>
+                          <span className="font-black text-xs uppercase tracking-[0.2em]">{method.name}</span>
                           {paymentMethod === method.id && (
                             <motion.div layoutId="active" className="h-2 w-2 rounded-full bg-primary mt-auto" />
                           )}
@@ -442,21 +441,6 @@ const Checkout = () => {
 
                     <div className="pt-6 border-t border-dashed">
                       <AnimatePresence mode="wait">
-                        {paymentMethod === "cod" && (
-                          <motion.div
-                            key="cod-info"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="p-8 rounded-[40px] bg-green-500/5 flex flex-col items-center text-center space-y-4 border border-green-500/10"
-                          >
-                            <div className="h-20 w-20 rounded-full bg-green-500/10 flex items-center justify-center text-3xl">💵</div>
-                            <div className="space-y-2">
-                              <h4 className="font-black text-xl">Cash on Delivery</h4>
-                              <p className="text-sm text-muted-foreground">Pay the amount to the delivery associate when your package arrives at your doorstep.</p>
-                            </div>
-                          </motion.div>
-                        )}
                         {paymentMethod === "online" && (
                           <motion.div
                             key="online-info"

@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, Search, User, Menu, X, LogOut, Package, Settings, LogIn, Home } from "lucide-react";
+import { ShoppingCart, Search, User, Menu, X, LogOut, Package, Settings, LogIn, Home, Trash2, AlertTriangle } from "lucide-react";
 import { useCart } from "@/modules/user/context/CartContext";
 import { useAuth } from "@/modules/user/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from "@/modules/user/components/ModeToggle";
+import { useToast } from "@/hooks/use-toast";
 import {
   Sheet,
   SheetContent,
@@ -25,13 +26,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Navbar = () => {
   const { cartCount } = useCart();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, deleteAccount } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -43,6 +55,27 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteAccount();
+      toast({
+        title: "Account Deleted",
+        description: "Your account has been deleted successfully. You can no longer log in.",
+      });
+      setIsDeleteDialogOpen(false);
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -114,43 +147,84 @@ const Navbar = () => {
             </Link>
 
             {isAuthenticated ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full overflow-hidden border">
-                    <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                      {user?.avatar ? (
-                        <img src={user.avatar} alt={user.fullName} className="h-full w-full object-cover" />
-                      ) : (
-                        user?.fullName?.charAt(0) || 'U'
-                      )}
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 rounded-xl p-2 shadow-xl border-muted">
-                  <DropdownMenuLabel className="p-2">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-black leading-none">{user?.fullName}</p>
-                      <p className="text-xs leading-none text-muted-foreground font-medium italic">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer font-bold" onClick={() => navigate('/account')}>
-                    <User className="h-4 w-4" /> Account
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer font-bold" onClick={() => navigate('/orders')}>
-                    <Package className="h-4 w-4" /> Orders
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer font-bold" onClick={() => navigate('/account?tabs=settings')}>
-                    <Settings className="h-4 w-4" /> Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer text-red-500 focus:text-red-500 font-black" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4" /> Log Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full overflow-hidden border">
+                      <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        {user?.avatar ? (
+                          <img src={user.avatar} alt={user.fullName} className="h-full w-full object-cover" />
+                        ) : (
+                          user?.fullName?.charAt(0) || 'U'
+                        )}
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 rounded-xl p-2 shadow-xl border-muted">
+                    <DropdownMenuLabel className="p-2">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-black leading-none">{user?.fullName}</p>
+                        <p className="text-xs leading-none text-muted-foreground font-medium italic">
+                          {user?.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer font-bold" onClick={() => navigate('/account')}>
+                      <User className="h-4 w-4" /> Account
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer font-bold" onClick={() => navigate('/orders')}>
+                      <Package className="h-4 w-4" /> Orders
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer font-bold" onClick={() => navigate('/account?tabs=settings')}>
+                      <Settings className="h-4 w-4" /> Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="rounded-lg gap-2 cursor-pointer text-destructive focus:text-destructive font-bold"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete Account
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer text-red-500 focus:text-red-500 font-black" onClick={handleLogout}>
+                      <LogOut className="h-4 w-4" /> Log Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Delete Account Confirmation Dialog */}
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                  <DialogContent className="rounded-3xl max-w-md">
+                    <DialogHeader>
+                      <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                        <AlertTriangle className="h-6 w-6 text-destructive" />
+                      </div>
+                      <DialogTitle className="text-center text-2xl font-black tracking-tight">Delete Account?</DialogTitle>
+                      <DialogDescription className="text-center font-medium">
+                        This action is irreversible. All your data, orders, and addresses will be permanently deactivated.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
+                      <Button
+                        variant="ghost"
+                        className="flex-1 rounded-xl font-bold"
+                        onClick={() => setIsDeleteDialogOpen(false)}
+                        disabled={isDeleting}
+                      >
+                        No, Keep it
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="flex-1 rounded-xl font-black shadow-lg shadow-destructive/20"
+                        onClick={handleDeleteAccount}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Deleting..." : "Yes, Delete Account"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </>
             ) : (
               <Link to="/login" className="hidden md:block">
                 <Button variant="default" className="rounded-full px-6 font-bold gap-2">
@@ -214,7 +288,14 @@ const Navbar = () => {
                   </div>
 
                   {isAuthenticated && (
-                    <div className="mt-8 pt-4 border-t">
+                    <div className="mt-8 pt-4 border-t space-y-2">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-4 text-destructive font-black hover:bg-destructive/10 rounded-xl"
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                      >
+                        <Trash2 className="h-5 w-5" /> Delete Account
+                      </Button>
                       <Button
                         variant="ghost"
                         className="w-full justify-start gap-4 text-red-500 font-black hover:bg-red-50 hover:text-red-600 rounded-xl"

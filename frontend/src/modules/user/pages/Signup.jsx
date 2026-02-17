@@ -84,10 +84,10 @@ const Signup = () => {
         try {
             await signup(formData);
             toast({
-                title: "Account Created!",
-                description: "Verify your email with the OTP sent.",
+                title: "Login Successful",
+                description: "Welcome back to V-Commerce!",
             });
-            navigate('/verify-otp');
+            navigate('/');
         } catch (error) {
             toast({
                 title: "Registration Failed",

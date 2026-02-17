@@ -40,9 +40,14 @@ export const authService = {
     signup: async (userData) => {
         try {
             const response = await apiClient.post('/auth/register', userData);
-            // Store email temporarily for verification
-            localStorage.setItem("pending_email", userData.email);
-            return response.data;
+            const { data, token } = response.data;
+
+            if (token && data) {
+                localStorage.setItem("auth_token", token);
+                localStorage.setItem("user", JSON.stringify(data));
+            }
+
+            return { success: true, user: data, token };
         } catch (error) {
             throw new Error(error.response?.data?.message || "Signup failed");
         }
@@ -193,6 +198,15 @@ export const authService = {
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to reset password");
+        }
+    },
+
+    deleteAccount: async () => {
+        try {
+            const response = await apiClient.delete('/auth/soft-delete');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to delete account");
         }
     }
 };

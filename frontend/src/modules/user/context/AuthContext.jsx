@@ -69,7 +69,11 @@ export const AuthProvider = ({ children }) => {
                 login,
                 adminLogin,
                 signup,
-                logout
+                logout,
+                deleteAccount: async () => {
+                    await authService.deleteAccount();
+                    logout();
+                }
             }}
         >
             {children}

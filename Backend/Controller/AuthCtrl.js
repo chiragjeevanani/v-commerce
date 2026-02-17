@@ -19,23 +19,19 @@ export const registerUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
     const user = await User.create({
       fullName,
       email,
       password: hashedPassword,
       phoneNumber,
-      otp,
-      otpExpire: Date.now() + 10 * 60 * 1000,
+      isVerified: true, // Auto-verify users upon registration
     });
-
-    await sendOTPEmail(email, otp);
 
     res.json({
       success: true,
-      message: "Registration successful. OTP sent to your email.",
-      data: null,
+      message: "Registration successful",
+      data: user,
+      token: generateToken(user._id),
     });
   } catch (error) {
     console.error(error);

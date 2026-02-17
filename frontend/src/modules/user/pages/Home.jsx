@@ -249,66 +249,110 @@ const Home = () => {
       )}
 
       {/* Hierarchical Categories Section */}
-      <section className="container py-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-              <LayoutGrid className="h-6 w-6" />
+      <section className="container py-24 relative overflow-hidden">
+        {/* Ambient background glows for dark mode depth */}
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px] pointer-events-none opacity-0 dark:opacity-100 transition-opacity duration-1000" />
+        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[140px] pointer-events-none opacity-0 dark:opacity-100 transition-opacity duration-1000" />
+
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8 relative z-10">
+          <div className="flex items-center gap-5">
+            <div className="relative group/title-icon">
+              <div className="absolute inset-0 bg-primary blur-2xl opacity-20 group-hover/title-icon:opacity-40 transition-opacity" />
+              <div className="relative h-16 w-16 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/40 ring-1 ring-white/20">
+                <LayoutGrid className="h-8 w-8" />
+              </div>
             </div>
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Browse Categories</h2>
-              <p className="text-muted-foreground text-sm uppercase font-bold tracking-tighter opacity-50">Discover by subcategory</p>
+            <div className="space-y-1">
+              <h2 className="text-4xl md:text-6xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 leading-tight">
+                Browse Categories
+              </h2>
+              <div className="flex items-center gap-3">
+                <div className="h-1 w-12 bg-gradient-to-r from-primary to-transparent rounded-full" />
+                <p className="text-primary text-xs uppercase font-black tracking-[0.3em] opacity-90">Discover by subcategory</p>
+              </div>
             </div>
           </div>
-          <Link to="/shop" className="text-sm font-bold uppercase tracking-widest text-indigo-600 hover:opacity-70 transition-opacity flex items-center gap-2">
-            Explore All <ArrowRight className="h-4 w-4" />
+          <Link to="/shop" className="group flex items-center gap-4 text-sm font-black uppercase tracking-[0.2em] text-primary hover:text-foreground transition-all">
+            <span className="relative">
+              Explore All Collection
+              <span className="absolute -bottom-1.5 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
+            </span>
+            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-primary/30">
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </div>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 relative z-10">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-40 rounded-2xl bg-muted animate-pulse" />
+              <div key={i} className="h-72 rounded-[3.5rem] bg-muted/40 animate-pulse border border-border/50" />
             ))
             : categories.slice(0, 6).map((cat, i) => (
               <motion.div
                 key={cat.categoryFirstId}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="group relative overflow-hidden bg-white hover:bg-indigo-50/30 border border-slate-100 rounded-[2rem] p-6 transition-all duration-500 shadow-sm hover:shadow-xl hover:-translate-y-1"
+                transition={{
+                  delay: i * 0.1,
+                  type: "spring",
+                  stiffness: 80,
+                  damping: 18
+                }}
+                className="group relative overflow-hidden bg-gradient-to-br from-card/60 to-card/20 dark:from-card/90 dark:to-background/40 backdrop-blur-3xl border border-border/40 dark:border-white/10 rounded-[3.5rem] p-10 transition-all duration-500 hover:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.2)] dark:hover:shadow-[0_30px_100px_-20px_rgba(var(--primary),0.15)] hover:-translate-y-3 cursor-pointer"
               >
-                <div className="flex justify-between items-start mb-6">
-                  <div className="space-y-1">
+                {/* Visual Enhancers for Dark Mode Elevation */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <div className="absolute -top-24 -right-24 h-64 w-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-primary/20 transition-all duration-700" />
+
+                {/* Precise Top Rim Light */}
+                <div className="absolute top-0 left-12 right-12 h-[1px] bg-gradient-to-r from-transparent via-white/10 dark:via-white/20 to-transparent" />
+
+                <div className="flex justify-between items-start mb-10 relative z-10">
+                  <div className="space-y-3">
                     <Link to={`/shop?category=${cat.categoryFirstId}`}>
-                      <h3 className="text-xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase italic tracking-tighter">
+                      <h3 className="text-3xl font-black text-foreground group-hover:text-primary transition-all duration-300 uppercase italic tracking-tighter leading-[0.85] flex flex-col">
+                        <span className="text-primary/50 text-[10px] italic normal-case tracking-[0.2em] mb-2 font-black">PREMIUM SERIES</span>
                         {cat.categoryFirstName}
                       </h3>
                     </Link>
-                    <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Popular Subcategories</p>
+                    <div className="flex items-center gap-3">
+                      <div className="h-[2px] w-6 bg-primary/40 rounded-full group-hover:w-10 group-hover:bg-primary transition-all" />
+                      <p className="text-[10px] text-muted-foreground font-black tracking-[0.2em] uppercase opacity-60 group-hover:opacity-100 transition-opacity">Handpicked Selection</p>
+                    </div>
                   </div>
-                  <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
-                    <Zap className="h-6 w-6" />
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
+                    <div className="relative h-16 w-16 rounded-2xl bg-secondary/50 dark:bg-white/5 backdrop-blur-2xl flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-[0_0_30px_rgba(var(--primary),0.4)] transition-all duration-700 border border-border/50 dark:border-white/10 ring-1 ring-white/5">
+                      <Zap className="h-8 w-8 fill-current" />
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3 relative z-10">
                   {cat.categoryFirstList?.slice(0, 5).map((sub, idx) => (
                     <Link
                       key={sub.categorySecondId}
                       to={`/shop?category=${sub.categorySecondId}`}
-                      className="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-100 text-[11px] font-bold text-slate-600 hover:bg-indigo-600 hover:text-white hover:border-transparent transition-all duration-300"
+                      className="px-5 py-2.5 rounded-2xl bg-secondary/20 dark:bg-white/[0.03] border border-border/40 dark:border-white/5 text-[12px] font-bold text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-transparent hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 backdrop-blur-md"
                     >
                       {sub.categorySecondName}
                     </Link>
                   ))}
                   {cat.categoryFirstList?.length > 5 && (
-                    <span className="text-[11px] font-bold text-indigo-600 py-1.5 px-2">
-                      +{cat.categoryFirstList.length - 5} More
-                    </span>
+                    <Link
+                      to={`/shop?category=${cat.categoryFirstId}`}
+                      className="px-4 py-2 text-[12px] font-black text-primary hover:text-foreground transition-all flex items-center gap-2 group/more"
+                    >
+                      <span>+{cat.categoryFirstList.length - 5} More</span>
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/more:translate-x-1.5" />
+                    </Link>
                   )}
                 </div>
+
+                {/* Cyber-Line Accent */}
+                <div className="absolute bottom-0 left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-1000 blur-[0.5px]" />
               </motion.div>
             ))}
         </div>
