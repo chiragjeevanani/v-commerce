@@ -139,14 +139,36 @@ const Checkout = () => {
     getEstimate();
   }, [cart]);
 
-  // Load Razorpay Script
+  // Razorpay key state
+  const [razorpayKeyId, setRazorpayKeyId] = useState(null);
+  const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+
+  // Load Razorpay Script and Key
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     document.body.appendChild(script);
+    
+    // Fetch Razorpay public key from backend
+    const loadRazorpayKey = async () => {
+      try {
+        const keyData = await api.getRazorpayPublicKey();
+        if (keyData.success && keyData.keyId) {
+          setRazorpayKeyId(keyData.keyId);
+          setRazorpayEnabled(keyData.isEnabled !== false);
+        }
+      } catch (error) {
+        console.error("Failed to load Razorpay key:", error);
+      }
+    };
+    
+    loadRazorpayKey();
+    
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
@@ -219,18 +241,39 @@ const Checkout = () => {
           }
         });
       } else if (paymentMethod === 'online') {
+        // Check if Razorpay is configured and enabled
+        if (!razorpayKeyId) {
+          toast({ 
+            title: "Payment Gateway Not Configured", 
+            description: "Razorpay is not configured. Please contact administrator.", 
+            variant: "destructive" 
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (!razorpayEnabled) {
+          toast({ 
+            title: "Payment Gateway Disabled", 
+            description: "Razorpay payment gateway is currently disabled. Please use Cash on Delivery.", 
+            variant: "destructive" 
+          });
+          setLoading(false);
+          return;
+        }
+
         // 1. Create Razorpay Order on Backend
         const rzpOrderRes = await api.createRazorpayOrder(totalAmount);
 
         if (!rzpOrderRes.success) {
-          throw new Error("Failed to create payment order");
+          throw new Error(rzpOrderRes.message || "Failed to create payment order");
         }
 
         const rzpOrder = rzpOrderRes.order;
 
         // 2. Open Razorpay Checkout
         const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_YOUR_KEY_ID", // Fallback for dev
+          key: razorpayKeyId, // Use key from backend settings
           amount: rzpOrder.amount,
           currency: rzpOrder.currency,
           name: "V-Commerce",

@@ -10,7 +10,10 @@ import {
     CheckCircle2,
     RefreshCw,
     Globe,
-    Lock
+    Lock,
+    CreditCard,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +57,16 @@ const Settings = () => {
         confirmPassword: ""
     });
 
+    // State for Razorpay Settings
+    const [razorpaySettings, setRazorpaySettings] = useState({
+        keyId: "",
+        keySecret: "",
+        isConfigured: false,
+        isEnabled: false
+    });
+    const [showRazorpaySecret, setShowRazorpaySecret] = useState(false);
+    const [razorpayLoading, setRazorpayLoading] = useState(false);
+
     // Fetch Initial Data
     useEffect(() => {
         const loadSettings = async () => {
@@ -85,6 +98,17 @@ const Settings = () => {
                         storeDescription: "Modern Shopping Experience for Lifestyle & Electronics."
                     });
                 }
+
+                // 3. Load Razorpay Settings
+                const razorpayData = await settingsService.getRazorpaySettings();
+                if (razorpayData) {
+                    setRazorpaySettings({
+                        keyId: razorpayData.keyId || "",
+                        keySecret: razorpayData.keySecret || "",
+                        isConfigured: razorpayData.isConfigured || false,
+                        isEnabled: razorpayData.isEnabled !== undefined ? razorpayData.isEnabled : false
+                    });
+                }
             } catch (error) {
                 console.error("Failed to load settings:", error);
                 toast({
@@ -107,6 +131,107 @@ const Settings = () => {
                 description: "Supplier API is responding correctly.",
             });
         }, 1500);
+    };
+
+    const handleTestRazorpayConnection = async () => {
+        setRazorpayLoading(true);
+        try {
+            const result = await settingsService.testRazorpayConnection();
+            toast({
+                title: "Connection Successful",
+                description: result.message || "Razorpay API is responding correctly.",
+            });
+        } catch (error) {
+            toast({
+                title: "Connection Failed",
+                description: error.response?.data?.message || "Failed to connect to Razorpay. Please check your credentials.",
+                variant: "destructive"
+            });
+        } finally {
+            setRazorpayLoading(false);
+        }
+    };
+
+    const handleUpdateRazorpaySettings = async () => {
+        if (!razorpaySettings.keyId || !razorpaySettings.keySecret) {
+            toast({
+                title: "Validation Error",
+                description: "Both Key ID and Key Secret are required.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await settingsService.updateRazorpaySettings({
+                keyId: razorpaySettings.keyId,
+                keySecret: razorpaySettings.keySecret,
+                isEnabled: razorpaySettings.isEnabled
+            });
+            toast({
+                title: "Razorpay Settings Updated",
+                description: "Your Razorpay credentials have been saved successfully.",
+            });
+            // Reload settings to get masked secret
+            const updated = await settingsService.getRazorpaySettings();
+            if (updated) {
+                setRazorpaySettings({
+                    keyId: updated.keyId || "",
+                    keySecret: updated.keySecret || "",
+                    isConfigured: updated.isConfigured || false,
+                    isEnabled: updated.isEnabled !== undefined ? updated.isEnabled : false
+                });
+            }
+            setShowRazorpaySecret(false);
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || "Failed to update Razorpay settings.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleToggleRazorpay = async (enabled) => {
+        // If enabling, make sure credentials are configured
+        if (enabled && (!razorpaySettings.keyId || !razorpaySettings.keySecret)) {
+            toast({
+                title: "Configuration Required",
+                description: "Please configure Razorpay credentials before enabling.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setRazorpaySettings({ ...razorpaySettings, isEnabled: enabled });
+        
+        // Auto-save when toggling if credentials are already configured
+        if (razorpaySettings.isConfigured) {
+            try {
+                await settingsService.updateRazorpaySettings({
+                    keyId: razorpaySettings.keyId,
+                    keySecret: razorpaySettings.keySecret,
+                    isEnabled: enabled
+                });
+                toast({
+                    title: enabled ? "Razorpay Enabled" : "Razorpay Disabled",
+                    description: enabled 
+                        ? "Razorpay payment gateway is now active." 
+                        : "Razorpay payment gateway has been disabled.",
+                });
+            } catch (error) {
+                // Revert on error
+                setRazorpaySettings({ ...razorpaySettings, isEnabled: !enabled });
+                toast({
+                    title: "Error",
+                    description: "Failed to update Razorpay status.",
+                    variant: "destructive"
+                });
+            }
+        }
     };
 
     // --- Handlers ---
@@ -447,66 +572,103 @@ const Settings = () => {
                             <p className="text-sm text-muted-foreground">Manage keys for your dropshipping network integrations.</p>
                         </div>
                         <div className="md:col-span-2 space-y-6">
+                           
+                            {/* Razorpay Payment Gateway Card */}
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-indigo-100 rounded-lg">
-                                            <Globe className="h-5 w-5 text-indigo-700" />
+                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                            <CreditCard className="h-5 w-5 text-blue-700 dark:text-blue-400" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-lg">Global Dropship Network</CardTitle>
-                                            <CardDescription>Main marketplace API Integration</CardDescription>
+                                            <CardTitle className="text-lg">Razorpay Payment Gateway</CardTitle>
+                                            <CardDescription>Payment processing API integration</CardDescription>
                                         </div>
                                     </div>
-                                    <Badge className="bg-green-500">Connected</Badge>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <Label htmlFor="razorpay-toggle" className="text-sm text-muted-foreground cursor-pointer">
+                                                {razorpaySettings.isEnabled ? "Enabled" : "Disabled"}
+                                            </Label>
+                                            <Switch
+                                                id="razorpay-toggle"
+                                                checked={razorpaySettings.isEnabled}
+                                                onCheckedChange={handleToggleRazorpay}
+                                                disabled={!razorpaySettings.isConfigured}
+                                            />
+                                        </div>
+                                        <Badge className={razorpaySettings.isConfigured ? "bg-green-500" : "bg-gray-400"}>
+                                            {razorpaySettings.isConfigured ? "Connected" : "Not Configured"}
+                                        </Badge>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="api-key">Supplier API Key</Label>
+                                        <Label htmlFor="razorpay-key-id">Razorpay Key ID</Label>
+                                        <Input 
+                                            id="razorpay-key-id" 
+                                            type="text" 
+                                            value={razorpaySettings.keyId}
+                                            onChange={(e) => setRazorpaySettings({ ...razorpaySettings, keyId: e.target.value })}
+                                            placeholder="rzp_test_xxxxxxxxxxxxx"
+                                            className="font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="razorpay-key-secret">Razorpay Key Secret</Label>
                                         <div className="flex gap-2">
-                                            <Input id="api-key" type="password" value="••••••••••••••••••••••••••••" readOnly className="font-mono" />
-                                            <Button variant="outline" size="icon"><RefreshCw className="h-4 w-4" /></Button>
+                                            <Input 
+                                                id="razorpay-key-secret" 
+                                                type={showRazorpaySecret ? "text" : "password"} 
+                                                value={razorpaySettings.keySecret}
+                                                onChange={(e) => setRazorpaySettings({ ...razorpaySettings, keySecret: e.target.value })}
+                                                placeholder={razorpaySettings.isConfigured ? "••••••••••••••••••••" : "Enter your Razorpay Key Secret"}
+                                                className="font-mono"
+                                            />
+                                            <Button 
+                                                variant="outline" 
+                                                size="icon"
+                                                onClick={() => setShowRazorpaySecret(!showRazorpaySecret)}
+                                                type="button"
+                                            >
+                                                {showRazorpaySecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </Button>
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between p-3 bg-muted/40 rounded-lg text-xs">
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                            <span>Last sync: Oct 23, 2023 - 10:45 AM</span>
+                                            {razorpaySettings.isConfigured ? (
+                                                <>
+                                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                                    <span>Credentials configured</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Lock className="h-4 w-4 text-muted-foreground" />
+                                                    <span>Enter your Razorpay credentials</span>
+                                                </>
+                                            )}
                                         </div>
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             className="text-xs h-8 text-primary font-bold"
-                                            onClick={handleTestConnection}
-                                            disabled={isTestLoading}
+                                            onClick={handleTestRazorpayConnection}
+                                            disabled={razorpayLoading || !razorpaySettings.keyId || !razorpaySettings.keySecret}
                                         >
-                                            {isTestLoading ? "Testing..." : "Test Connection"}
+                                            {razorpayLoading ? "Testing..." : "Test Connection"}
                                         </Button>
                                     </div>
                                 </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-lg font-bold">Automation Settings</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-0.5">
-                                            <Label className="font-bold">Auto-Sync Inventory</Label>
-                                            <p className="text-xs text-muted-foreground">Update stock counts automatically every hour.</p>
-                                        </div>
-                                        <Switch defaultChecked />
-                                    </div>
-                                    <Separator />
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-0.5">
-                                            <Label className="font-bold">Price Protection</Label>
-                                            <p className="text-xs text-muted-foreground">Notify me if supplier price increases above my markup.</p>
-                                        </div>
-                                        <Switch defaultChecked />
-                                    </div>
-                                </CardContent>
+                                <CardFooter className="border-t bg-muted/20 justify-end py-3">
+                                    <Button 
+                                        className="gap-2" 
+                                        onClick={handleUpdateRazorpaySettings} 
+                                        disabled={isLoading || !razorpaySettings.keyId || !razorpaySettings.keySecret}
+                                    >
+                                        <Save className="h-4 w-4" /> Save Razorpay Settings
+                                    </Button>
+                                </CardFooter>
                             </Card>
                         </div>
                     </div>

@@ -70,6 +70,11 @@ export const api = {
   },
 
   // Razorpay
+  getRazorpayPublicKey: async () => {
+    const response = await apiClient.get('/razorpay/public-key');
+    return response.data;
+  },
+
   createRazorpayOrder: async (amount) => {
     const response = await apiClient.post('/razorpay/create-order', { amount });
     return response.data;

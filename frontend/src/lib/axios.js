@@ -1,26 +1,30 @@
-import axios from 'axios';
+import axios from "axios";
 
 const apiClient = axios.create({
-    baseURL: 'https://api.vcommerce.shop/api/v1',
+  baseURL: 'https://api.vcommerce.shop/api/v1',
+//   baseURL: "http://localhost:3000/api/v1",
 });
 
 // Interceptor to add auth token to requests
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use(
+  (config) => {
     const token = localStorage.getItem("auth_token");
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-}, (error) => {
+  },
+  (error) => {
     return Promise.reject(error);
-});
+  },
+);
 
 // Response interceptor for global error handling
 apiClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        return Promise.reject(error);
-    }
+  (response) => response,
+  (error) => {
+    return Promise.reject(error);
+  },
 );
 
 export default apiClient;

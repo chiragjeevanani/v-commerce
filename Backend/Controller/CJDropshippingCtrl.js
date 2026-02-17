@@ -177,6 +177,12 @@ const makeCJRequest = async (endpoint, method = 'GET', queryParams = {}, body = 
     if (params) {
         url += `?${params}`;
     }
+    
+    // Log the exact URL being sent to CJ API (for debugging pagination issues)
+    if (endpoint === '/product/listV2') {
+        console.log(`[CJ API] 🔗 Full URL: ${url}`);
+        console.log(`[CJ API] 📋 Query Params Object:`, queryParams);
+    }
 
     const headers = {
         'CJ-Access-Token': accessToken,
@@ -194,8 +200,21 @@ const makeCJRequest = async (endpoint, method = 'GET', queryParams = {}, body = 
         headers,
         body: fetchBody
     });
+    
+    const responseData = await response.json();
+    
+    // Log response for pagination debugging
+    if (endpoint === '/product/listV2' && queryParams.pageNum) {
+        const products = responseData?.data?.content?.[0]?.productList || [];
+        console.log(`[CJ API] 📥 Response Status: ${response.status}`);
+        console.log(`[CJ API] 📦 Products Count: ${products.length}`);
+        if (products.length > 0) {
+            console.log(`[CJ API] 🔢 First Product ID: ${products[0].id || products[0].pid}`);
+            console.log(`[CJ API] 🔢 Last Product ID: ${products[products.length - 1]?.id || products[products.length - 1]?.pid}`);
+        }
+    }
 
-    return await response.json();
+    return responseData;
 };
 
 // ================= PRODUCT APIS =================
@@ -237,10 +256,15 @@ export const listProductsV2 = async (req, res) => {
     try {
         const { page = 1, size = 20, keyWord, categoryId, pid, productName, status } = req.query;
 
+        // Convert page and size to integers
+        const pageNum = parseInt(page, 10) || 1;
+        const pageSize = parseInt(size, 10) || 20;
+
         // Construct query object for CJ API
+        // IMPORTANT: CJ API expects 'page' and 'size', NOT 'pageNum' and 'pageSize'!
         const query = {
-            pageNum: page,
-            pageSize: size
+            page: pageNum,      // CJ API uses 'page', not 'pageNum'
+            size: pageSize      // CJ API uses 'size', not 'pageSize'
         };
 
         if (keyWord) query.keyWord = keyWord;
@@ -249,9 +273,36 @@ export const listProductsV2 = async (req, res) => {
         if (productName) query.productName = productName;
         if (status) query.status = status;
 
+        console.log(`[CJ API] Requesting products - Page: ${pageNum}, Size: ${pageSize}, Query:`, JSON.stringify(query));
+        
+        // Build the actual URL to see what's being sent
+        const testParams = new URLSearchParams(query).toString();
+        console.log(`[CJ API] URL Query String: ${testParams}`);
+
         const result = await makeCJRequest('/product/listV2', 'GET', query);
+        
+        // Log response for debugging
+        if (result?.data?.content?.[0]?.productList) {
+            const products = result.data.content[0].productList;
+            console.log(`[CJ API] ✅ Received ${products.length} products for page ${pageNum}`);
+            if (products.length > 0) {
+                const firstProduct = products[0];
+                console.log(`[CJ API] First product:`, {
+                    id: firstProduct.id,
+                    pid: firstProduct.pid,
+                    name: firstProduct.nameEn?.substring(0, 50) || firstProduct.productNameEn?.substring(0, 50)
+                });
+                // Log first 3 product IDs to check if they're different across pages
+                console.log(`[CJ API] First 3 product IDs:`, products.slice(0, 3).map(p => ({ id: p.id, pid: p.pid })));
+            }
+        } else {
+            console.warn(`[CJ API] ⚠️ No products in response for page ${pageNum}`);
+            console.warn(`[CJ API] Response structure:`, JSON.stringify(result, null, 2).substring(0, 500));
+        }
+        
         res.json(result);
     } catch (error) {
+        console.error('[CJ API] Error in listProductsV2:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };

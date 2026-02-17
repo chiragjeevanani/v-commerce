@@ -24,11 +24,11 @@ const globalCache = getGlobalCache();
 
 export const productsService = {
     getSupplierProducts: async (params = {}) => {
-        const { page = 1, size = 20, keyWord = '', categoryId = '' } = params;
+        const { page = 1, size = 20, keyWord = '', categoryId = '', skipCache = false } = params;
         const cacheKey = `products_${page}_${size}_${keyWord}_${categoryId}`;
 
-        // 1. Check if we already have a success result in cache
-        if (globalCache.products[cacheKey]) {
+        // 1. Check if we already have a success result in cache (skip for infinite scroll)
+        if (!skipCache && globalCache.products[cacheKey]) {
             console.log(`[Cache Hit] Products: ${cacheKey}`);
             return globalCache.products[cacheKey];
         }

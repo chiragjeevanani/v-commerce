@@ -45,5 +45,36 @@ export const settingsService = {
             console.error("Upload Store Logo Error:", error);
             throw error;
         }
+    },
+
+    // Razorpay Settings
+    getRazorpaySettings: async () => {
+        try {
+            const response = await apiClient.get('/razorpay/settings');
+            return response.data?.data || null;
+        } catch (error) {
+            console.error("Fetch Razorpay Settings Error:", error);
+            return null;
+        }
+    },
+
+    updateRazorpaySettings: async (settings) => {
+        try {
+            const response = await apiClient.put('/razorpay/settings', settings);
+            return response.data;
+        } catch (error) {
+            console.error("Update Razorpay Settings Error:", error);
+            throw error;
+        }
+    },
+
+    testRazorpayConnection: async () => {
+        try {
+            const response = await apiClient.post('/razorpay/test-connection');
+            return response.data;
+        } catch (error) {
+            console.error("Test Razorpay Connection Error:", error);
+            throw error;
+        }
     }
 };

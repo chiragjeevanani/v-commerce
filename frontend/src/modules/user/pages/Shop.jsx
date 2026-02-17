@@ -41,6 +41,11 @@ const Shop = () => {
   const [sortOption, setSortOption] = useState("featured");
   const [visibleCount, setVisibleCount] = useState(20);
   const observerTarget = useRef(null);
+  
+  // Refs for infinite scroll control
+  const loadingRef = useRef(false);
+  const lastRequestTime = useRef(0);
+  const minRequestInterval = 1500; // 1.5 seconds between requests
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -67,8 +72,27 @@ const Shop = () => {
   }, []);
 
   const fetchProducts = async (pageNumber, isInitial = false) => {
-    if (isInitial) setLoading(true);
-    else setLoadingMore(true);
+    if (isInitial) {
+      setLoading(true);
+      loadingRef.current = true;
+    } else {
+      // Rate limiting for infinite scroll
+      const now = Date.now();
+      const timeSinceLastRequest = now - lastRequestTime.current;
+      if (timeSinceLastRequest < minRequestInterval) {
+        const waitTime = minRequestInterval - timeSinceLastRequest;
+        console.log(`[Shop LoadMore] Rate limiting: waiting ${waitTime}ms before next request`);
+        setTimeout(() => {
+          if (!loadingRef.current && hasMore) {
+            fetchProducts(pageNumber, isInitial);
+          }
+        }, waitTime);
+        return;
+      }
+      setLoadingMore(true);
+      loadingRef.current = true;
+      lastRequestTime.current = now;
+    }
 
     try {
       const categoryParam = searchParams.get("category");
@@ -78,63 +102,184 @@ const Shop = () => {
         page: pageNumber,
         size: 20,
         categoryId: categoryParam || undefined,
-        keyWord: searchParam || undefined
+        keyWord: searchParam || undefined,
+        skipCache: !isInitial // Skip cache for infinite scroll
       };
 
+      console.log(`[Shop] Fetching page ${pageNumber}...`);
       const result = await productsService.getSupplierProducts(params);
 
       if (result && result.products) {
         if (pageNumber === 1) {
           setProducts(result.products);
+          // Set hasMore based on totalPages
+          const totalPages = result.totalPages;
+          const hasMoreProducts = totalPages 
+            ? pageNumber < totalPages 
+            : result.products.length >= 20;
+          setHasMore(hasMoreProducts);
+          console.log(`[Shop InitialLoad] Loaded ${result.products.length} products, Page ${pageNumber}/${totalPages || '?'}, hasMore: ${hasMoreProducts}`);
         } else {
-          setProducts(prev => [...prev, ...result.products]);
+          setProducts(prev => {
+            // Filter out duplicates
+            const existingIds = new Set();
+            const existingPids = new Set();
+            
+            prev.forEach(p => {
+              if (p.id) existingIds.add(String(p.id));
+              if (p.pid) existingPids.add(String(p.pid));
+            });
+            
+            const uniqueNewProducts = result.products.filter(
+              p => {
+                const productId = p.id;
+                const productPid = p.pid;
+                
+                const existsById = productId && existingIds.has(String(productId));
+                const existsByPid = productPid && existingPids.has(String(productPid));
+                
+                if (existsById || existsByPid) {
+                  return false; // Duplicate
+                }
+                
+                if (productId) existingIds.add(String(productId));
+                if (productPid) existingPids.add(String(productPid));
+                
+                return true; // New product
+              }
+            );
+            
+            if (uniqueNewProducts.length === 0 && result.products.length > 0) {
+              console.warn(`[Shop LoadMore] ⚠️ All ${result.products.length} products from page ${pageNumber} are duplicates!`);
+              if (pageNumber > 2) {
+                console.warn(`[Shop LoadMore] ⛔ Stopping infinite scroll - CJ API returning duplicates (page ${pageNumber})`);
+                setHasMore(false);
+                return prev;
+              }
+            }
+            
+            const newProducts = [...prev, ...uniqueNewProducts];
+            console.log(`[Shop LoadMore] ✅ Added ${uniqueNewProducts.length} new products (${result.products.length - uniqueNewProducts.length} duplicates filtered), Total: ${newProducts.length}`);
+            return newProducts;
+          });
+          
+          // Set hasMore based on totalPages
+          const totalPages = result.totalPages;
+          const hasMoreProducts = totalPages 
+            ? pageNumber < totalPages 
+            : result.products.length >= 20;
+          setHasMore(hasMoreProducts);
+          console.log(`[Shop LoadMore] Page ${pageNumber}/${totalPages || '?'}, Has more products: ${hasMoreProducts}`);
         }
-        setHasMore(result.products.length === 20);
       } else {
         setHasMore(false);
       }
     } catch (error) {
-      console.error("Error fetching products", error);
+      console.error("[Shop] Error fetching products", error);
       toast({
         title: "Error",
         description: "Failed to load products.",
         variant: "destructive",
       });
+      setHasMore(false);
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      loadingRef.current = false;
     }
   };
 
   useEffect(() => {
     setPage(1);
+    setProducts([]);
+    setHasMore(true);
+    loadingRef.current = false;
     fetchProducts(1, true);
   }, [searchParams]);
 
-  useEffect(() => {
-    if (page > 1) {
-      fetchProducts(page);
+  // Infinite scroll with IntersectionObserver
+  const loadMoreProducts = useCallback(async () => {
+    if (loadingRef.current || loading || loadingMore || !hasMore) {
+      return;
     }
-  }, [page]);
+
+    const nextPage = page + 1;
+    console.log(`[Shop LoadMore] Loading page ${nextPage}...`);
+    await fetchProducts(nextPage, false);
+    setPage(nextPage);
+  }, [page, loading, loadingMore, hasMore]);
 
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !loadingRef.current && !loading && !loadingMore && hasMore) {
+          const now = Date.now();
+          const timeSinceLastRequest = now - lastRequestTime.current;
+          
+          if (timeSinceLastRequest >= minRequestInterval) {
+            console.log(`[Shop IntersectionObserver] ✅ Triggering loadMoreProducts`);
+            loadMoreProducts();
+          } else {
+            const waitTime = minRequestInterval - timeSinceLastRequest;
+            console.log(`[Shop IntersectionObserver] Rate limited: ${waitTime}ms remaining`);
+          }
+        }
+      },
+      {
+        root: null,
+        rootMargin: '300px',
+        threshold: 0.1
+      }
+    );
+
+    const target = observerTarget.current;
+    if (target) {
+      observer.observe(target);
+    }
+
+    return () => {
+      if (target) {
+        observer.unobserve(target);
+      }
+    };
+  }, [loadMoreProducts, loading, loadingMore, hasMore]);
+
+  // Fallback scroll handler (throttled)
+  useEffect(() => {
     const handleScroll = () => {
-      if (loading || loadingMore || !hasMore) return;
+      if (loading || loadingMore || !hasMore || loadingRef.current) return;
 
       const windowHeight = window.innerHeight;
       const scrollY = window.scrollY;
       const bodyHeight = document.documentElement.scrollHeight;
+      const threshold = bodyHeight - 400;
 
-      // When within 500px of bottom
-      if (windowHeight + scrollY >= bodyHeight - 500) {
-        console.log("Triggering next page", page + 1);
-        setPage(prev => prev + 1);
+      if (windowHeight + scrollY >= threshold) {
+        const now = Date.now();
+        const timeSinceLastRequest = now - lastRequestTime.current;
+        
+        if (timeSinceLastRequest >= minRequestInterval) {
+          console.log(`[Shop ScrollHandler] ✅ Triggering loadMoreProducts`);
+          loadMoreProducts();
+        }
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [loading, loadingMore, hasMore, page]);
+    let ticking = false;
+    const throttledHandleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledHandleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', throttledHandleScroll);
+  }, [loadMoreProducts, loading, loadingMore, hasMore]);
 
   // Apply local filtering to the products we have (Price & Sort)
   const filteredProducts = React.useMemo(() => {
@@ -287,12 +432,19 @@ const Shop = () => {
                   ))}
                 </AnimatePresence>
               </motion.div>
-              {(hasMore || loadingMore) && (
-                <div className="h-20 flex items-center justify-center mt-8 mb-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <span className="ml-2 text-muted-foreground">Loading more products...</span>
-                </div>
-              )}
+              {/* Observer target for infinite scroll */}
+              <div ref={observerTarget} className="h-20 flex items-center justify-center mt-8 mb-20">
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-2 text-muted-foreground">Loading more products...</span>
+                  </>
+                ) : hasMore ? (
+                  <span className="text-sm text-muted-foreground">Scroll for more products...</span>
+                ) : products.length > 0 ? (
+                  <span className="text-sm text-muted-foreground">You've reached the end of our collection</span>
+                ) : null}
+              </div>
             </>
           ) : (
             <div className="text-center py-12">
