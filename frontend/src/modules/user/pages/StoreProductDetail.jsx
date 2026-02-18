@@ -346,7 +346,7 @@ const StoreProductDetail = () => {
 
                         <div
                             className="text-base text-muted-foreground leading-relaxed font-medium border-l-4 border-primary/20 pl-6 product-description"
-                            dangerouslySetInnerHTML={{ __html: product.description || product.shortDescription || "Premium quality product." }}
+                            dangerouslySetInnerHTML={{ __html:  product.shortDescription || "Premium quality product." }}
                         />
 
                         <div className="space-y-8 pt-6 border-t">
