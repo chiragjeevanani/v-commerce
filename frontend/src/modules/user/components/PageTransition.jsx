@@ -3,21 +3,15 @@ import { motion } from 'framer-motion';
 
 const pageVariants = {
     initial: {
-        opacity: 0,
+        opacity: 1, // Start visible to avoid blank screen during route switch
     },
     animate: {
         opacity: 1,
-        transition: {
-            duration: 0.3,
-            ease: 'easeOut',
-        },
+        transition: { duration: 0.15, ease: 'easeOut' },
     },
     exit: {
         opacity: 0,
-        transition: {
-            duration: 0.2,
-            ease: 'easeIn',
-        },
+        transition: { duration: 0.15, ease: 'easeIn' },
     },
 };
 

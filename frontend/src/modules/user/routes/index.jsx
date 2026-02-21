@@ -2,12 +2,12 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../layouts/Layout';
 import ProtectedRoute from '../components/ProtectedRoute';
+import Home from '../pages/Home';
+import Shop from '../pages/Shop';
+import StoreProducts from '../pages/StoreProducts';
 
-// Lazy load pages
-const Home = lazy(() => import('../pages/Home'));
-const Shop = lazy(() => import('../pages/Shop'));
+// Lazy load remaining pages (main nav pages are eager to prevent blank screen)
 const ProductDetail = lazy(() => import('../pages/ProductDetail'));
-const StoreProducts = lazy(() => import('../pages/StoreProducts'));
 const StoreProductDetail = lazy(() => import('../pages/StoreProductDetail'));
 const Cart = lazy(() => import('../pages/Cart'));
 const Checkout = lazy(() => import('../pages/Checkout'));
