@@ -117,7 +117,17 @@ const VerifyOTP = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-muted/30 p-4">
+            <div className="w-full max-w-md mb-4 flex justify-start">
+                <Button
+                    variant="ghost"
+                    className="hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all rounded-full px-4 group"
+                    onClick={() => navigate("/signup")}
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                    Back to Signup
+                </Button>
+            </div>
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}

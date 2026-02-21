@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/services/api";
 import { Truck, ChevronRight, Package, Eye, Plus, Trash2, MapPin, Check, ArrowLeft } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { addressService } from "@/services/address.service";
 import { useAuth } from "@/modules/user/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { authService } from "@/services/auth.service";
 
 const Account = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout: authLogout } = useAuth();
   const [orders, setOrders] = useState([]);
   const [addresses, setAddresses] = useState([]);
@@ -39,7 +40,7 @@ const Account = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [location.key]);
 
   const handleDeleteAddress = async (id) => {
     try {
@@ -68,8 +69,8 @@ const Account = () => {
 
   return (
     <div className="container py-8">
-      <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate(-1)}>
-        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back
+      <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate("/")}>
+        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Home
       </Button>
       <h1 className="text-3xl font-bold mb-8">My Account</h1>
 

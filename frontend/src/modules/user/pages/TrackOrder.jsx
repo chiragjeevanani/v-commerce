@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Package, MapPin, CreditCard, Calendar, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { api } from "@/services/api";
 const TrackOrder = () => {
     const { orderId: paramOrderId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [orderId, setOrderId] = useState(paramOrderId || "");
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -41,7 +42,7 @@ const TrackOrder = () => {
         if (paramOrderId) {
             fetchOrder(paramOrderId);
         }
-    }, [paramOrderId]);
+    }, [paramOrderId, location.key]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -56,7 +57,7 @@ const TrackOrder = () => {
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate("/account")}
                     className="rounded-full"
                 >
                     <ArrowLeft className="w-5 h-5" />

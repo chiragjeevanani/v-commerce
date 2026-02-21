@@ -91,7 +91,12 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 font-inter">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-muted/30 p-4 font-inter">
+            <div className="w-full max-w-md mb-4 flex justify-start">
+                <Link to="/login" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-colors group">
+                    <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Login
+                </Link>
+            </div>
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}

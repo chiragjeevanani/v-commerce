@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
     Package,
@@ -23,6 +23,7 @@ import { cn } from "@/utils/utils";
 
 const OrderHistory = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -52,7 +53,7 @@ const OrderHistory = () => {
         };
 
         fetchOrders();
-    }, []);
+    }, [location.key]);
 
     const getStatusStyles = (status = "") => {
         switch (status.toLowerCase()) {
@@ -101,10 +102,10 @@ const OrderHistory = () => {
             <Button
                 variant="ghost"
                 className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/account")}
             >
                 <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                Back
+                Back to Account
             </Button>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">

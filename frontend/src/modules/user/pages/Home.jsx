@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight, LayoutGrid, Zap, Search } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { API_BASE_URL } from "@/lib/axios";
 import { productsService } from "@/modules/admin/services/products.service";
 import ProductCard from "@/modules/user/components/ProductCard";
@@ -106,7 +106,7 @@ const Home = () => {
 
     fetchData();
     return () => { isMounted = false; };
-  }, []);
+  }, [location.key]);
 
   useEffect(() => {
     if (banners.length === 0) return;

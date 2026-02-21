@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,6 +25,7 @@ const steps = [
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { cart, cartTotal, clearCart } = useCart();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -76,7 +77,7 @@ const Checkout = () => {
       }
     };
     fetchAddresses();
-  }, [cart, navigate]);
+  }, [cart, navigate, location.key]);
 
   // Fetch shipping estimate when cart or address changes
   useEffect(() => {

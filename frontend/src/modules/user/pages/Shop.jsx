@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Filter, SlidersHorizontal, Loader2, ArrowLeft, Search } from "lucide-react";
 import { productsService } from "@/modules/admin/services/products.service";
 import ProductCard from "@/modules/user/components/ProductCard";
@@ -28,6 +28,7 @@ import SkeletonCard from "@/modules/user/components/SkeletonCard";
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
 
   useEffect(() => {
@@ -212,7 +213,7 @@ const Shop = () => {
     setHasMore(true);
     loadingRef.current = false;
     fetchProducts(1, true);
-  }, [searchParams]);
+  }, [searchParams, location.key]);
 
   // Infinite scroll with IntersectionObserver
   const loadMoreProducts = useCallback(async () => {

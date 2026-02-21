@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
     ArrowLeft, Package, MapPin, CreditCard, Calendar,
@@ -16,6 +16,7 @@ import { cn } from "@/utils/utils";
 const OrderDetails = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -37,7 +38,7 @@ const OrderDetails = () => {
             }
         };
         fetchOrder();
-    }, [orderId]);
+    }, [orderId, location.key]);
 
     const getStatusStyles = (status) => {
         switch (status.toLowerCase()) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Filter, Loader2, ArrowLeft, Search } from "lucide-react";
 import { storeProductService } from "@/modules/admin/services/storeProduct.service";
 import { categoryService } from "@/modules/admin/services/category.service";
@@ -29,6 +29,7 @@ import SkeletonCard from "@/modules/user/components/SkeletonCard";
 const StoreProducts = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
 
     useEffect(() => {
@@ -64,7 +65,7 @@ const StoreProducts = () => {
 
     useEffect(() => {
         fetchCategories();
-    }, []);
+    }, [location.key]);
 
     useEffect(() => {
         if (selectedCategories.length > 0) {
@@ -78,7 +79,7 @@ const StoreProducts = () => {
     useEffect(() => {
         setPage(1);
         fetchProducts(1, true);
-    }, [searchParams]);
+    }, [searchParams, location.key]);
 
     useEffect(() => {
         if (page > 1) {

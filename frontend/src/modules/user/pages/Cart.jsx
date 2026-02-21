@@ -14,25 +14,30 @@ const Cart = () => {
 
   if (cart.length === 0) {
     return (
-      <div className="container py-16 text-center space-y-6">
-        <div className="flex justify-center">
-          <div className="bg-muted p-6 rounded-full">
-            <ShoppingCart className="h-12 w-12 text-muted-foreground" />
+      <div className="container py-8">
+        <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate("/")}>
+          <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Home
+        </Button>
+        <div className="py-16 text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="bg-muted p-6 rounded-full">
+              <ShoppingCart className="h-12 w-12 text-muted-foreground" />
+            </div>
           </div>
+          <h2 className="text-2xl font-bold">Your cart is empty</h2>
+          <p className="text-muted-foreground max-w-sm mx-auto">
+            Looks like you haven't added anything to your cart yet.
+          </p>
+          <Button onClick={() => navigate("/shop")}>Start Shopping</Button>
         </div>
-        <h2 className="text-2xl font-bold">Your cart is empty</h2>
-        <p className="text-muted-foreground max-w-sm mx-auto">
-          Looks like you haven't added anything to your cart yet.
-        </p>
-        <Button onClick={() => navigate("/shop")}>Start Shopping</Button>
       </div>
     );
   }
 
   return (
     <div className="container py-8">
-      <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate(-1)}>
-        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back
+      <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate("/shop")}>
+        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Shop
       </Button>
       <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
 

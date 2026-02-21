@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ShoppingCart, CreditCard, ArrowLeft, Info } from "lucide-react";
 import { productsService } from "@/modules/admin/services/products.service";
@@ -15,6 +15,7 @@ import ProductCard from "@/modules/user/components/ProductCard";
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart, cartCount } = useCart();
   const { toast } = useToast();
   const [product, setProduct] = useState(null);
@@ -171,7 +172,7 @@ const ProductDetail = () => {
     };
     fetchProduct();
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [id, location.key]);
 
   const handleQuantityChange = (type) => {
     if (type === "dec" && quantity > 1) setQuantity(quantity - 1);
@@ -224,11 +225,17 @@ const ProductDetail = () => {
     <div className="min-h-screen pb-32">
       {/* Mobile-Only Immersive Hero */}
       <div className="md:hidden">
-        {/* Floating Home Link */}
+        {/* Back Button */}
         <div className="absolute top-6 left-6 z-50">
-          <Link to="/" className="text-2xl font-logo tracking-wider text-white mix-blend-difference hover:opacity-80 transition-opacity">
-            V-Commerce
-          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full w-12 h-12 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 border-0"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
         </div>
 
         {/* Hero Image Section - Swipe & Autoscroll */}
