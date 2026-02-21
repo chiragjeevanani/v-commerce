@@ -1,8 +1,9 @@
 import axios from "axios";
 
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://api.vcommerce.shop/api/v1";
+
 const apiClient = axios.create({
-  baseURL: 'https://api.vcommerce.shop/api/v1',
-//   baseURL: "http://localhost:3000/api/v1",
+  baseURL: API_BASE_URL,
 });
 
 // Interceptor to add auth token to requests

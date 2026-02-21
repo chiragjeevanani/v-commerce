@@ -7,6 +7,7 @@ import { useAuth } from "@/modules/user/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/utils/utils";
 import { ModeToggle } from "@/modules/user/components/ModeToggle";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -123,9 +124,9 @@ const Navbar = () => {
             <ModeToggle />
 
             <Link to="/cart">
-              <Button variant="ghost" size="icon" className="relative group rounded-full">
+              <Button variant="ghost" size="icon" className={cn("relative group rounded-full", cartCount > 0 && "text-primary ring-2 ring-primary/50 bg-primary/10")}>
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                  <ShoppingCart className="h-5 w-5 group-hover:text-primary transition-colors" />
+                  <ShoppingCart className={cn("h-5 w-5 transition-colors", cartCount > 0 ? "text-primary" : "group-hover:text-primary")} />
                 </motion.div>
                 <AnimatePresence>
                   {cartCount > 0 && (

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, CreditCard, MapPin, Truck } from "lucide-react";
+import { Check, CreditCard, MapPin, Truck, ArrowLeft } from "lucide-react";
 import { useCart } from "@/modules/user/context/CartContext";
 import { api } from "@/services/api";
 import { addressService } from "@/services/address.service";
@@ -345,6 +345,9 @@ const Checkout = () => {
 
   return (
     <div className="container py-8 max-w-4xl min-h-screen">
+      <Button variant="ghost" className="mb-6 -ml-2 hover:bg-transparent hover:text-primary transition-colors group" onClick={() => navigate("/cart")}>
+        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Cart
+      </Button>
       {/* Stepper */}
       <div className="mb-12">
         <div className="flex items-center justify-between relative max-w-2xl mx-auto">

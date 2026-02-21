@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Package, ShoppingBag, Copy, Check, ChevronRight, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,11 @@ const OrderSuccess = () => {
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-12 bg-background relative overflow-hidden">
+      <div className="absolute top-6 left-4 md:left-8 z-20">
+        <Button variant="ghost" className="hover:bg-transparent hover:text-primary transition-colors group" onClick={() => navigate("/")}>
+          <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Home
+        </Button>
+      </div>
       {/* Background Decorative Elements */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-full pointer-events-none opacity-20">
         <div className="absolute top-10 left-10 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-pulse" />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ShoppingCart, CreditCard, ArrowLeft, Info } from "lucide-react";
@@ -14,7 +14,7 @@ import StoreProductCard from "@/modules/user/components/StoreProductCard";
 const StoreProductDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addToCart } = useCart();
+    const { addToCart, cartCount } = useCart();
     const { toast } = useToast();
     const [product, setProduct] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
@@ -23,6 +23,13 @@ const StoreProductDetail = () => {
     const [quantity, setQuantity] = useState(1);
     const [activeImage, setActiveImage] = useState(0);
     const [activeTab, setActiveTab] = useState("description");
+    const [hasAddedToCartOnThisPage, setHasAddedToCartOnThisPage] = useState(false);
+    const touchStartX = useRef(0);
+    const swipeDirection = useRef(0); // -1 = prev, 1 = next
+
+    const imagesCount = product
+        ? (Array.isArray(product.images) ? product.images.length : (product.images ? 1 : 1))
+        : 0;
 
     useEffect(() => {
         fetchProduct();
@@ -35,6 +42,16 @@ const StoreProductDetail = () => {
             fetchRecommendedProducts();
         }
     }, [product]);
+
+    // Autoscroll images every 4 seconds
+    useEffect(() => {
+        if (imagesCount <= 1) return;
+        const timer = setInterval(() => {
+            swipeDirection.current = 1;
+            setActiveImage((prev) => (prev + 1) % imagesCount);
+        }, 4000);
+        return () => clearInterval(timer);
+    }, [imagesCount]);
 
     const fetchProduct = async () => {
         setLoading(true);
@@ -124,11 +141,7 @@ const StoreProductDetail = () => {
             stock: product.stock,
             isStoreProduct: true,
         });
-
-        toast({
-            title: "Added to cart",
-            description: `${quantity} x ${product.name} added to your cart.`,
-        });
+        setHasAddedToCartOnThisPage(true);
     };
 
     const handleBuyNow = () => {
@@ -168,7 +181,43 @@ const StoreProductDetail = () => {
         );
     }
 
-    const images = product.images || [];
+    const images = Array.isArray(product.images) ? product.images : (product.images ? [product.images] : ["/placeholder-product.png"]);
+
+    const handleTouchStart = (e) => {
+        touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = (e) => {
+        if (imagesCount <= 1) return;
+        const touchEndX = e.changedTouches[0].clientX;
+        const diff = touchStartX.current - touchEndX;
+        if (Math.abs(diff) > 40) {
+            swipeDirection.current = diff > 0 ? 1 : -1;
+            setActiveImage((prev) => {
+                if (diff > 0) return (prev + 1) % imagesCount;
+                return (prev - 1 + imagesCount) % imagesCount;
+            });
+        }
+    };
+
+    const handlePrevImage = () => {
+        if (imagesCount <= 1) return;
+        swipeDirection.current = -1;
+        setActiveImage((prev) => (prev - 1 + imagesCount) % imagesCount);
+    };
+
+    const handleNextImage = () => {
+        if (imagesCount <= 1) return;
+        swipeDirection.current = 1;
+        setActiveImage((prev) => (prev + 1) % imagesCount);
+    };
+
+    const slideVariants = {
+        enter: (dir) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0.8 }),
+        center: { x: 0, opacity: 1 },
+        exit: (dir) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0.8 }),
+    };
+
     const isOutOfStock = product.trackInventory && product.stock <= 0;
     const maxQuantity = product.trackInventory ? product.stock : 999;
     const discountPercentage = product.compareAtPrice && product.compareAtPrice > product.price
@@ -186,17 +235,47 @@ const StoreProductDetail = () => {
                     </Link>
                 </div>
 
-                {/* Hero Image Section */}
-                <section className="relative w-full h-[70vh] overflow-hidden bg-card">
-                    <motion.img
-                        key={activeImage}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.8 }}
-                        src={images[activeImage] || "/placeholder-product.png"}
-                        alt={product.name}
-                        className="h-full w-full object-cover"
-                    />
+                {/* Hero Image Section - Swipe & Autoscroll */}
+                <section
+                    className="relative w-full h-[70vh] overflow-hidden bg-card touch-pan-y"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    <AnimatePresence mode="wait" initial={false} custom={swipeDirection.current}>
+                        <motion.img
+                            key={activeImage}
+                            custom={swipeDirection.current}
+                            variants={slideVariants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            transition={{ type: "tween", ease: "easeOut", duration: 0.35 }}
+                            src={images[activeImage] || "/placeholder-product.png"}
+                            alt={product.name}
+                            className="absolute inset-0 h-full w-full object-cover select-none"
+                            draggable={false}
+                        />
+                    </AnimatePresence>
+                    {imagesCount > 1 && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={handlePrevImage}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 z-10"
+                                aria-label="Previous image"
+                            >
+                                <span className="text-2xl">‹</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleNextImage}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 z-10"
+                                aria-label="Next image"
+                            >
+                                <span className="text-2xl">›</span>
+                            </button>
+                        </>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
 
                     {/* Floating Badges */}
@@ -241,7 +320,10 @@ const StoreProductDetail = () => {
                                                     ? "border-primary shadow-md scale-105"
                                                     : "border-muted hover:border-primary/50"
                                             }`}
-                                            onClick={() => setActiveImage(i)}
+                                            onClick={() => {
+                                                swipeDirection.current = i > activeImage ? 1 : -1;
+                                                setActiveImage(i);
+                                            }}
                                         >
                                             <img src={img} alt="" className="h-full w-full object-cover" />
                                         </button>
@@ -289,11 +371,41 @@ const StoreProductDetail = () => {
                             layoutId="product-image"
                             className="aspect-square overflow-hidden rounded-[40px] border bg-muted shadow-lg group relative"
                         >
-                            <img
-                                src={images[activeImage] || "/placeholder-product.png"}
-                                alt={product.name}
-                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
+                            <AnimatePresence mode="wait" initial={false} custom={swipeDirection.current}>
+                                <motion.img
+                                    key={activeImage}
+                                    custom={swipeDirection.current}
+                                    variants={slideVariants}
+                                    initial="enter"
+                                    animate="center"
+                                    exit="exit"
+                                    transition={{ type: "tween", ease: "easeOut", duration: 0.35 }}
+                                    src={images[activeImage] || "/placeholder-product.png"}
+                                    alt={product.name}
+                                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105 select-none"
+                                    draggable={false}
+                                />
+                            </AnimatePresence>
+                            {imagesCount > 1 && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={handlePrevImage}
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        aria-label="Previous image"
+                                    >
+                                        <span className="text-2xl font-bold">‹</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleNextImage}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        aria-label="Next image"
+                                    >
+                                        <span className="text-2xl font-bold">›</span>
+                                    </button>
+                                </>
+                            )}
                             {discountPercentage > 0 && (
                                 <div className="absolute top-8 left-8">
                                     <Badge className="bg-primary text-primary-foreground px-6 py-2 rounded-full font-black text-sm shadow-xl">
@@ -312,7 +424,10 @@ const StoreProductDetail = () => {
                                                 ? "border-primary shadow-lg scale-105"
                                                 : "border-border hover:border-primary/50"
                                         }`}
-                                        onClick={() => setActiveImage(i)}
+                                        onClick={() => {
+                                            swipeDirection.current = i > activeImage ? 1 : -1;
+                                            setActiveImage(i);
+                                        }}
                                     >
                                         <img src={img} alt="" className="h-full w-full object-cover" />
                                     </button>
@@ -600,8 +715,19 @@ const StoreProductDetail = () => {
                     </section>
                 )}
 
-                {/* Mobile Sticky Action Bar */}
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t md:hidden z-50 flex gap-4">
+                {/* Mobile Sticky - Cart icon (only show after add to cart on this page) */}
+                {hasAddedToCartOnThisPage && cartCount > 0 && (
+                    <div className="fixed right-6 bottom-28 md:hidden z-50">
+                        <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl relative shadow-lg border-2 ring-2 ring-primary/50 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20" onClick={() => navigate("/cart")}>
+                            <ShoppingCart className="h-5 w-5" />
+                            <span className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                                {cartCount}
+                            </span>
+                        </Button>
+                    </div>
+                )}
+                {/* Mobile Sticky Action Bar - Buttons only */}
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t md:hidden z-40 flex gap-3">
                     <Button className="flex-1 h-12 font-bold rounded-xl shadow-lg" onClick={handleAddToCart} disabled={isOutOfStock || !product.isActive}>
                         Add to Cart
                     </Button>

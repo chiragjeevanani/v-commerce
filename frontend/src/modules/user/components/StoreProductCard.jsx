@@ -42,10 +42,6 @@ const StoreProductCard = ({ product }) => {
             sku: product.sku,
             isStoreProduct: true, // Flag to identify store products
         });
-        toast({
-            title: "Added to cart",
-            description: `${name} added to your cart.`,
-        });
     };
 
     return (

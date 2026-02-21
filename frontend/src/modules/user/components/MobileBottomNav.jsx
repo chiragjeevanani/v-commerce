@@ -28,17 +28,19 @@ const MobileBottomNav = () => {
       <div className="grid h-full grid-cols-5 mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.path;
+          const hasCartItems = item.badge > 0;
+          const isHighlighted = isActive || hasCartItems;
           return (
             <Link
               key={item.label}
               to={item.path}
               className={cn(
                 "inline-flex flex-col items-center justify-center px-5 hover:bg-muted/50 transition-colors",
-                isActive && "text-primary"
+                isHighlighted && "text-primary"
               )}
             >
-              <div className="relative">
-                <item.icon className={cn("h-6 w-6 mb-1", isActive && "fill-current")} />
+              <div className={cn("relative", hasCartItems && "rounded-full ring-2 ring-primary/40 bg-primary/10")}>
+                <item.icon className={cn("h-6 w-6 mb-1", isHighlighted && "fill-current")} />
                 {item.badge > 0 && (
                   <Badge
                     variant="destructive"

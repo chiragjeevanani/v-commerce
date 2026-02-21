@@ -1,11 +1,18 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { RefreshCcw, PackageCheck, Clock, XCircle, CheckCircle, AlertCircle, Mail } from "lucide-react";
-import { Link } from "react-router-dom";
+import { RefreshCcw, PackageCheck, Clock, XCircle, CheckCircle, AlertCircle, Mail, ArrowLeft } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const RefundPolicy = () => {
+    const navigate = useNavigate();
     return (
         <div className="min-h-screen bg-background">
+            <div className="container pt-6 pb-2">
+                <Button variant="ghost" className="hover:bg-transparent hover:text-primary transition-colors group" onClick={() => navigate("/")}>
+                    <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Home
+                </Button>
+            </div>
             {/* Hero Section */}
             <section className="relative bg-gradient-to-br from-primary/10 via-background to-background py-16 md:py-24 border-b">
                 <div className="container">

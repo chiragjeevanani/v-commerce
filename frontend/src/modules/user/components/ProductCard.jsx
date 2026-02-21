@@ -6,11 +6,9 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/modules/user/context/CartContext";
-import { useToast } from "@/hooks/use-toast";
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
-  const { toast } = useToast();
 
   // Normalize CJ data for consistent UI
   const name = product.productNameEn || product.name;
@@ -50,10 +48,6 @@ const ProductCard = ({ product }) => {
   const handleAddToCart = (e) => {
     if (e) e.preventDefault();
     addToCart({ ...product, id: pid, name, image }); // Ensure consistent structure in cart
-    toast({
-      title: "Added to cart",
-      description: `${name} added to your cart.`,
-    });
   };
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Filter, Loader2 } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Filter, Loader2, ArrowLeft, Search } from "lucide-react";
 import { storeProductService } from "@/modules/admin/services/storeProduct.service";
 import { categoryService } from "@/modules/admin/services/category.service";
 import StoreProductCard from "@/modules/user/components/StoreProductCard";
@@ -28,6 +28,23 @@ import SkeletonCard from "@/modules/user/components/SkeletonCard";
 
 const StoreProducts = () => {
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
+
+    useEffect(() => {
+        setSearchInput(searchParams.get("search") || "");
+    }, [searchParams]);
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        const newParams = new URLSearchParams(searchParams);
+        if (searchInput.trim()) {
+            newParams.set("search", searchInput.trim());
+        } else {
+            newParams.delete("search");
+        }
+        setSearchParams(newParams);
+    };
     const { toast } = useToast();
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -307,6 +324,9 @@ const StoreProducts = () => {
 
     return (
         <div className="container py-8">
+            <Button variant="ghost" className="mb-6 -ml-2 hover:bg-transparent hover:text-primary transition-colors group" onClick={() => navigate("/")}>
+                <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Home
+            </Button>
             <div className="flex flex-col md:flex-row gap-8">
                 {/* Desktop Sidebar */}
                 <div className="hidden md:block w-64 flex-shrink-0 space-y-8">
@@ -315,6 +335,18 @@ const StoreProducts = () => {
 
                 {/* Mobile Filter & Content */}
                 <div className="flex-1">
+                    <form onSubmit={handleSearch} className="mb-6">
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <input
+                                type="search"
+                                placeholder="Search store products..."
+                                className="w-full md:max-w-sm h-11 pl-11 pr-4 rounded-xl bg-muted/50 border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                            />
+                        </div>
+                    </form>
                     <div className="flex items-center justify-between mb-6">
                         <h1 className="text-3xl font-bold">Store Products</h1>
                         <div className="flex items-center gap-2">

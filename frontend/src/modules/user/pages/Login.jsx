@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,7 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({ email: '', password: '' });
+    const isSubmittingRef = useRef(false);
 
     const { login } = useAuth();
     const { toast } = useToast();
@@ -31,6 +32,8 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
         setIsLoading(true);
 
         try {
@@ -48,6 +51,7 @@ const Login = () => {
             });
         } finally {
             setIsLoading(false);
+            isSubmittingRef.current = false;
         }
     };
 

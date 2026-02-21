@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { cartService } from "../../../services/cart.service";
-import { authService } from "../../../services/auth.service";
+import { useAuth } from "./AuthContext";
 
 const CartContext = createContext();
 
@@ -9,27 +9,12 @@ export const useCart = () => useContext(CartContext);
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Sync authentication state from token
+  // Load cart when auth is ready and when auth status changes
   useEffect(() => {
-    const checkToken = () => {
-      setIsAuthenticated(!!authService.getToken());
-    };
-    checkToken();
+    if (authLoading) return;
 
-    // Simple way to listen to storage changes for token (optional enhancement)
-    window.addEventListener('storage', checkToken);
-    return () => window.removeEventListener('storage', checkToken);
-  }, []);
-
-  // Sync auth state if login/logout happens in the app
-  useEffect(() => {
-    setIsAuthenticated(!!authService.getToken());
-  }, [authService.getCurrentUser()]);
-
-  // Load cart on mount or when auth status changes
-  useEffect(() => {
     const initCart = async () => {
       setLoading(true);
       try {
@@ -65,7 +50,7 @@ export const CartProvider = ({ children }) => {
     };
 
     initCart();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading]);
 
   // Save guest cart to local storage whenever it changes
   useEffect(() => {
