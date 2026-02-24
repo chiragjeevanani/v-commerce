@@ -285,9 +285,30 @@ const OrderDetail = () => {
                         <CardContent className="p-4 space-y-4">
                             <div className="flex justify-between items-center bg-muted/30 p-3 rounded-lg border">
                                 <span className="text-sm font-medium">{order.paymentMethod || "Card"}</span>
-                                <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Paid</Badge>
+                                {order.isPartialPayment ? (
+                                    <Badge variant={order.remainingPaymentStatus === "paid" ? "secondary" : "outline"} className={order.remainingPaymentStatus === "paid" ? "bg-green-100 text-green-700 border-green-200" : "bg-amber-100 text-amber-800 border-amber-200"}>
+                                        {order.remainingPaymentStatus === "paid" ? "Fully paid" : "Partial (remaining due)"}
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Paid</Badge>
+                                )}
                             </div>
-
+                            {order.isPartialPayment && (
+                                <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 p-3 space-y-1 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Paid (first)</span>
+                                        <span>₹{(order.amountPaid ?? 500).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Remaining</span>
+                                        <span className="font-medium">₹{(order.remainingAmount ?? 0).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs pt-1">
+                                        <span className="text-muted-foreground">Status</span>
+                                        <span>{order.remainingPaymentStatus === "paid" ? "Paid" : "Pending"}</span>
+                                    </div>
+                                </div>
+                            )}
                             <div className="space-y-2 pt-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Subtotal</span>

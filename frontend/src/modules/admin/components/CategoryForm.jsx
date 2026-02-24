@@ -20,6 +20,7 @@ const CategoryForm = ({ category, onSuccess, onCancel }) => {
         name: category?.name || '',
         description: category?.description || '',
         isActive: category?.isActive !== undefined ? category.isActive : true,
+        allowPartialPayment: category?.allowPartialPayment === true,
     });
 
     const handleChange = (e) => {
@@ -68,6 +69,7 @@ const CategoryForm = ({ category, onSuccess, onCancel }) => {
             data.append('name', formData.name);
             data.append('description', formData.description);
             data.append('isActive', formData.isActive);
+            data.append('allowPartialPayment', formData.allowPartialPayment);
 
             if (selectedFile) {
                 data.append('image', selectedFile);
@@ -163,6 +165,20 @@ const CategoryForm = ({ category, onSuccess, onCancel }) => {
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
                         Active (visible to customers)
+                    </label>
+                </div>
+                <div className="flex items-center space-x-2 h-10">
+                    <Checkbox
+                        id="allowPartialPayment"
+                        name="allowPartialPayment"
+                        checked={formData.allowPartialPayment}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, allowPartialPayment: checked }))}
+                    />
+                    <label
+                        htmlFor="allowPartialPayment"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                        Allow partial payment (products in this category can offer partial payment)
                     </label>
                 </div>
             </div>

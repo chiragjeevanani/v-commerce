@@ -170,11 +170,23 @@ const Orders = () => {
                                                 <td className="px-6 py-4 text-xs whitespace-nowrap">
                                                     {new Date(order.date || order.createdAt).toLocaleDateString()}
                                                 </td>
-                                                <td className="px-6 py-4 font-bold text-primary">
-                                                    ₹{(order.total || order.totalAmount || 0).toFixed(2)}
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-primary">₹{(order.total || order.totalAmount || 0).toFixed(2)}</div>
+                                                    {order.isPartialPayment && (
+                                                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                            {order.remainingPaymentStatus === "paid" ? "Fully paid" : `₹${(order.remainingAmount ?? 0).toFixed(0)} due`}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <StatusBadge status={order.status} />
+                                                    <div className="flex flex-wrap items-center gap-1">
+                                                        <StatusBadge status={order.status} />
+                                                        {order.isPartialPayment && (
+                                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                                                                Partial
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                     <DropdownMenu>

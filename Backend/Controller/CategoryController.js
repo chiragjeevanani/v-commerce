@@ -99,7 +99,7 @@ export const getCategoryById = async (req, res) => {
 // ================= CREATE CATEGORY (ADMIN) =================
 export const createCategory = async (req, res) => {
     try {
-        const { name, description, isActive } = req.body;
+        const { name, description, isActive, allowPartialPayment } = req.body;
         const imageFile = req.file;
 
         if (!name || !description || !imageFile) {
@@ -144,7 +144,8 @@ export const createCategory = async (req, res) => {
             name: name.trim(),
             description: description.trim(),
             image: imageUrl,
-            isActive: isActive !== undefined ? isActive : true,
+            isActive: isActive !== undefined ? (isActive === true || isActive === 'true') : true,
+            allowPartialPayment: allowPartialPayment !== undefined ? (allowPartialPayment === true || allowPartialPayment === 'true') : false,
         });
 
         res.status(201).json({
@@ -167,7 +168,7 @@ export const createCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, isActive } = req.body;
+        const { name, description, isActive, allowPartialPayment } = req.body;
         const imageFile = req.file;
 
         const category = await Category.findById(id);
@@ -214,7 +215,8 @@ export const updateCategory = async (req, res) => {
 
         if (name) category.name = name.trim();
         if (description) category.description = description.trim();
-        if (isActive !== undefined) category.isActive = isActive;
+        if (isActive !== undefined) category.isActive = isActive === true || isActive === 'true';
+        if (allowPartialPayment !== undefined) category.allowPartialPayment = allowPartialPayment === true || allowPartialPayment === 'true';
 
         await category.save();
 

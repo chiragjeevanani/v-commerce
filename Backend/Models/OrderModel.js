@@ -54,7 +54,24 @@ const orderSchema = new mongoose.Schema({
     },
     razorpayPaymentId: {
         type: String
-    }
+    },
+    isPartialPayment: {
+        type: Boolean,
+        default: false
+    },
+    amountPaid: {
+        type: Number
+    },
+    remainingAmount: {
+        type: Number
+    },
+    remainingPaymentStatus: {
+        type: String,
+        enum: ["pending", "paid"],
+        default: "pending"
+    },
+    remainingRazorpayOrderId: { type: String },
+    remainingRazorpayPaymentId: { type: String }
 }, { timestamps: true });
 
 const Order = mongoose.model("Order", orderSchema);

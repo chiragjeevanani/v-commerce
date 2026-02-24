@@ -225,15 +225,22 @@ const OrderHistory = () => {
                                                     </h3>
                                                 </div>
 
-                                                <Badge
-                                                    className={cn(
-                                                        "flex items-center gap-1 px-2 py-0.5 border-none",
-                                                        getStatusStyles(order.status)
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <Badge
+                                                        className={cn(
+                                                            "flex items-center gap-1 px-2 py-0.5 border-none",
+                                                            getStatusStyles(order.status)
+                                                        )}
+                                                    >
+                                                        {getStatusIcon(order.status)}
+                                                        {order.status}
+                                                    </Badge>
+                                                    {order.isPartialPayment && (
+                                                        <Badge variant="outline" className="text-[10px] font-medium">
+                                                            {order.remainingPaymentStatus === "paid" ? "Fully paid" : `₹${(order.remainingAmount ?? 0).toFixed(0)} due`}
+                                                        </Badge>
                                                     )}
-                                                >
-                                                    {getStatusIcon(order.status)}
-                                                    {order.status}
-                                                </Badge>
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center justify-between mt-auto">

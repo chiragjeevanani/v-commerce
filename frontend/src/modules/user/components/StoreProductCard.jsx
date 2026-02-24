@@ -40,7 +40,8 @@ const StoreProductCard = ({ product }) => {
             quantity: 1,
             category: categoryName,
             sku: product.sku,
-            isStoreProduct: true, // Flag to identify store products
+            isStoreProduct: true,
+            allowPartialPayment: product.allowPartialPayment === true || product.categoryId?.allowPartialPayment === true,
         });
     };
 

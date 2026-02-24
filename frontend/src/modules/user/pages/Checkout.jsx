@@ -31,6 +31,9 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const isOrderPlaced = useRef(false);
   const [paymentMethod, setPaymentMethod] = useState("online");
+  const [usePartialPayment, setUsePartialPayment] = useState(false);
+  const cartHasPartialPayment = cart.some((item) => item.allowPartialPayment === true);
+  const PARTIAL_PAYMENT_AMOUNT = 500;
   const { user } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -55,6 +58,10 @@ const Checkout = () => {
   const [shippingLoading, setShippingLoading] = useState(false);
   const [deliveryEstimate, setDeliveryEstimate] = useState("");
   const [newAddressData, setNewAddressData] = useState(null);
+
+  const shippingFee = selectedShipping?.fee ?? selectedShipping?.price ?? 0;
+  const orderTotal = (cartTotal * 1.1) + shippingFee;
+  const showPartialOption = cartHasPartialPayment && orderTotal > 500;
 
   useEffect(() => {
     if (cart.length === 0 && !isOrderPlaced.current) {
@@ -220,7 +227,7 @@ const Checkout = () => {
         return;
       }
 
-      const totalAmount = (cartTotal * 1.1) + (selectedShipping?.fee || 0);
+      const totalAmount = (cartTotal * 1.1) + shippingFee;
 
       // Branching logic for Payment Method
       if (paymentMethod === 'cod') {
@@ -263,8 +270,9 @@ const Checkout = () => {
           return;
         }
 
+        const amountToPay = usePartialPayment ? PARTIAL_PAYMENT_AMOUNT : totalAmount;
         // 1. Create Razorpay Order on Backend
-        const rzpOrderRes = await api.createRazorpayOrder(totalAmount);
+        const rzpOrderRes = await api.createRazorpayOrder(amountToPay);
 
         if (!rzpOrderRes.success) {
           throw new Error(rzpOrderRes.message || "Failed to create payment order");
@@ -291,7 +299,10 @@ const Checkout = () => {
                 orderData: {
                   items: cart,
                   total: totalAmount,
-                  shipping: shippingAddress
+                  shipping: shippingAddress,
+                  isPartialPayment: usePartialPayment,
+                  amountPaid: amountToPay,
+                  totalOrderAmount: totalAmount
                 }
               });
 
@@ -463,44 +474,76 @@ const Checkout = () => {
                     exit={{ opacity: 0, x: -20 }}
                     className="space-y-8"
                   >
-                    <div className="flex justify-center py-4">
-                      {[
-                        { id: "online", name: "Online Payment", icon: "💳", disabled: false },
-                      ].map((method) => (
-                        <button
-                          key={method.id}
-                          type="button"
-                          onClick={() => !method.disabled && setPaymentMethod(method.id)}
-                          disabled={method.disabled}
-                          className={`w-full max-w-[280px] p-8 rounded-[32px] border-2 flex flex-col items-center gap-4 transition-all relative ${paymentMethod === method.id
-                            ? "border-primary bg-primary/5 shadow-[0_0_25px_rgba(var(--primary-rgb),0.1)] scale-105"
-                            : "border-border hover:border-primary/50"
-                            } ${method.disabled ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
-                        >
-                          <span className="text-4xl">{method.icon}</span>
-                          <span className="font-black text-xs uppercase tracking-[0.2em]">{method.name}</span>
-                          {paymentMethod === method.id && (
-                            <motion.div layoutId="active" className="h-2 w-2 rounded-full bg-primary mt-auto" />
-                          )}
-                        </button>
-                      ))}
+                    <div className="space-y-3">
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Select payment method</p>
+                      <div className="flex justify-center py-2">
+                        {[
+                          { id: "online", name: "Online Payment", icon: "💳", disabled: false },
+                        ].map((method) => (
+                          <button
+                            key={method.id}
+                            type="button"
+                            onClick={() => !method.disabled && setPaymentMethod(method.id)}
+                            disabled={method.disabled}
+                            className={`w-full max-w-[300px] p-6 sm:p-8 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all duration-200 relative ${paymentMethod === method.id
+                              ? "border-primary bg-primary/5 shadow-[0_0_30px_rgba(var(--primary-rgb),0.15)]"
+                              : "border-border hover:border-primary/40"
+                              } ${method.disabled ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
+                          >
+                            <span className="text-3xl sm:text-4xl">{method.icon}</span>
+                            <span className="font-bold text-sm uppercase tracking-wider">{method.name}</span>
+                            {paymentMethod === method.id && (
+                              <motion.div layoutId="active" className="absolute bottom-4 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-primary" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="pt-6 border-t border-dashed">
+                    <div className="pt-8 border-t border-border/60">
                       <AnimatePresence mode="wait">
                         {paymentMethod === "online" && (
                           <motion.div
                             key="online-info"
-                            initial={{ opacity: 0, y: 10 }}
+                            initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="p-8 rounded-[40px] bg-primary/5 flex flex-col items-center text-center space-y-4 border border-primary/10"
+                            exit={{ opacity: 0, y: -8 }}
+                            className="space-y-6"
                           >
-                            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl">💳</div>
-                            <div className="space-y-2">
-                              <h4 className="font-black text-xl">Secure Online Payment</h4>
-                              <p className="text-sm text-muted-foreground">Pay securely using Cards, NetBanking, UPI, or Wallets via Razorpay.</p>
-                            </div>
+                           
+                            {showPartialOption && (
+                              <div className="space-y-4">
+                                <h4 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">Choose payment option</h4>
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => setUsePartialPayment(false)}
+                                    className={`flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200 ${!usePartialPayment ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-primary/20 hover:bg-muted/30'}`}
+                                  >
+                                    <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${!usePartialPayment ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                                      {!usePartialPayment && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
+                                    </div>
+                                    <div>
+                                      <span className="font-bold text-sm block">Full Payment</span>
+                                      <span className="text-xs text-muted-foreground mt-0.5 block">Pay total ₹{orderTotal.toFixed(0)} now</span>
+                                    </div>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setUsePartialPayment(true)}
+                                    className={`flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200 ${usePartialPayment ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-primary/20 hover:bg-muted/30'}`}
+                                  >
+                                    <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${usePartialPayment ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                                      {usePartialPayment && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
+                                    </div>
+                                    <div>
+                                      <span className="font-bold text-sm block">Partial Payment</span>
+                                      <span className="text-xs text-muted-foreground mt-0.5 block">Pay ₹500 now, rest later</span>
+                                    </div>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -540,7 +583,9 @@ const Checkout = () => {
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{paymentMethod === 'online' ? '💳' : '💵'}</span>
                           <p className="text-sm font-black uppercase tracking-widest">
-                            {paymentMethod === 'online' ? 'Online Payment' : 'Cash on Delivery'}
+                            {paymentMethod === 'online'
+                              ? (usePartialPayment ? `Online Payment (₹500 now)` : 'Online Payment (Full)')
+                              : 'Cash on Delivery'}
                           </p>
                         </div>
                       </div>
@@ -588,29 +633,31 @@ const Checkout = () => {
         </div>
 
         <div className="lg:col-span-1">
-          <Card className="sticky top-24 border-none shadow-xl bg-card rounded-3xl overflow-hidden">
-            <CardHeader className="bg-primary py-6">
-              <CardTitle className="text-xl font-black text-primary-foreground uppercase tracking-widest">Summary</CardTitle>
+          <Card className="sticky top-24 border-none shadow-xl bg-card rounded-3xl overflow-hidden border border-border/50">
+            <CardHeader className="bg-primary/10 dark:bg-primary/20 py-6 border-b border-border/50">
+              <CardTitle className="text-lg font-bold text-primary uppercase tracking-widest">Summary</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-6 space-y-5">
               <div className="space-y-3 text-sm font-medium">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-black">₹<AnimatedNumber value={cartTotal} decimals={2} /></span>
                 </div>
-                <div className="flex justify-between items-center text-primary">
+                <div className="flex justify-between items-center">
                   <span className="text-muted-foreground font-medium">Shipping Fee</span>
-                  <span className="font-black">
-                    {shippingLoading ? "..." : selectedShipping ? `₹${selectedShipping.fee}` : "Calculated at next step"}
+                  <span className="font-black text-primary">
+                    {shippingLoading ? "..." : selectedShipping
+                      ? (shippingFee === 0 ? "FREE" : `₹${Number(shippingFee).toFixed(2)}`)
+                      : "—"}
                   </span>
                 </div>
                 {deliveryEstimate && (
-                  <div className="flex justify-between items-center text-green-600 bg-green-50 p-2 rounded-lg border border-green-100 mt-2">
+                  <div className="flex justify-between items-center text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 p-3 rounded-xl border border-green-200 dark:border-green-800/50">
                     <div className="flex items-center gap-2">
-                      <Truck className="h-3 w-3" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Est. Delivery</span>
+                      <Truck className="h-4 w-4 shrink-0" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Est. Delivery</span>
                     </div>
-                    <span className="text-[10px] font-black">{deliveryEstimate} Days</span>
+                    <span className="text-xs font-bold">{typeof deliveryEstimate === 'number' ? `${deliveryEstimate} days` : deliveryEstimate}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center border-t pt-2">
@@ -621,10 +668,20 @@ const Checkout = () => {
               <Separator className="opacity-50" />
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Total Amount</span>
-                  <span className="text-3xl font-black text-primary leading-none">
-                    ₹<AnimatedNumber value={(cartTotal * 1.1) + (selectedShipping?.fee || 0)} decimals={2} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
+                    {paymentMethod === 'online' && usePartialPayment ? 'Pay now (₹500)' : 'Total Amount'}
                   </span>
+                  <span className="text-3xl font-black text-primary leading-none">
+                    ₹<AnimatedNumber
+                      value={paymentMethod === 'online' && usePartialPayment
+                        ? 500
+                        : orderTotal}
+                      decimals={2}
+                    />
+                  </span>
+                  {paymentMethod === 'online' && usePartialPayment && (
+                    <span className="text-[10px] text-muted-foreground mt-1">Full order total: ₹<AnimatedNumber value={orderTotal} decimals={2} /></span>
+                  )}
                 </div>
               </div>
             </CardContent>

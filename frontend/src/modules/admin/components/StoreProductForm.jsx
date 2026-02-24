@@ -93,12 +93,16 @@ const StoreProductForm = ({ product, onSuccess, onCancel }) => {
     };
 
     const handleSelectChange = (name, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [name]: value,
-            ...(name === 'categoryId' ? { subcategoryId: '' } : {})
-        }));
+        setFormData(prev => {
+            const next = { ...prev, [name]: value };
+            if (name === 'categoryId') next.subcategoryId = '';
+            return next;
+        });
     };
+
+    // Find selected category and check if it allows partial payment
+    const selectedCategory = categories.find((c) => String(c._id) === String(formData.categoryId));
+    const showPartialPaymentOption = selectedCategory?.allowPartialPayment === true;
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
@@ -164,6 +168,8 @@ const StoreProductForm = ({ product, onSuccess, onCancel }) => {
             data.append('stock', formData.stock);
             data.append('trackInventory', formData.trackInventory);
             data.append('isActive', formData.isActive);
+            // Auto-set allowPartialPayment from category: all products in partial-payment category get it
+            data.append('allowPartialPayment', showPartialPaymentOption);
             if (formData.tags) data.append('tags', formData.tags);
 
             // Append existing images if editing
@@ -333,6 +339,15 @@ const StoreProductForm = ({ product, onSuccess, onCancel }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Partial Payment (auto when category allows) */}
+            {showPartialPaymentOption && (
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                    <p className="text-sm font-medium text-primary">
+                        This category allows partial payment. Customers can pay ₹500 now and the rest later.
+                    </p>
+                </div>
+            )}
 
             {/* Images */}
             <div className="space-y-4">

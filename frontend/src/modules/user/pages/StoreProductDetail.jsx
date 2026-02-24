@@ -141,6 +141,7 @@ const StoreProductDetail = () => {
             sku: product.sku,
             stock: product.stock,
             isStoreProduct: true,
+            allowPartialPayment: product.allowPartialPayment === true,
         });
         setHasAddedToCartOnThisPage(true);
     };
@@ -348,12 +349,15 @@ const StoreProductDetail = () => {
 
                         <div className="flex flex-col">
                             <span className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground mb-2">Pricing</span>
-                            <div className="flex items-baseline gap-4">
+                            <div className="flex items-baseline gap-4 flex-wrap">
                                 <span className="text-3xl font-black text-primary">
                                     ₹<AnimatedNumber value={product.price} />
                                 </span>
                                 {product.compareAtPrice && product.compareAtPrice > product.price && (
                                     <span className="text-xl line-through text-muted-foreground opacity-50">₹{product.compareAtPrice}</span>
+                                )}
+                                {product.allowPartialPayment && (
+                                    <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wide">Pay ₹500 now, rest later</Badge>
                                 )}
                             </div>
                         </div>
@@ -452,7 +456,7 @@ const StoreProductDetail = () => {
                             <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-foreground tracking-tight break-words">
                                 {product.name}
                             </h1>
-                            <div className="flex items-center gap-6 py-4">
+                            <div className="flex items-center gap-6 py-4 flex-wrap">
                                 <div className="flex flex-col">
                                     <span className="text-3xl xl:text-4xl font-black text-primary">
                                         ₹<AnimatedNumber value={product.price} />
@@ -463,6 +467,9 @@ const StoreProductDetail = () => {
                                         </span>
                                     )}
                                 </div>
+                                {product.allowPartialPayment && (
+                                    <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wide">Pay ₹500 now, rest later</Badge>
+                                )}
                             </div>
                         </div>
 

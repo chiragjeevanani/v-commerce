@@ -59,7 +59,7 @@ export const CartProvider = ({ children }) => {
     }
   }, [cart, isAuthenticated]);
 
-  const addToCart = async (product) => {
+    const addToCart = async (product) => {
     // Standardize input for CJ and local data
     const cartItem = {
       pid: product.pid || product.id,
@@ -69,7 +69,8 @@ export const CartProvider = ({ children }) => {
       quantity: product.quantity || 1,
       category: product.categoryName || product.category,
       sku: product.productSku || product.sku,
-      isStoreProduct: product.isStoreProduct || false // Flag for store products
+      isStoreProduct: product.isStoreProduct || false,
+      allowPartialPayment: product.isStoreProduct && (product.allowPartialPayment === true),
     };
 
     if (isAuthenticated) {

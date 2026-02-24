@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
     ArrowLeft, Package, MapPin, CreditCard, Calendar,
-    Download, Printer, AlertCircle, Loader2, ChevronRight
+    Printer, AlertCircle, Loader2, Banknote
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,34 +10,99 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import OrderTimeline from "../components/OrderTimeline";
 import { ordersService } from "@/services/orders.service";
+import { api } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/utils/utils";
 
 const OrderDetails = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { toast } = useToast();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [payRemainingLoading, setPayRemainingLoading] = useState(false);
+    const [razorpayKeyId, setRazorpayKeyId] = useState(null);
+
+    const fetchOrder = async (silent = false) => {
+        if (!silent) setLoading(true);
+        try {
+            const data = await ordersService.getOrderDetails(orderId);
+            if (data) {
+                setOrder(data);
+            } else if (!silent) {
+                setError("Order not found.");
+            }
+        } catch (err) {
+            if (!silent) setError("Failed to fetch order details.");
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchOrder = async () => {
-            setLoading(true);
-            try {
-                const data = await ordersService.getOrderDetails(orderId);
-                if (data) {
-                    setOrder(data);
-                } else {
-                    setError("Order not found.");
-                }
-            } catch (err) {
-                setError("Failed to fetch order details.");
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchOrder();
     }, [orderId, location.key]);
+
+    useEffect(() => {
+        if (!order?.isPartialPayment || order?.remainingPaymentStatus === "paid") return;
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        document.body.appendChild(script);
+        api.getRazorpayPublicKey().then((keyData) => {
+            if (keyData.success && keyData.keyId) setRazorpayKeyId(keyData.keyId);
+        }).catch(() => {});
+    }, [order?.isPartialPayment, order?.remainingPaymentStatus]);
+
+    const handlePayRemaining = async () => {
+        if (!order?.remainingAmount || order.remainingPaymentStatus === "paid" || !razorpayKeyId) return;
+        setPayRemainingLoading(true);
+        try {
+            const res = await api.createRemainingPaymentOrder(order.id || order._id, order.remainingAmount);
+            if (!res.success || !res.order) throw new Error(res.message || "Failed to create payment");
+            const options = {
+                key: razorpayKeyId,
+                amount: res.order.amount,
+                currency: res.order.currency || "INR",
+                name: "V-Commerce",
+                description: "Remaining amount for order",
+                order_id: res.order.id,
+                handler: async function (response) {
+                    setPayRemainingLoading(true);
+                    try {
+                        const verifyRes = await api.verifyRemainingPayment({
+                            orderId: order.id || order._id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                        });
+                        if (verifyRes.success) {
+                            toast({ title: "Payment successful", description: "Remaining amount paid." });
+                            fetchOrder(true);
+                        } else {
+                            toast({ title: "Verification failed", description: verifyRes.message, variant: "destructive" });
+                        }
+                    } catch (err) {
+                        toast({ title: "Error", description: err.message, variant: "destructive" });
+                    } finally {
+                        setPayRemainingLoading(false);
+                    }
+                },
+                theme: { color: "#000000" },
+            };
+            const rzp = new window.Razorpay(options);
+            rzp.on("payment.failed", () => {
+                toast({ title: "Payment failed", description: "Please try again.", variant: "destructive" });
+                setPayRemainingLoading(false);
+            });
+            rzp.open();
+        } catch (err) {
+            toast({ title: "Error", description: err.message || "Could not start payment", variant: "destructive" });
+        }
+        setPayRemainingLoading(false);
+    };
 
     const getStatusStyles = (status) => {
         switch (status.toLowerCase()) {
@@ -187,9 +251,38 @@ const OrderDetails = () => {
                             <CardTitle className="text-lg">Order Summary</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {order.isPartialPayment && (
+                                <>
+                                    <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 space-y-2">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">Partial Payment</p>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Paid (first)</span>
+                                            <span>₹{(order.amountPaid ?? 500).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Remaining</span>
+                                            <span className="font-bold">₹{(order.remainingAmount ?? 0).toFixed(2)}</span>
+                                        </div>
+                                        {order.remainingPaymentStatus === "paid" ? (
+                                            <Badge className="bg-green-600 text-white">Remaining paid</Badge>
+                                        ) : (
+                                            <Button
+                                                size="sm"
+                                                className="w-full mt-2 gap-2"
+                                                onClick={handlePayRemaining}
+                                                disabled={payRemainingLoading || !razorpayKeyId}
+                                            >
+                                                {payRemainingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Banknote className="w-4 h-4" />}
+                                                Pay remaining ₹{(order.remainingAmount ?? 0).toFixed(0)}
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <Separator />
+                                </>
+                            )}
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span>₹{order.total.toFixed(2)}</span>
+                                <span>₹{(order.total ?? order.totalAmount).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Shipping</span>
@@ -202,7 +295,7 @@ const OrderDetails = () => {
                             <Separator />
                             <div className="flex justify-between items-center text-lg font-bold">
                                 <span>Total</span>
-                                <span className="text-primary">₹{order.total.toFixed(2)}</span>
+                                <span className="text-primary">₹{(order.total ?? order.totalAmount).toFixed(2)}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -236,8 +329,15 @@ const OrderDetails = () => {
                                     <CreditCard className="w-5 h-5 text-primary" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Payment Information</p>
-                                    <p className="text-sm font-semibold">{order.paymentMethod || "N/A"}</p>
+                                    <p className="text-sm font-medium text-muted-foreground">Payment</p>
+                                    <p className="text-sm font-semibold">
+                                        {order.paymentMethod || "N/A"}
+                                        {order.isPartialPayment && (
+                                            <span className="block text-muted-foreground font-normal mt-1">
+                                                {order.remainingPaymentStatus === "paid" ? "Full amount paid" : "Partial paid, remaining due"}
+                                            </span>
+                                        )}
+                                    </p>
                                 </div>
                             </div>
 

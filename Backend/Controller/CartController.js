@@ -40,7 +40,7 @@ const parsePrice = (price) => {
 // @route   POST /api/v1/cart/add
 // @access  Private
 export const addToCart = asyncHandler(async (req, res) => {
-    const { pid, name, image, price, quantity, category, sku } = req.body;
+    const { pid, name, image, price, quantity, category, sku, isStoreProduct, allowPartialPayment } = req.body;
 
     // Parse price to handle price ranges
     const parsedPrice = parsePrice(price);
@@ -52,22 +52,34 @@ export const addToCart = asyncHandler(async (req, res) => {
         });
     }
 
+    const cartItem = {
+        pid,
+        name,
+        image,
+        price: parsedPrice,
+        quantity: quantity || 1,
+        category,
+        sku,
+        isStoreProduct: !!isStoreProduct,
+        allowPartialPayment: !!(isStoreProduct && allowPartialPayment),
+    };
+
     let cart = await Cart.findOne({ userId: req.user._id });
 
     if (!cart) {
         cart = await Cart.create({
             userId: req.user._id,
-            items: [{ pid, name, image, price: parsedPrice, quantity: quantity || 1, category, sku }]
+            items: [cartItem]
         });
     } else {
         const itemIndex = cart.items.findIndex(item => item.pid === pid);
 
         if (itemIndex > -1) {
-            // Item exists, update quantity
+            // Item exists, update quantity and preserve allowPartialPayment
             cart.items[itemIndex].quantity += (quantity || 1);
+            if (allowPartialPayment !== undefined) cart.items[itemIndex].allowPartialPayment = !!(isStoreProduct && allowPartialPayment);
         } else {
-            // New item
-            cart.items.push({ pid, name, image, price: parsedPrice, quantity: quantity || 1, category, sku });
+            cart.items.push(cartItem);
         }
         await cart.save();
     }

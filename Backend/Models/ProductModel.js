@@ -70,6 +70,10 @@ const productSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        allowPartialPayment: {
+            type: Boolean,
+            default: false,
+        },
         tags: [{
             type: String,
             trim: true,

@@ -20,7 +20,7 @@ export const getActiveProducts = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const products = await Product.find(query)
-            .populate('categoryId', 'name')
+            .populate('categoryId', 'name allowPartialPayment')
             .populate('subcategoryId', 'name')
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -70,7 +70,7 @@ export const getAllProducts = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const products = await Product.find(query)
-            .populate('categoryId', 'name')
+            .populate('categoryId', 'name allowPartialPayment')
             .populate('subcategoryId', 'name')
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -105,7 +105,7 @@ export const getProductById = async (req, res) => {
     try {
         const { id } = req.params;
         const product = await Product.findById(id)
-            .populate('categoryId', 'name image')
+            .populate('categoryId', 'name image allowPartialPayment')
             .populate('subcategoryId', 'name')
             .select("-__v");
 
@@ -117,10 +117,16 @@ export const getProductById = async (req, res) => {
             });
         }
 
+        const productObj = product.toObject();
+        // Fallback: if product has no allowPartialPayment, use category's setting
+        if (productObj.allowPartialPayment === undefined || productObj.allowPartialPayment === null) {
+            productObj.allowPartialPayment = !!productObj.categoryId?.allowPartialPayment;
+        }
+
         res.json({
             success: true,
             message: "Product fetched successfully",
-            data: product,
+            data: productObj,
         });
     } catch (error) {
         console.error(error);
@@ -150,6 +156,7 @@ export const createProduct = async (req, res) => {
             dimensions,
             isActive,
             isFeatured,
+            allowPartialPayment,
             tags,
             metaTitle,
             metaDescription,
@@ -283,8 +290,9 @@ export const createProduct = async (req, res) => {
                 }
                 return undefined;
             })(),
-            isActive: isActive !== undefined ? isActive : true,
-            isFeatured: isFeatured !== undefined ? isFeatured : false,
+            isActive: isActive !== undefined ? (isActive === true || isActive === 'true') : true,
+            isFeatured: isFeatured !== undefined ? (isFeatured === true || isFeatured === 'true') : false,
+            allowPartialPayment: allowPartialPayment !== undefined ? (allowPartialPayment === true || allowPartialPayment === 'true') : false,
             tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())).filter(Boolean) : [],
             metaTitle: metaTitle?.trim(),
             metaDescription: metaDescription?.trim(),
@@ -333,6 +341,7 @@ export const updateProduct = async (req, res) => {
             dimensions,
             isActive,
             isFeatured,
+            allowPartialPayment,
             tags,
             metaTitle,
             metaDescription,
@@ -490,8 +499,9 @@ export const updateProduct = async (req, res) => {
                 product.dimensions = undefined;
             }
         }
-        if (isActive !== undefined) product.isActive = isActive;
-        if (isFeatured !== undefined) product.isFeatured = isFeatured;
+        if (isActive !== undefined) product.isActive = isActive === true || isActive === 'true';
+        if (isFeatured !== undefined) product.isFeatured = isFeatured === true || isFeatured === 'true';
+        if (allowPartialPayment !== undefined) product.allowPartialPayment = allowPartialPayment === true || allowPartialPayment === 'true';
         if (tags !== undefined) {
             product.tags = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim()).filter(Boolean);
         }

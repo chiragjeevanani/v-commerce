@@ -622,7 +622,7 @@ const Settings = () => {
                                                 type={showRazorpaySecret ? "text" : "password"} 
                                                 value={razorpaySettings.keySecret}
                                                 onChange={(e) => setRazorpaySettings({ ...razorpaySettings, keySecret: e.target.value })}
-                                                placeholder={razorpaySettings.isConfigured ? "••••••••••••••••••••" : "Enter your Razorpay Key Secret"}
+                                                placeholder={razorpaySettings.isConfigured ? "Leave as •••• to keep current" : "Enter your Razorpay Key Secret"}
                                                 className="font-mono"
                                             />
                                             <Button 

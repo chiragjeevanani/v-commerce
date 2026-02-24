@@ -23,7 +23,9 @@ const cartItemSchema = new mongoose.Schema({
         default: 1
     },
     category: String,
-    sku: String
+    sku: String,
+    isStoreProduct: { type: Boolean, default: false },
+    allowPartialPayment: { type: Boolean, default: false }
 });
 
 const cartSchema = new mongoose.Schema({

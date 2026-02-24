@@ -83,5 +83,15 @@ export const api = {
   verifyRazorpayPayment: async (paymentData) => {
     const response = await apiClient.post('/razorpay/verify-payment', paymentData);
     return response.data;
+  },
+
+  createRemainingPaymentOrder: async (orderId, amount) => {
+    const response = await apiClient.post('/razorpay/create-remaining-order', { orderId, amount });
+    return response.data;
+  },
+
+  verifyRemainingPayment: async (data) => {
+    const response = await apiClient.post('/razorpay/verify-remaining-payment', data);
+    return response.data;
   }
 };

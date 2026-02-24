@@ -1,7 +1,9 @@
 import express from "express";
 import { 
     createRazorpayOrder, 
-    verifyPayment, 
+    verifyPayment,
+    createRemainingPaymentOrder,
+    verifyRemainingPayment,
     getRazorpaySettings,
     updateRazorpaySettings,
     testRazorpayConnection,
@@ -17,6 +19,8 @@ router.get("/public-key", getRazorpayPublicKey);
 // Public payment routes (require authentication)
 router.post("/create-order", AuthMiddleware, createRazorpayOrder);
 router.post("/verify-payment", AuthMiddleware, verifyPayment);
+router.post("/create-remaining-order", AuthMiddleware, createRemainingPaymentOrder);
+router.post("/verify-remaining-payment", AuthMiddleware, verifyRemainingPayment);
 
 // Admin settings routes (require admin authentication)
 router.get("/settings", AuthMiddleware, isAdmin, getRazorpaySettings);
