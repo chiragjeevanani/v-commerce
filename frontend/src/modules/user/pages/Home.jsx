@@ -62,28 +62,34 @@ const Home = () => {
 
       try {
         const [storeProductsResult, storeCategoriesResult] = await Promise.all([
-          storeProductService.getActiveProducts({ limit: 8 }),
+          storeProductService.getActiveProducts({ limit: 20, page: 1 }),
           categoryService.getActiveCategories(),
         ]);
 
         if (!isMounted) return;
 
-        // Store products
-        if (storeProductsResult?.success) {
-          setProducts(storeProductsResult.data || []);
+        // Store products (first 20)
+        if (storeProductsResult?.success && Array.isArray(storeProductsResult.data)) {
+          setProducts(storeProductsResult.data);
+          const initialPage = storeProductsResult.pagination?.page || 1;
+          const totalPages = storeProductsResult.pagination?.pages || 1;
+          setPage(initialPage);
+          setHasMore(initialPage < totalPages);
         } else if (Array.isArray(storeProductsResult?.data)) {
           setProducts(storeProductsResult.data);
+          setPage(1);
+          setHasMore(storeProductsResult.data.length >= 20);
         }
 
-        // Store categories
+        // Store categories (sorted: newest first)
         const catsPayload = storeCategoriesResult?.data ?? storeCategoriesResult;
-        const catsArray = Array.isArray(catsPayload?.data)
+        const rawCats = Array.isArray(catsPayload?.data)
           ? catsPayload.data
           : (Array.isArray(catsPayload) ? catsPayload : []);
-        setCategories(catsArray);
-
-        // Infinite scroll disabled for now
-        setHasMore(false);
+        const sortedCats = [...rawCats].sort(
+          (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        );
+        setCategories(sortedCats);
       } catch (error) {
         console.error("Failed to fetch store data for home:", error);
       } finally {
