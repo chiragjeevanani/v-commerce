@@ -208,16 +208,9 @@ const Home = () => {
   const storePartialCategories = categories.filter((c) => c.allowPartialPayment === true);
   const storeNormalCategories = categories.filter((c) => !c.allowPartialPayment);
 
-  const handleStoreCategoryClick = async (categoryId) => {
+  const handleStoreCategoryClick = (categoryId) => {
     setSelectedStoreCategoryId(categoryId);
-    try {
-      const res = await storeProductService.getActiveProducts({ categoryId, limit: 8 });
-      if (res?.success) {
-        setProducts(res.data || []);
-      }
-    } catch (error) {
-      console.error("Failed to load store products for category:", error);
-    }
+    navigate(`/store-products?category=${encodeURIComponent(categoryId)}`);
   };
 
   return (

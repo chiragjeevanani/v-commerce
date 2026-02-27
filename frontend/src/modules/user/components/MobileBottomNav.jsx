@@ -24,8 +24,8 @@ const MobileBottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-background border-t md:hidden no-print">
-      <div className="grid h-full grid-cols-5 mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-background/95 backdrop-blur border-t md:hidden no-print">
+      <div className="grid h-full grid-cols-4 mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.path;
           const hasCartItems = item.badge > 0;

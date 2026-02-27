@@ -264,7 +264,6 @@ const Navbar = () => {
                   <div className="flex flex-col gap-1">
                     {[
                       { to: "/", label: "Home", icon: Home },
-                      { to: "/shop", label: "Shop", icon: Package },
                       { to: "/store-products", label: "Store Products", icon: Package },
                       { to: "/cart", label: "Cart", icon: ShoppingCart },
                       { to: "/orders", label: "My Orders", icon: Package },
@@ -279,9 +278,10 @@ const Navbar = () => {
                         <SheetClose asChild>
                           <Link
                             to={link.to}
-                            className="flex items-center gap-4 text-base font-bold p-4 rounded-xl hover:bg-muted transition-colors"
+                            className="flex items-center gap-3 text-base font-bold p-3 rounded-xl hover:bg-muted transition-colors"
                           >
-                            {link.label}
+                            <link.icon className="h-4 w-4" />
+                            <span>{link.label}</span>
                           </Link>
                         </SheetClose>
                       </motion.div>
