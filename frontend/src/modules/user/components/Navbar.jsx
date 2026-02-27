@@ -92,9 +92,9 @@ const Navbar = () => {
             <Link to="/" className="transition-colors hover:text-foreground">
               Home
             </Link>
-            <Link to="/shop" className="transition-colors hover:text-foreground">
+            {/* <Link to="/shop" className="transition-colors hover:text-foreground">
               Shop
-            </Link>
+            </Link> */}
             <Link to="/store-products" className="transition-colors hover:text-foreground">
               Store Products
             </Link>
