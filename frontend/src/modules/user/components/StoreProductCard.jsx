@@ -120,12 +120,12 @@ const StoreProductCard = ({ product }) => {
                 </CardContent>
 
                 <CardFooter className="p-3 md:p-4 pt-0 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-base md:text-lg font-black text-primary truncate">
+                    <div className="flex items-center gap-1 min-w-0">
+                        <span className="text-sm md:text-base font-semibold text-primary whitespace-nowrap">
                             ₹{price}
                         </span>
                         {compareAtPrice && compareAtPrice > price && (
-                            <span className="text-sm text-muted-foreground line-through">
+                            <span className="text-[11px] md:text-xs text-muted-foreground line-through whitespace-nowrap">
                                 ₹{compareAtPrice}
                             </span>
                         )}
