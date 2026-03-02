@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/services/api";
-import { Truck, ChevronRight, Package, Eye, Plus, Trash2, MapPin, Check, ArrowLeft } from "lucide-react";
+import { Truck, ChevronRight, Package, Eye, Plus, Trash2, MapPin, Check, ArrowLeft, User, Camera } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { addressService } from "@/services/address.service";
 import { useAuth } from "@/modules/user/context/AuthContext";
@@ -148,7 +147,7 @@ const Account = () => {
                   <p className="text-muted-foreground font-medium">No orders yet</p>
                   <p className="text-sm text-muted-foreground/80 mt-1">Start shopping to see your orders here</p>
                   <Button variant="default" size="sm" className="mt-4" asChild>
-                    <Link to="/shop">Start Shopping</Link>
+                    <Link to="/store-products">Start Shopping</Link>
                   </Button>
                 </div>
               )}
@@ -236,14 +235,16 @@ const Account = () => {
 
 
 const ProfileTab = ({ user }) => {
+  const fileInputRef = useRef(null);
+  const { refreshUser } = useAuth();
   const [formData, setFormData] = useState({
     fullName: user?.fullName || "",
     email: user?.email || "",
     phoneNumber: user?.phoneNumber || ""
   });
   const [loading, setLoading] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
 
-  // Update form when user data changes (e.g. initial load)
   useEffect(() => {
     if (user) {
       setFormData({
@@ -253,6 +254,11 @@ const ProfileTab = ({ user }) => {
       });
     }
   }, [user]);
+
+  const handlePhoneChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setFormData({ ...formData, phoneNumber: value });
+  };
 
   const handleUpdate = async () => {
     setLoading(true);
@@ -266,14 +272,72 @@ const ProfileTab = ({ user }) => {
     }
   };
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Invalid file", description: "Please select an image file (JPEG, PNG, etc.)", variant: "destructive" });
+      return;
+    }
+    setAvatarLoading(true);
+    try {
+      await authService.uploadAvatar(file);
+      refreshUser?.();
+      toast({ title: "Profile Photo Updated", description: "Your profile picture has been updated." });
+    } catch (error) {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    } finally {
+      setAvatarLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <TabsContent value="profile" className="mt-6">
       <Card className="border-border/50 shadow-sm overflow-hidden">
         <CardHeader>
           <CardTitle className="text-lg">Profile Information</CardTitle>
-          <CardDescription className="text-sm mt-0.5">Update your personal details</CardDescription>
+          <CardDescription className="text-sm mt-0.5">Update your name, email, address & profile photo</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Profile Photo */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-muted flex items-center justify-center border-2 border-border">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="h-12 w-12 text-muted-foreground" />
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-md"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarLoading}
+              >
+                {avatarLoading ? (
+                  <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <div>
+              <p className="font-medium text-sm">Profile Photo</p>
+              <p className="text-xs text-muted-foreground">Click the camera icon to upload a new photo (max 5MB)</p>
+            </div>
+          </div>
+
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
@@ -282,6 +346,7 @@ const ProfileTab = ({ user }) => {
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 className="h-11"
+                placeholder="Your name"
               />
             </div>
             <div className="space-y-2">
@@ -292,19 +357,26 @@ const ProfileTab = ({ user }) => {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="h-11"
+                placeholder="you@example.com"
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone" className="text-sm font-medium">Phone</Label>
+            <Label htmlFor="phone" className="text-sm font-medium">Mobile Number</Label>
             <Input
               id="phone"
               type="tel"
+              inputMode="numeric"
               value={formData.phoneNumber}
-              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              onChange={handlePhoneChange}
               className="h-11 max-w-sm"
+              placeholder="9876543210"
+              maxLength={10}
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            Manage your shipping addresses in the <strong>Address</strong> tab.
+          </p>
         </CardContent>
         <CardFooter className="pt-2">
           <Button onClick={handleUpdate} disabled={loading} className="w-full sm:w-auto">

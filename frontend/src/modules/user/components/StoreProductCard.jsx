@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShoppingCart, Eye } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const StoreProductCard = ({ product }) => {
     const { addToCart } = useCart();
+    const navigate = useNavigate();
     const { toast } = useToast();
 
     const image = product.images && product.images.length > 0 ? product.images[0] : "/placeholder-product.png";
@@ -20,7 +21,7 @@ const StoreProductCard = ({ product }) => {
     const categoryName = product.categoryId?.name || product.category;
     const isOutOfStock = product.trackInventory && product.stock <= 0;
 
-    const handleAddToCart = (e) => {
+    const handleAddToCart = async (e) => {
         if (e) e.preventDefault();
         if (isOutOfStock) {
             toast({
@@ -30,7 +31,7 @@ const StoreProductCard = ({ product }) => {
             });
             return;
         }
-        addToCart({
+        await addToCart({
             pid,
             id: pid,
             name,
@@ -43,6 +44,7 @@ const StoreProductCard = ({ product }) => {
             isStoreProduct: true,
             allowPartialPayment: product.allowPartialPayment === true || product.categoryId?.allowPartialPayment === true,
         });
+        navigate("/cart");
     };
 
     return (

@@ -145,8 +145,8 @@ const OrderHistory = () => {
                                 ? "We couldn't find any orders matching your search."
                                 : "You haven't placed any orders yet."}
                         </p>
-                        <Button asChild>
-                            <Link to="/shop">Start Shopping</Link>
+                        <Button disabled>
+                            Start Shopping
                         </Button>
                     </CardContent>
                 </Card>

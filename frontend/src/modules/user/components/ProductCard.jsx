@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShoppingCart, Eye } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { useCart } from "@/modules/user/context/CartContext";
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   // Normalize CJ data for consistent UI
   const name = product.productNameEn || product.name;
@@ -45,9 +46,10 @@ const ProductCard = ({ product }) => {
   const pid = product.pid || product.id;
   const categoryName = product.categoryName || product.category;
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = async (e) => {
     if (e) e.preventDefault();
-    addToCart({ ...product, id: pid, name, image }); // Ensure consistent structure in cart
+    await addToCart({ ...product, id: pid, name, image }); // Ensure consistent structure in cart
+    navigate("/cart");
   };
 
   return (

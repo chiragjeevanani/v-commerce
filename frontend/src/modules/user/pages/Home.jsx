@@ -116,9 +116,9 @@ const Home = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/store-products?search=${encodeURIComponent(searchQuery.trim())}`);
     } else {
-      navigate("/shop");
+      navigate("/store-products");
     }
   };
 
@@ -220,7 +220,7 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen gap-10 pb-10">
+    <div className="flex flex-col min-h-screen gap-4 md:gap-6 pb-4 md:pb-8">
       {/* Search Bar - Visible on all screens */}
       <section className="container pt-4">
         <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
@@ -306,7 +306,7 @@ const Home = () => {
                     transition={{ delay: 1 }}
                     className="flex gap-4"
                   >
-                    <Link to="/shop">
+                    <Link to="/store-products">
                       <Button size="lg" className="text-lg px-8 py-7 rounded-full shadow-lg hover:shadow-primary/20 transition-all active:scale-95 group">
                         {banners[currentBanner].cta}
                         <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -352,7 +352,7 @@ const Home = () => {
       )}
 
       {/* Store Categories Section (replaces CJ Browse Categories) */}
-      <section className="container py-10 space-y-6">
+      <section className="container pt-4 pb-3 md:pt-6 md:pb-4 space-y-3">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-4">
           <div className="flex items-center gap-3 md:gap-5">
             <div className="relative">
@@ -363,133 +363,139 @@ const Home = () => {
             </div>
             <div className="space-y-1">
               <h2 className="text-2xl md:text-3xl font-black tracking-tight">
-                Browse Store Categories
+                Regular Store Categories
               </h2>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Apne store ki local categories se products discover karein.
+                Browse standard categories where customers pay the full amount at checkout.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {storeNormalCategories.length === 0 && loading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-32 rounded-2xl bg-muted/40 animate-pulse border border-border/50" />
-            ))
-          ) : storeNormalCategories.length > 0 ? (
-            storeNormalCategories.map((cat) => {
-              const name = cat.name || "Category";
-              const firstLetter = (name[0] || "C").toUpperCase();
-              const isSelected = selectedStoreCategoryId === cat._id;
-              return (
-                <button
-                  key={cat._id}
-                  type="button"
-                  onClick={() => handleStoreCategoryClick(cat._id)}
-                  className={`group relative overflow-hidden rounded-2xl border text-left transition-all ${
-                    isSelected
-                      ? "border-primary bg-card shadow-sm shadow-primary/20"
-                      : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
-                  }`}
-                >
-                  <div className="relative h-28 w-full overflow-hidden">
-                    {cat.image ? (
-                      <img
-                        src={cat.image}
-                        alt={name}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center">
-                        <span className="text-2xl font-black text-primary">{firstLetter}</span>
+        <div className="-mx-2 overflow-x-auto scrollbar-none">
+          <div className="flex gap-4 px-2 pb-1 md:pb-2 min-w-max">
+            {storeNormalCategories.length === 0 && loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-32 w-[160px] sm:w-[180px] md:w-[200px] flex-shrink-0 rounded-2xl bg-muted/40 animate-pulse border border-border/50" />
+              ))
+            ) : storeNormalCategories.length > 0 ? (
+              storeNormalCategories.map((cat) => {
+                const name = cat.name || "Category";
+                const firstLetter = (name[0] || "C").toUpperCase();
+                const isSelected = selectedStoreCategoryId === cat._id;
+                return (
+                  <div key={cat._id} className="w-[160px] sm:w-[180px] md:w-[200px] flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleStoreCategoryClick(cat._id)}
+                      className={`w-full group relative overflow-hidden rounded-2xl border text-left transition-all ${
+                        isSelected
+                          ? "border-primary bg-card shadow-sm shadow-primary/20"
+                          : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
+                      }`}
+                    >
+                      <div className="relative h-28 w-full overflow-hidden">
+                        {cat.image ? (
+                          <img
+                            src={cat.image}
+                            alt={name}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-full w-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center">
+                            <span className="text-2xl font-black text-primary">{firstLetter}</span>
+                          </div>
+                        )}
+                        {cat.allowPartialPayment && (
+                          <span className="absolute top-2 left-2 rounded-full bg-amber-500/90 text-[9px] font-black uppercase tracking-[0.18em] text-white px-2 py-0.5 shadow-sm">
+                            Partial
+                          </span>
+                        )}
                       </div>
-                    )}
-                    {cat.allowPartialPayment && (
-                      <span className="absolute top-2 left-2 rounded-full bg-amber-500/90 text-[9px] font-black uppercase tracking-[0.18em] text-white px-2 py-0.5 shadow-sm">
-                        Partial
-                      </span>
-                    )}
+                      <div className="p-3 space-y-1">
+                        <p className="text-sm font-semibold line-clamp-1">{name}</p>
+                        <p className="text-[11px] text-muted-foreground line-clamp-2">
+                          {cat.description || "Store category"}
+                        </p>
+                      </div>
+                    </button>
                   </div>
-                  <div className="p-3 space-y-1">
-                    <p className="text-sm font-semibold line-clamp-1">{name}</p>
-                    <p className="text-[11px] text-muted-foreground line-clamp-2">
-                      {cat.description || "Store category"}
-                    </p>
-                  </div>
-                </button>
-              );
-            })
-          ) : (
-            <p className="text-sm text-muted-foreground col-span-full">
-              Abhi tak koi normal (non‑partial) store category create nahi hui hai.
-            </p>
-          )}
+                );
+              })
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No regular (non-partial) store categories have been created yet.
+              </p>
+            )}
+          </div>
         </div>
       </section>
 
       {/* Partial payment categories (separate section) */}
       {storePartialCategories.length > 0 && (
-        <section className="container pb-8 space-y-4">
+        <section className="container pt-3 pb-3 md:pt-4 md:pb-4 space-y-2">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm md:text-lg font-bold">
+              <h2 className="text-lg md:text-2xl font-black tracking-tight">
                 Partial Payment Categories
-              </h3>
+              </h2>
               <p className="text-xs md:text-sm text-muted-foreground">
-                In categories me customers ₹500 partial payment kar sakte hain.
+                In these categories customers can start with a ₹500 partial payment and pay the remaining amount later.
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {storePartialCategories.map((cat) => {
-              const name = cat.name || "Category";
-              const firstLetter = (name[0] || "C").toUpperCase();
-              const isSelected = selectedStoreCategoryId === cat._id;
-              return (
-                <button
-                  key={cat._id}
-                  type="button"
-                  onClick={() => handleStoreCategoryClick(cat._id)}
-                  className={`group relative overflow-hidden rounded-2xl border text-left transition-all ${
-                    isSelected
-                      ? "border-amber-500 bg-card shadow-sm shadow-amber-300/40"
-                      : "border-border bg-card hover:border-amber-400 hover:bg-amber-50/10"
-                  }`}
-                >
-                  <div className="relative h-28 w-full overflow-hidden">
-                    {cat.image ? (
-                      <img
-                        src={cat.image}
-                        alt={name}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-gradient-to-br from-amber-400/40 to-amber-300/20 flex items-center justify-center">
-                        <span className="text-2xl font-black text-amber-700">{firstLetter}</span>
+          <div className="-mx-2 overflow-x-auto scrollbar-none">
+            <div className="flex gap-4 px-2 pb-1 md:pb-2 min-w-max">
+              {storePartialCategories.map((cat) => {
+                const name = cat.name || "Category";
+                const firstLetter = (name[0] || "C").toUpperCase();
+                const isSelected = selectedStoreCategoryId === cat._id;
+                return (
+                  <div key={cat._id} className="w-[160px] sm:w-[180px] md:w-[200px] flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleStoreCategoryClick(cat._id)}
+                      className={`w-full group relative overflow-hidden rounded-2xl border text-left transition-all ${
+                        isSelected
+                          ? "border-amber-500 bg-card shadow-sm shadow-amber-300/40"
+                          : "border-border bg-card hover:border-amber-400 hover:bg-amber-50/10"
+                      }`}
+                    >
+                      <div className="relative h-28 w-full overflow-hidden">
+                        {cat.image ? (
+                          <img
+                            src={cat.image}
+                            alt={name}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-full w-full bg-gradient-to-br from-amber-400/40 to-amber-300/20 flex items-center justify-center">
+                            <span className="text-2xl font-black text-amber-700">{firstLetter}</span>
+                          </div>
+                        )}
+                        <span className="absolute top-2 left-2 rounded-full bg-amber-500/95 text-[9px] font-black uppercase tracking-[0.18em] text-white px-2 py-0.5 shadow-sm">
+                          Partial
+                        </span>
                       </div>
-                    )}
-                    <span className="absolute top-2 left-2 rounded-full bg-amber-500/95 text-[9px] font-black uppercase tracking-[0.18em] text-white px-2 py-0.5 shadow-sm">
-                      Partial
-                    </span>
+                      <div className="p-3 space-y-1">
+                        <p className="text-sm font-semibold line-clamp-1">{name}</p>
+                        <p className="text-[11px] text-muted-foreground line-clamp-2">
+                          {cat.description || "Partial payment enabled category"}
+                        </p>
+                      </div>
+                    </button>
                   </div>
-                  <div className="p-3 space-y-1">
-                    <p className="text-sm font-semibold line-clamp-1">{name}</p>
-                    <p className="text-[11px] text-muted-foreground line-clamp-2">
-                      {cat.description || "Partial payment enabled category"}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </section>
       )}
 
       {/* Store Products grid (no dropshipping) */}
-      <section className="container py-8 space-y-4">
+      <section className="container pt-4 pb-5 md:pt-6 space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">
             {selectedStoreCategoryId ? "Store Products in this Category" : "Store Products"}
@@ -535,7 +541,7 @@ const Home = () => {
               </div>
             </div>
           </div>
-          <Link to="/shop" className="group flex items-center gap-3 md:gap-4 text-xs md:text-sm font-black uppercase tracking-[0.15em] md:tracking-[0.2em] text-primary hover:text-foreground transition-all">
+          <Link to="/store-products" className="group flex items-center gap-3 md:gap-4 text-xs md:text-sm font-black uppercase tracking-[0.15em] md:tracking-[0.2em] text-primary hover:text-foreground transition-all">
             <span className="relative">
               Explore All
               <span className="absolute -bottom-1.5 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
@@ -673,7 +679,7 @@ const Home = () => {
 
                 <div className="flex justify-between items-start mb-10 relative z-10 pr-24">
                   <div className="space-y-3">
-                    <Link to={`/shop?category=${cat.categoryFirstId || cat.id}`}>
+                    <Link to={`/store-products?category=${cat.categoryFirstId || cat.id}`}>
                       <h3 className="text-3xl font-black text-foreground group-hover:text-primary transition-all duration-300 uppercase italic tracking-tighter leading-[0.85] flex flex-col">
                         <span className="text-primary/50 text-[10px] italic normal-case tracking-[0.2em] mb-2 font-black">PREMIUM SERIES</span>
                         {name}
@@ -694,7 +700,7 @@ const Home = () => {
                       {cat.categoryFirstList.slice(0, 5).map((sub, idx) => (
                         <Link
                           key={sub.categorySecondId || sub.id || idx}
-                          to={`/shop?category=${sub.categorySecondId || sub.id}`}
+                          to={`/store-products?category=${sub.categorySecondId || sub.id}`}
                           className="px-5 py-2.5 rounded-2xl bg-secondary/20 dark:bg-white/[0.03] border border-border/40 dark:border-white/5 text-[12px] font-bold text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-transparent hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 backdrop-blur-md"
                         >
                           {sub.categorySecondName || sub.name}
@@ -702,7 +708,7 @@ const Home = () => {
                       ))}
                       {cat.categoryFirstList.length > 5 && (
                         <Link
-                          to={`/shop?category=${cat.categoryFirstId || cat.id}`}
+                          to={`/store-products?category=${cat.categoryFirstId || cat.id}`}
                           className="px-4 py-2 text-[12px] font-black text-primary hover:text-foreground transition-all flex items-center gap-2 group/more"
                         >
                           <span>+{cat.categoryFirstList.length - 5} More</span>
@@ -712,7 +718,7 @@ const Home = () => {
                     </>
                   ) : (
                     <Link
-                      to={`/shop?category=${cat.categoryFirstId || cat.id}`}
+                      to={`/store-products?category=${cat.categoryFirstId || cat.id}`}
                       className="px-5 py-2.5 rounded-2xl bg-secondary/20 dark:bg-white/[0.03] border border-border/40 dark:border-white/5 text-[12px] font-bold text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-transparent hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 backdrop-blur-md"
                     >
                       Explore Products
@@ -747,7 +753,7 @@ const Home = () => {
                   
                   <div className="flex justify-between items-start mb-10 relative z-10">
                     <div className="space-y-3">
-                      <Link to="/shop">
+                      <Link to="/store-products">
                         <h3 className="text-3xl font-black text-foreground group-hover:text-primary transition-all duration-300 uppercase italic tracking-tighter leading-[0.85] flex flex-col">
                           <span className="text-primary/50 text-[10px] italic normal-case tracking-[0.2em] mb-2 font-black">COMING SOON</span>
                           Category {i + 1}
@@ -768,10 +774,10 @@ const Home = () => {
 
                   <div className="flex flex-wrap gap-3 relative z-10">
                     <Link
-                      to="/shop"
+                      to="/store-products"
                       className="px-5 py-2.5 rounded-2xl bg-secondary/20 dark:bg-white/[0.03] border border-border/40 dark:border-white/5 text-[12px] font-bold text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-transparent hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 backdrop-blur-md"
                     >
-                      Explore Shop
+                      Explore Products
                     </Link>
                   </div>
 

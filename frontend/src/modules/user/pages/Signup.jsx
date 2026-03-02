@@ -1,77 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import {
-    Eye,
-    EyeOff,
-    User,
-    Mail,
-    Phone,
-    Lock,
-    ArrowRight,
-    Check,
-    ShieldCheck,
-    Loader2,
-    ArrowLeft
-} from 'lucide-react';
+import { Phone, ArrowRight, Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/utils/utils';
 
 const Signup = () => {
-    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        fullName: '',
-        email: '',
-        phoneNumber: '',
-        password: '',
-        confirmPassword: '',
-        agreeTerms: false
-    });
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [agreeTerms, setAgreeTerms] = useState(false);
 
-    const [passwordStrength, setPasswordStrength] = useState(0);
     const { signup } = useAuth();
     const { toast } = useToast();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        // Basic password strength logic
-        let strength = 0;
-        if (formData.password.length > 0) {
-            if (formData.password.length >= 6) strength += 1;
-            if (/[A-Z]/.test(formData.password) && /[0-9]/.test(formData.password)) strength += 1;
-            if (/[^A-Za-z0-9]/.test(formData.password)) strength += 1;
-        }
-        setPasswordStrength(strength);
-    }, [formData.password]);
+    const handlePhoneChange = (e) => {
+        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+        setPhoneNumber(value);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (formData.phoneNumber.length !== 10) {
+        if (phoneNumber.length !== 10) {
             toast({
                 title: "Validation Error",
-                description: "Phone number must be exactly 10 digits!",
+                description: "Enter a valid 10-digit mobile number.",
                 variant: "destructive",
             });
             return;
         }
 
-        if (formData.password !== formData.confirmPassword) {
-            toast({
-                title: "Validation Error",
-                description: "Passwords do not match!",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        if (!formData.agreeTerms) {
+        if (!agreeTerms) {
             toast({
                 title: "Terms & Conditions",
                 description: "Please agree to the terms and conditions.",
@@ -82,12 +46,14 @@ const Signup = () => {
 
         setIsLoading(true);
         try {
-            await signup(formData);
-            toast({
-                title: "Login Successful",
-                description: "Welcome back to V-Commerce!",
-            });
-            navigate('/');
+            const result = await signup({ phoneNumber });
+            if (result?.pending_phone) {
+                toast({ title: "OTP Sent", description: "Check your mobile for the verification code." });
+                navigate('/verify-otp', { state: { mode: 'signup' }, replace: true });
+            } else if (result?.user) {
+                toast({ title: "Account Created", description: "Welcome to V-Commerce!" });
+                navigate('/');
+            }
         } catch (error) {
             toast({
                 title: "Registration Failed",
@@ -99,24 +65,9 @@ const Signup = () => {
         }
     };
 
-    const handlePhoneChange = (e) => {
-        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-        setFormData({ ...formData, phoneNumber: value });
-    };
-
-    const getStrengthConfig = () => {
-        switch (passwordStrength) {
-            case 1: return { color: 'bg-red-500', label: 'Weak', width: '33%' };
-            case 2: return { color: 'bg-yellow-500', label: 'Medium', width: '66%' };
-            case 3: return { color: 'bg-green-500', label: 'Strong', width: '100%' };
-            default: return { color: 'bg-muted', label: 'Very Weak', width: '10%' };
-        }
-    };
-
     return (
         <div className="min-h-screen relative flex items-center justify-center bg-muted/30 lg:bg-background p-4 lg:p-0 overflow-y-auto overflow-x-hidden">
             <div className="z-10 w-full max-w-[1100px] flex flex-col gap-4 my-8">
-                {/* Back Button Container */}
                 <div className="flex justify-start px-2">
                     <Button
                         variant="ghost"
@@ -132,9 +83,8 @@ const Signup = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.4 }}
-                    className="w-full lg:h-[750px] grid lg:grid-cols-2 rounded-3xl overflow-hidden shadow-2xl bg-card border"
+                    className="w-full lg:h-[600px] grid lg:grid-cols-2 rounded-3xl overflow-hidden shadow-2xl bg-card border"
                 >
-                    {/* Left Column - Hero (Desktop Only) */}
                     <div className="hidden lg:flex relative bg-black flex-col justify-between p-12 text-white overflow-hidden">
                         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1557821552-17105176677c?w=1200&q=80')] bg-cover bg-center opacity-40" />
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-black/90 mix-blend-multiply" />
@@ -148,14 +98,14 @@ const Signup = () => {
 
                         <div className="relative z-10 space-y-6">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-widest text-primary-foreground">
-                                <ShieldCheck className="h-3 w-3" /> 100% Genuine Products
+                                <ShieldCheck className="h-3 w-3" /> Mobile-First
                             </div>
                             <h1 className="text-5xl font-black leading-tight text-pretty">
-                                Join the Future <br />
-                                <span className="text-white/70 italic text-4xl">of E-Commerce.</span>
+                                Join with <br />
+                                <span className="text-white/70 italic text-4xl">Your Mobile Number</span>
                             </h1>
                             <p className="text-lg text-white/60 max-w-sm">
-                                Create an account and get personalized recommendations, express checkout, and exclusive deals.
+                                Just enter your mobile number. OTP verification, then you're in. Add name, email & address later in your profile.
                             </p>
                         </div>
 
@@ -171,147 +121,63 @@ const Signup = () => {
                         </div>
                     </div>
 
-                    {/* Right Column - Signup Form */}
                     <div className="flex flex-col justify-center p-8 lg:p-12 overflow-y-auto">
                         <div className="space-y-2 mb-8 text-center lg:text-left">
                             <h2 className="text-3xl font-black tracking-tight">Create Account</h2>
-                            <p className="text-muted-foreground font-medium">Step into a world of curated shopping.</p>
+                            <p className="text-muted-foreground font-medium">Enter your mobile number to get started.</p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="fullName">Full Name</Label>
-                                    <div className="relative group">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                        <Input
-                                            id="fullName"
-                                            placeholder="John Doe"
-                                            className="pl-10 h-11 rounded-xl focus:ring-primary border-muted"
-                                            required
-                                            value={formData.fullName}
-                                            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="phoneNumber">Phone Number</Label>
-                                    <div className="relative group">
-                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                        <Input
-                                            id="phoneNumber"
-                                            type="tel"
-                                            placeholder="9876543210"
-                                            className="pl-10 h-11 rounded-xl focus:ring-primary border-muted"
-                                            required
-                                            value={formData.phoneNumber}
-                                            onChange={handlePhoneChange}
-                                            maxLength={10}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email Address</Label>
+                                <Label htmlFor="phoneNumber">Mobile Number</Label>
                                 <div className="relative group">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                     <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="john@example.com"
-                                        className="pl-10 h-11 rounded-xl focus:ring-primary border-muted"
+                                        id="phoneNumber"
+                                        type="tel"
+                                        inputMode="numeric"
+                                        placeholder="9876543210"
+                                        className="pl-10 h-12 rounded-xl focus:ring-primary border-muted"
                                         required
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        value={phoneNumber}
+                                        onChange={handlePhoneChange}
+                                        maxLength={10}
                                     />
                                 </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="password">Password</Label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                        <Input
-                                            id="password"
-                                            type={showPassword ? "text" : "password"}
-                                            className="pl-10 h-11 rounded-xl focus:ring-primary border-muted"
-                                            required
-                                            value={formData.password}
-                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
-                                        >
-                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </button>
-                                    </div>
-                                    {/* Strength Indicator */}
-                                    <div className="space-y-1 px-1">
-                                        <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: getStrengthConfig().width }}
-                                                className={cn("h-full transition-all duration-500", getStrengthConfig().color)}
-                                            />
-                                        </div>
-                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                                            Strength: <span className={cn("italic", getStrengthConfig().color.replace('bg-', 'text-'))}>{getStrengthConfig().label}</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                                    <div className="relative group">
-                                        <Check className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                        <Input
-                                            id="confirmPassword"
-                                            type="password"
-                                            className="pl-10 h-11 rounded-xl focus:ring-primary border-muted"
-                                            required
-                                            value={formData.confirmPassword}
-                                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
+                                <p className="text-xs text-muted-foreground">OTP will be sent to this number for verification</p>
                             </div>
 
                             <div className="flex items-start space-x-2 pt-2">
                                 <Checkbox
                                     id="terms"
                                     className="mt-0.5 rounded-md border-muted data-[state=checked]:bg-primary"
-                                    checked={formData.agreeTerms}
-                                    onCheckedChange={(checked) => setFormData({ ...formData, agreeTerms: !!checked })}
+                                    checked={agreeTerms}
+                                    onCheckedChange={(checked) => setAgreeTerms(!!checked)}
                                 />
                                 <label htmlFor="terms" className="text-xs font-medium leading-normal text-muted-foreground">
                                     I agree to the{' '}
-                                    <Link to="/terms" className="text-primary font-bold hover:underline">Terms of Service</Link>
-                                    {' '}and{' '}
+                                    <Link to="/terms" className="text-primary font-bold hover:underline">Terms</Link>
+                                    {' '}&{' '}
                                     <Link to="/privacy" className="text-primary font-bold hover:underline">Privacy Policy</Link>.
                                 </label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="w-full h-11 rounded-xl font-bold bg-primary hover:bg-primary/90 transition-all gap-2"
+                                className="w-full h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 transition-all gap-2"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
                                 ) : (
-                                    <>Create Account <ArrowRight className="h-5 w-5" /></>
+                                    <>Send OTP <ArrowRight className="h-5 w-5" /></>
                                 )}
                             </Button>
                         </form>
 
                         <p className="mt-8 text-center text-sm text-muted-foreground font-medium">
                             Already have an account?{' '}
-                            <Link to="/login" className="text-primary font-bold hover:underline">
-                                Sign In Instead
-                            </Link>
+                            <Link to="/login" className="text-primary font-bold hover:underline">Sign In</Link>
                         </p>
                     </div>
                 </motion.div>

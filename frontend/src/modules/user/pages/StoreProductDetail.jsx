@@ -109,7 +109,7 @@ const StoreProductDetail = () => {
         if (type === "inc" && quantity < maxQty) setQuantity(quantity + 1);
     };
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         if (!product.isActive) {
             toast({
                 title: "Product Unavailable",
@@ -128,7 +128,7 @@ const StoreProductDetail = () => {
             return;
         }
 
-        addToCart({
+        await addToCart({
             pid: product._id,
             id: product._id,
             name: product.name,
@@ -144,11 +144,11 @@ const StoreProductDetail = () => {
             allowPartialPayment: product.allowPartialPayment === true,
         });
         setHasAddedToCartOnThisPage(true);
+        navigate("/cart");
     };
 
     const handleBuyNow = () => {
         handleAddToCart();
-        navigate("/cart");
     };
 
     if (loading) {

@@ -1,52 +1,58 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { authService } from '@/services/auth.service';
 import {
-    Eye,
-    EyeOff,
-    Mail,
-    Lock,
+    Phone,
     ArrowRight,
     Loader2,
     ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 
 const Login = () => {
-    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState({ email: '', password: '' });
+    const [phoneNumber, setPhoneNumber] = useState('');
     const isSubmittingRef = useRef(false);
 
-    const { login } = useAuth();
     const { toast } = useToast();
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from?.pathname || "/";
 
+    const handlePhoneChange = (e) => {
+        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+        setPhoneNumber(value);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmittingRef.current) return;
+        if (phoneNumber.length !== 10) {
+            toast({
+                title: "Validation Error",
+                description: "Please enter a valid 10-digit mobile number.",
+                variant: "destructive",
+            });
+            return;
+        }
         isSubmittingRef.current = true;
         setIsLoading(true);
 
         try {
-            await login(formData.email, formData.password);
+            await authService.sendOTPLogin(phoneNumber);
             toast({
-                title: "Login Successful",
-                description: "Welcome back to V-Commerce!",
+                title: "OTP Sent",
+                description: "Check your mobile for the verification code.",
             });
-            navigate(from, { replace: true });
+            navigate('/verify-otp', { state: { mode: 'login', from }, replace: true });
         } catch (error) {
             toast({
-                title: "Login Failed",
-                description: error.message || "Invalid credentials. Try test@vcommerce.com / password123",
+                title: "Failed",
+                description: error.message || "Could not send OTP.",
                 variant: "destructive",
             });
         } finally {
@@ -136,54 +142,22 @@ const Login = () => {
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Email Address</Label>
+                                <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Mobile Number</Label>
                                 <div className="relative group">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                     <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="name@example.com"
+                                        id="phone"
+                                        type="tel"
+                                        inputMode="numeric"
+                                        placeholder="9876543210"
                                         className="pl-12 h-14 rounded-2xl bg-muted/50 border-muted focus:bg-background transition-all"
                                         required
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        value={phoneNumber}
+                                        onChange={handlePhoneChange}
+                                        maxLength={10}
                                     />
                                 </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center ml-1">
-                                    <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Password</Label>
-                                    <Link to="/forgot-password" size="sm" className="text-xs font-bold text-primary hover:underline hover:text-primary/80 transition-colors">
-                                        Forgot Password?
-                                    </Link>
-                                </div>
-                                <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                    <Input
-                                        id="password"
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="••••••••"
-                                        className="pl-12 h-14 rounded-2xl bg-muted/50 border-muted focus:bg-background transition-all"
-                                        required
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors focus:outline-none"
-                                    >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center space-x-3 ml-1">
-                                <Checkbox id="remember" className="rounded-md h-5 w-5 border-muted data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
-                                <label htmlFor="remember" className="text-sm font-semibold text-muted-foreground leading-none cursor-pointer">
-                                    Remember me
-                                </label>
+                                <p className="text-xs text-muted-foreground ml-1">OTP will be sent to this number for verification</p>
                             </div>
 
                             <Button
@@ -195,20 +169,21 @@ const Login = () => {
                                     <Loader2 className="h-6 w-6 animate-spin" />
                                 ) : (
                                     <div className="flex items-center justify-center gap-2">
-                                        <span>Sign In</span>
+                                        <span>Send OTP</span>
                                         <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                                     </div>
                                 )}
                             </Button>
                         </form>
 
-                        <div className="mt-12 pt-8 border-t border-muted/50">
+                        <div className="mt-8 pt-4 border-t border-muted/50 space-y-2">
                             <p className="text-center text-sm font-medium text-muted-foreground">
                                 Don't have an account?{' '}
                                 <Link to="/signup" className="text-primary font-black hover:underline transition-all underline-offset-4 tracking-tight">
                                     Create Account
                                 </Link>
                             </p>
+                          
                         </div>
                     </div>
                 </motion.div>

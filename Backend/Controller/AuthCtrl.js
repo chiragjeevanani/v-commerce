@@ -3,43 +3,190 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { generateToken } from "../Helpers/generateToken.js";
 import { sendOTPEmail } from "../Helpers/SendMail.js";
+import { sendOTPSMS } from "../Helpers/SendSMS.js";
 
-// ================= REGISTER =================
+// ================= REGISTER (Mobile Only) =================
 export const registerUser = async (req, res) => {
   try {
-    const { fullName, email, password, phoneNumber } = req.body;
+    const { phoneNumber } = req.body;
 
-    // Check for non-deleted user with same email
-    const userExists = await User.findOne({ email, isDeleted: false });
-    if (userExists)
+    const cleanPhone = (phoneNumber || "").replace(/\D/g, "").slice(-10);
+
+    if (cleanPhone.length !== 10) {
       return res.status(400).json({
         success: false,
-        message: "User already exists",
+        message: "Valid 10-digit phone number is required",
+        data: null,
+      });
+    }
+
+    // If user already exists with this phone -> ask to login
+    const existingUser = await User.findOne({ phoneNumber: cleanPhone, isDeleted: false });
+    if (existingUser)
+      return res.status(400).json({
+        success: false,
+        message: "Account already exists. Use Login with this mobile number.",
         data: null,
       });
 
-    // If deleted user exists with same email, permanently delete it first
-    const deletedUser = await User.findOne({ email, isDeleted: true });
-    if (deletedUser) {
-      await User.findByIdAndDelete(deletedUser._id);
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const placeholderEmail = `mobile_${cleanPhone}@temp.vcommerce.local`;
+    const hashedPassword = await bcrypt.hash(crypto.randomBytes(16).toString("hex"), 10);
 
     const user = await User.create({
-      fullName,
-      email,
+      fullName: "User",
+      email: placeholderEmail,
       password: hashedPassword,
-      phoneNumber,
-      isVerified: true, // Auto-verify users upon registration
+      phoneNumber: cleanPhone,
+      isVerified: false,
+      otp,
+      otpExpire: Date.now() + 10 * 60 * 1000,
     });
+
+    await sendOTPSMS(cleanPhone, otp);
 
     res.json({
       success: true,
-      message: "Registration successful",
+      message: "OTP sent to your mobile. Verify to complete registration.",
+      data: { pending_phone: cleanPhone },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", data: null });
+  }
+};
+
+// ================= VERIFY SIGNUP OTP =================
+export const verifySignupOTP = async (req, res) => {
+  try {
+    const { phoneNumber, otp } = req.body;
+
+    if (!phoneNumber || !otp)
+      return res.status(400).json({ success: false, message: "Phone number and OTP are required", data: null });
+
+    const user = await User.findOne({
+      phoneNumber: phoneNumber.replace(/\D/g, "").slice(-10),
+      otp,
+      otpExpire: { $gt: Date.now() },
+      isDeleted: false,
+    });
+
+    if (!user)
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP", data: null });
+
+    user.otp = undefined;
+    user.otpExpire = undefined;
+    user.isVerified = true;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Account verified successfully",
       data: user,
       token: generateToken(user._id),
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", data: null });
+  }
+};
+
+// ================= SEND OTP FOR LOGIN =================
+export const sendOTPLogin = async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber || phoneNumber.replace(/\D/g, "").length !== 10)
+      return res.status(400).json({ success: false, message: "Valid 10-digit phone number is required", data: null });
+
+    const cleanPhone = phoneNumber.replace(/\D/g, "").slice(-10);
+
+    const user = await User.findOne({ phoneNumber: cleanPhone, isDeleted: false });
+    if (!user)
+      return res.status(404).json({ success: false, message: "No account found with this phone number", data: null });
+
+    if (!user.isActive)
+      return res.status(403).json({ success: false, message: "Account deactivated", data: null });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpire = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await sendOTPSMS(cleanPhone, otp);
+
+    res.json({
+      success: true,
+      message: "OTP sent to your mobile number",
+      data: { pending_phone: cleanPhone },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", data: null });
+  }
+};
+
+// ================= VERIFY OTP & LOGIN =================
+export const verifyOTPLogin = async (req, res) => {
+  try {
+    const { phoneNumber, otp } = req.body;
+
+    if (!phoneNumber || !otp)
+      return res.status(400).json({ success: false, message: "Phone number and OTP are required", data: null });
+
+    const cleanPhone = phoneNumber.replace(/\D/g, "").slice(-10);
+
+    const user = await User.findOne({
+      phoneNumber: cleanPhone,
+      otp,
+      otpExpire: { $gt: Date.now() },
+      isDeleted: false,
+    });
+
+    if (!user)
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP", data: null });
+
+    if (!user.isActive)
+      return res.status(403).json({ success: false, message: "Account deactivated", data: null });
+
+    user.otp = undefined;
+    user.otpExpire = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      data: user,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", data: null });
+  }
+};
+
+// ================= RESEND SIGNUP OTP =================
+export const resendSignupOTP = async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber)
+      return res.status(400).json({ success: false, message: "Phone number is required", data: null });
+
+    const cleanPhone = phoneNumber.replace(/\D/g, "").slice(-10);
+
+    const user = await User.findOne({ phoneNumber: cleanPhone, isDeleted: false });
+    if (!user)
+      return res.status(404).json({ success: false, message: "User not found", data: null });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpire = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await sendOTPSMS(cleanPhone, otp);
+
+    res.json({ success: true, message: "OTP resent to your mobile", data: null });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error", data: null });
@@ -151,17 +298,21 @@ export const changePassword = async (req, res) => {
 // ================= UPDATE PROFILE =================
 export const updateProfile = async (req, res) => {
   try {
-    const { fullName, email } = req.body;
+    const { fullName, email, phoneNumber, avatar } = req.body;
     const user = await User.findById(req.user._id);
 
     if (email && email !== user.email) {
-      const exists = await User.findOne({ email });
+      const exists = await User.findOne({ email, isDeleted: false });
       if (exists)
         return res.status(400).json({ success: false, message: "Email already exists", data: null });
     }
 
-    user.fullName = fullName || user.fullName;
-    user.email = email || user.email;
+    user.fullName = fullName !== undefined ? fullName : user.fullName;
+    user.email = email !== undefined ? email : user.email;
+    if (phoneNumber !== undefined && phoneNumber.length === 10) {
+      user.phoneNumber = phoneNumber.replace(/\D/g, "").slice(-10);
+    }
+    if (avatar !== undefined && avatar) user.avatar = avatar;
     await user.save();
 
     res.json({ success: true, message: "Profile updated", data: user, token: generateToken(user._id) });

@@ -177,7 +177,7 @@ const OrderSuccess = () => {
             className="w-full max-w-sm h-14 text-lg font-semibold shadow-lg shadow-primary/20"
             asChild
           >
-            <Link to="/shop">
+            <Link to="/store-products">
               <ShoppingBag className="mr-2 h-5 w-5" />
               Keep Shopping
               <ChevronRight className="ml-2 h-4 w-4 text-muted-foreground font-black" />

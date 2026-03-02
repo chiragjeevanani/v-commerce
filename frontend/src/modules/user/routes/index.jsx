@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../layouts/Layout';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Home from '../pages/Home';
-import Shop from '../pages/Shop';
 import StoreProducts from '../pages/StoreProducts';
 
 // Lazy load remaining pages (main nav pages are eager to prevent blank screen)
@@ -43,7 +42,6 @@ const UserRoutes = () => {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="shop" element={<Shop />} />
           <Route path="product/:id" element={<ProductDetail />} />
           <Route path="store-products" element={<StoreProducts />} />
           <Route path="store-product/:id" element={<StoreProductDetail />} />

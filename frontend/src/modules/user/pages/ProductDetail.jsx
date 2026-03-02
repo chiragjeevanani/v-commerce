@@ -179,14 +179,14 @@ const ProductDetail = () => {
     if (type === "inc" && quantity < (product?.stock || 10)) setQuantity(quantity + 1);
   };
 
-  const handleAddToCart = () => {
-    addToCart({ ...product, quantity });
+  const handleAddToCart = async () => {
+    await addToCart({ ...product, quantity });
     setHasAddedToCartOnThisPage(true);
+    navigate("/cart");
   };
 
   const handleBuyNow = () => {
-    addToCart({ ...product, quantity });
-    navigate("/cart");
+    handleAddToCart();
   };
 
   if (loading) {
@@ -214,8 +214,8 @@ const ProductDetail = () => {
     return (
       <div className="container py-12 text-center min-h-screen flex flex-col items-center justify-center">
         <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-muted-foreground">Product not found</h2>
-        <Button onClick={() => navigate("/shop")} className="mt-6 rounded-full px-8">
-          Back to Shop
+        <Button onClick={() => navigate("/store-products")} className="mt-6 rounded-full px-8">
+          Back to Store Products
         </Button>
       </div>
     );

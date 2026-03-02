@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, ArrowRight, RefreshCw, Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '../context/AuthContext';
 import { authService } from '../../../services/auth.service';
 
 const VerifyOTP = () => {
@@ -13,7 +14,19 @@ const VerifyOTP = () => {
     const inputRefs = useRef([]);
 
     const navigate = useNavigate();
+    const location = useLocation();
     const { toast } = useToast();
+    const { loginWithOTP, verifySignupWithOTP } = useAuth();
+
+    const mode = location.state?.mode || 'login';
+    const from = location.state?.from || '/';
+    const pendingPhone = localStorage.getItem('pending_phone') || '';
+
+    useEffect(() => {
+        if (!pendingPhone) {
+            navigate(mode === 'signup' ? '/signup' : '/', { replace: true });
+        }
+    }, [pendingPhone, mode, navigate]);
 
     useEffect(() => {
         let interval;
@@ -23,22 +36,19 @@ const VerifyOTP = () => {
         return () => clearInterval(interval);
     }, [timer]);
 
+    const maskPhone = (p) => (p ? `******${p.slice(-4)}` : '');
+
     const handleChange = (index, value) => {
         if (isNaN(value)) return;
-
         const newOtp = [...otp];
         newOtp[index] = value.substring(value.length - 1);
         setOtp(newOtp);
-
-        // Auto-focus next input
-        if (value && index < 5) {
-            inputRefs.current[index + 1].focus();
-        }
+        if (value && index < 5) inputRefs.current[index + 1]?.focus();
     };
 
     const handleKeyDown = (index, e) => {
         if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            inputRefs.current[index - 1].focus();
+            inputRefs.current[index - 1]?.focus();
         }
     };
 
@@ -50,9 +60,7 @@ const VerifyOTP = () => {
             if (!isNaN(char)) newOtp[i] = char;
         });
         setOtp(newOtp);
-        if (data.length > 0) {
-            inputRefs.current[Math.min(data.length, 5)].focus();
-        }
+        if (data.length > 0) inputRefs.current[Math.min(data.length, 5)]?.focus();
     };
 
     const handleSubmit = async (e) => {
@@ -60,152 +68,120 @@ const VerifyOTP = () => {
         const otpString = otp.join('');
 
         if (otpString.length < 6) {
-            toast({
-                title: "Incomplete Code",
-                description: "Please enter all 6 digits.",
-                variant: "destructive",
-            });
+            toast({ title: "Incomplete", description: "Enter all 6 digits.", variant: "destructive" });
             return;
         }
 
         setIsLoading(true);
         try {
-            await authService.verifyOTP(otpString);
-            toast({
-                title: "Verification Successful",
-                description: "Your account is now fully active!",
-            });
-            navigate('/');
+            if (mode === 'login') {
+                await loginWithOTP(pendingPhone, otpString);
+            } else {
+                await verifySignupWithOTP(pendingPhone, otpString);
+            }
+            toast({ title: "Success", description: mode === 'login' ? "Welcome back!" : "Account verified!" });
+            navigate('/', { replace: true });
         } catch (error) {
-            toast({
-                title: "Verification Failed",
-                description: error.message || "Invalid OTP code. Try 123456",
-                variant: "destructive",
-            });
+            toast({ title: "Failed", description: error.message || "Invalid or expired OTP.", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleResend = async () => {
-        const email = localStorage.getItem("pending_email");
-        if (!email) {
-            toast({
-                title: "Error",
-                description: "Email not found. Please signup again.",
-                variant: "destructive",
-            });
-            return;
-        }
-
+        if (!pendingPhone) return;
         try {
-            await authService.resendOTP(email);
+            if (mode === 'signup') {
+                await authService.resendSignupOTP(pendingPhone);
+            } else {
+                await authService.sendOTPLogin(pendingPhone);
+            }
             setTimer(60);
             setOtp(['', '', '', '', '', '']);
-            inputRefs.current[0].focus();
-            toast({
-                title: "OTP Resent",
-                description: "A new verification code has been sent to your email.",
-            });
+            inputRefs.current[0]?.focus();
+            toast({ title: "OTP Resent", description: "New code sent to your mobile." });
         } catch (error) {
-            toast({
-                title: "Error",
-                description: error.message || "Failed to resend OTP.",
-                variant: "destructive",
-            });
+            toast({ title: "Error", description: error.message, variant: "destructive" });
         }
     };
 
+    if (!pendingPhone) return null;
+
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-muted/30 p-4">
-            <div className="w-full max-w-md mb-4 flex justify-start">
+        <div className="min-h-screen flex flex-col bg-background">
+            {/* Top bar - mobile-friendly, safe area for notch */}
+            <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <Button
                     variant="ghost"
-                    className="hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all rounded-full px-4 group"
-                    onClick={() => navigate("/signup")}
+                    size="icon"
+                    className="shrink-0 -ml-1 h-10 w-10 rounded-full"
+                    onClick={() => navigate(mode === 'signup' ? '/signup' : '/')}
                 >
-                    <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                    Back to Signup
+                    <ArrowLeft className="h-5 w-5" />
                 </Button>
+                <span className="text-lg font-bold">Verify OTP</span>
+                <div className="w-10" />
             </div>
-            <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-md bg-card border rounded-3xl p-8 shadow-2xl space-y-8"
-            >
-                <div className="text-center space-y-2">
-                    <div className="h-16 w-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400">
-                        <ShieldCheck className="h-8 w-8" />
-                    </div>
-                    <h1 className="text-3xl font-black tracking-tight">Verify Your Account</h1>
-                    <p className="text-muted-foreground text-sm font-medium">
-                        We've sent a 6-digit verification code to <br />
-                        <span className="font-bold text-foreground">
-                            {localStorage.getItem("pending_email") || "your email address"}
-                        </span>
-                    </p>
-                </div>
 
-                <form onSubmit={handleSubmit} className="space-y-8">
-                    <div className="flex justify-between gap-2 max-w-sm mx-auto">
-                        {otp.map((digit, index) => (
-                            <input
-                                key={index}
-                                ref={(el) => (inputRefs.current[index] = el)}
-                                type="text"
-                                inputMode="numeric"
-                                maxLength={1}
-                                value={digit}
-                                onChange={(e) => handleChange(index, e.target.value)}
-                                onKeyDown={(e) => handleKeyDown(index, e)}
-                                onPaste={handlePaste}
-                                className="w-full h-14 text-center text-2xl font-black rounded-xl border bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
-                            />
-                        ))}
+            {/* Content - from top on mobile */}
+            <div className="flex-1 flex flex-col items-center px-4 pt-6 pb-8 overflow-y-auto">
+                <div className="w-full max-w-md">
+                    <div className="text-center space-y-3 mb-8">
+                        <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
+                            <ShieldCheck className="h-7 w-7 text-primary" />
+                        </div>
+                        <h1 className="text-xl font-bold">Verify Your Mobile</h1>
+                        <p className="text-sm text-muted-foreground">
+                            OTP sent to <span className="font-semibold text-foreground">{maskPhone(pendingPhone)}</span>
+                        </p>
                     </div>
 
-                    <div className="space-y-4">
-                        <Button
-                            type="submit"
-                            className="w-full h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 transition-all gap-2"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                            ) : (
-                                <>Verify & Continue <ArrowRight className="h-5 w-5" /></>
-                            )}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="flex justify-between gap-1 sm:gap-2 max-w-sm mx-auto">
+                            {otp.map((digit, index) => (
+                                <input
+                                    key={index}
+                                    ref={(el) => (inputRefs.current[index] = el)}
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    value={digit}
+                                    onChange={(e) => handleChange(index, e.target.value)}
+                                    onKeyDown={(e) => handleKeyDown(index, e)}
+                                    onPaste={handlePaste}
+                                    className="h-12 sm:h-14 w-9 sm:w-11 text-center text-xl sm:text-2xl font-bold rounded-xl border bg-background focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                                />
+                            ))}
+                        </div>
+
+                        <Button type="submit" className="w-full h-12 rounded-xl font-semibold" disabled={isLoading}>
+                            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Verify & Continue <ArrowRight className="h-4 w-4 ml-1" /></>}
                         </Button>
 
                         <div className="flex items-center justify-between px-2">
                             <button
                                 type="button"
-                                onClick={() => navigate('/signup')}
-                                className="flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-primary transition-colors"
+                                onClick={() => navigate(mode === 'signup' ? '/signup' : '/')}
+                                className="text-sm font-medium text-muted-foreground hover:text-primary"
                             >
-                                <ArrowLeft className="h-3 w-3" /> Change Details
+                                Change Number
                             </button>
-
                             <button
                                 type="button"
                                 onClick={handleResend}
                                 disabled={timer > 0}
-                                className="flex items-center gap-1 text-xs font-bold text-primary disabled:text-muted-foreground hover:underline transition-all"
+                                className="text-sm font-medium text-primary disabled:text-muted-foreground disabled:cursor-not-allowed"
                             >
-                                <RefreshCw className={`h-3 w-3 ${timer > 0 ? '' : 'animate-spin-once'}`} />
-                                {timer > 0 ? `Resend Code in ${timer}s` : 'Resend Code Now'}
+                                {timer > 0 ? `Resend in ${timer}s` : 'Resend OTP'}
                             </button>
                         </div>
-                    </div>
-                </form>
+                    </form>
 
-                <div className="p-4 bg-muted/50 rounded-2xl text-center space-y-1">
-                    <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground opacity-60">Security Tip</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                        Never share your OTP with anyone. V-Commerce will never call you asking for your verification code.
+                    <p className="mt-6 text-center text-xs text-muted-foreground">
+                        Never share your OTP. V-Commerce will never call asking for your code.
                     </p>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };

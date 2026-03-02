@@ -28,7 +28,7 @@ const Cart = () => {
           <p className="text-muted-foreground max-w-sm mx-auto">
             Looks like you haven't added anything to your cart yet.
           </p>
-          <Button onClick={() => navigate("/shop")}>Start Shopping</Button>
+          <Button onClick={() => navigate("/store-products")}>Start Shopping</Button>
         </div>
       </div>
     );
@@ -36,8 +36,8 @@ const Cart = () => {
 
   return (
     <div className="container py-8">
-      <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate("/shop")}>
-        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Shop
+      <Button variant="ghost" className="mb-6 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate("/store-products")}>
+        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Store Products
       </Button>
       <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
 

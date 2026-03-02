@@ -19,6 +19,60 @@ export const authService = {
         }
     },
 
+    sendOTPLogin: async (phoneNumber) => {
+        try {
+            const response = await apiClient.post('/auth/send-otp-login', { phoneNumber: phoneNumber.replace(/\D/g, '').slice(-10) });
+            const { data } = response.data;
+            if (data?.pending_phone) {
+                localStorage.setItem("pending_phone", data.pending_phone);
+            }
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to send OTP");
+        }
+    },
+
+    verifyOTPLogin: async (phoneNumber, otp) => {
+        try {
+            const cleanPhone = (phoneNumber || '').replace(/\D/g, '').slice(-10);
+            const response = await apiClient.post('/auth/verify-otp-login', { phoneNumber: cleanPhone, otp });
+            const { data, token } = response.data;
+
+            localStorage.setItem("auth_token", token);
+            localStorage.setItem("user", JSON.stringify(data));
+            localStorage.removeItem("pending_phone");
+
+            return { success: true, user: data, token };
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Invalid OTP");
+        }
+    },
+
+    verifySignupOTP: async (phoneNumber, otp) => {
+        try {
+            const cleanPhone = (phoneNumber || '').replace(/\D/g, '').slice(-10);
+            const response = await apiClient.post('/auth/verify-signup-otp', { phoneNumber: cleanPhone, otp });
+            const { data, token } = response.data;
+
+            localStorage.setItem("auth_token", token);
+            localStorage.setItem("user", JSON.stringify(data));
+            localStorage.removeItem("pending_phone");
+
+            return { success: true, user: data, token };
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Invalid or expired OTP");
+        }
+    },
+
+    resendSignupOTP: async (phoneNumber) => {
+        try {
+            const response = await apiClient.post('/auth/resend-signup-otp', { phoneNumber: (phoneNumber || '').replace(/\D/g, '').slice(-10) });
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to resend OTP");
+        }
+    },
+
     adminLogin: async (email, password) => {
         try {
             const response = await apiClient.post('/auth/login', { email, password });
@@ -40,13 +94,20 @@ export const authService = {
     signup: async (userData) => {
         try {
             const response = await apiClient.post('/auth/register', userData);
-            const { data, token } = response.data;
+            const { data } = response.data;
 
+            // OTP flow: backend sends OTP to mobile, returns pending_phone (no token yet)
+            if (data?.pending_phone) {
+                localStorage.setItem("pending_phone", data.pending_phone);
+                return { success: true, pending_phone: data.pending_phone };
+            }
+
+            // Fallback for old backend that returns token directly
+            const { token } = response.data;
             if (token && data) {
                 localStorage.setItem("auth_token", token);
                 localStorage.setItem("user", JSON.stringify(data));
             }
-
             return { success: true, user: data, token };
         } catch (error) {
             throw new Error(error.response?.data?.message || "Signup failed");

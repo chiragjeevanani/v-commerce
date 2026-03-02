@@ -245,7 +245,7 @@ const About = () => {
                             Join thousands of happy customers who trust V-Commerce for their shopping needs.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link to="/shop">
+                            <Link to="/store-products">
                                 <button className="px-8 py-4 bg-background text-foreground rounded-xl font-bold hover:bg-background/90 transition-all shadow-xl hover:shadow-2xl hover:scale-105">
                                     Browse Products
                                 </button>

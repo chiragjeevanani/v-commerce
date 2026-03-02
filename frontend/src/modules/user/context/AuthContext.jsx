@@ -8,17 +8,22 @@ export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
+    const refreshUser = () => {
+        const storedUser = authService.getCurrentUser();
+        const token = authService.getToken();
+        if (storedUser && token) {
+            setUser(storedUser);
+        }
+    };
+
     useEffect(() => {
-        const checkAuth = () => {
-            const storedUser = authService.getCurrentUser();
-            const token = authService.getToken();
-            if (storedUser && token) {
-                setUser(storedUser);
-                setIsAuthenticated(true);
-            }
-            setIsLoading(false);
-        };
-        checkAuth();
+        const storedUser = authService.getCurrentUser();
+        const token = authService.getToken();
+        if (storedUser && token) {
+            setUser(storedUser);
+            setIsAuthenticated(true);
+        }
+        setIsLoading(false);
     }, []);
 
     const login = async (email, password) => {
@@ -46,6 +51,30 @@ export const AuthProvider = ({ children }) => {
     const signup = async (userData) => {
         try {
             const response = await authService.signup(userData);
+            if (response.user) {
+                setUser(response.user);
+                setIsAuthenticated(true);
+            }
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const loginWithOTP = async (phoneNumber, otp) => {
+        try {
+            const response = await authService.verifyOTPLogin(phoneNumber, otp);
+            setUser(response.user);
+            setIsAuthenticated(true);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const verifySignupWithOTP = async (phoneNumber, otp) => {
+        try {
+            const response = await authService.verifySignupOTP(phoneNumber, otp);
             setUser(response.user);
             setIsAuthenticated(true);
             return response;
@@ -69,6 +98,9 @@ export const AuthProvider = ({ children }) => {
                 login,
                 adminLogin,
                 signup,
+                loginWithOTP,
+                verifySignupWithOTP,
+                refreshUser,
                 logout,
                 deleteAccount: async () => {
                     await authService.deleteAccount();

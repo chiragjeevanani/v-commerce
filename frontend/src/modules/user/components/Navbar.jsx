@@ -49,7 +49,7 @@ const Navbar = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+      navigate(`/store-products?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 

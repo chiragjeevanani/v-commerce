@@ -3,6 +3,10 @@ import {
     registerUser,
     loginUser,
     verifyUser,
+    verifySignupOTP,
+    sendOTPLogin,
+    verifyOTPLogin,
+    resendSignupOTP,
     changePassword,
     updateProfile,
     softDeleteUser,
@@ -22,8 +26,12 @@ import { AuthMiddleware, isAdmin } from "../Middlewares/AuthMiddleware.js";
 
 const router = express.Router();
 
-// Admin 
+// Auth (no auth required)
 router.post("/register", registerUser);
+router.post("/verify-signup-otp", verifySignupOTP);
+router.post("/resend-signup-otp", resendSignupOTP);
+router.post("/send-otp-login", sendOTPLogin);
+router.post("/verify-otp-login", verifyOTPLogin);
 router.post("/resend-otp", resendOTP);
 router.post("/login", loginUser);
 router.post("/verify", verifyUser);

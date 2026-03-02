@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, CreditCard, MapPin, Truck, ArrowLeft } from "lucide-react";
 import { useCart } from "@/modules/user/context/CartContext";
 import { api } from "@/services/api";
-import { addressService } from "@/services/address.service";
 import { useAuth } from "@/modules/user/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -17,39 +16,20 @@ import AddressForm from "@/modules/user/components/AddressForm";
 import { Separator } from "@/components/ui/separator";
 import AnimatedNumber from "@/modules/user/components/AnimatedNumber";
 
-const steps = [
-  { id: 1, name: "Shipping", icon: MapPin },
-  { id: 2, name: "Payment", icon: CreditCard },
-  { id: 3, name: "Review", icon: Check },
-];
-
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { cart, cartTotal, clearCart } = useCart();
-  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const isOrderPlaced = useRef(false);
   const [paymentMethod, setPaymentMethod] = useState("online");
   const [usePartialPayment, setUsePartialPayment] = useState(false);
-  const cartHasPartialPayment = cart.some((item) => item.allowPartialPayment === true);
-  const PARTIAL_PAYMENT_AMOUNT = 500;
   const { user } = useAuth();
-  const [addresses, setAddresses] = useState([]);
-  const [selectedAddressId, setSelectedAddressId] = useState(null);
-  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: user?.fullName?.split(' ')[0] || "",
-    lastName: user?.fullName?.split(' ')[1] || "",
+    fullName: user?.fullName || "",
     address: "",
-    city: "",
-    state: "",
-    zip: "",
+    pinCode: "",
     phoneNumber: user?.phoneNumber || "",
-    email: user?.email || "",
-    cardNumber: "",
-    expiry: "",
-    cvc: "",
   });
 
   // State for shipping estimation
@@ -57,33 +37,16 @@ const Checkout = () => {
   const [selectedShipping, setSelectedShipping] = useState(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [deliveryEstimate, setDeliveryEstimate] = useState("");
-  const [newAddressData, setNewAddressData] = useState(null);
-
   const shippingFee = selectedShipping?.fee ?? selectedShipping?.price ?? 0;
   const orderTotal = (cartTotal * 1.1) + shippingFee;
-  const showPartialOption = cartHasPartialPayment && orderTotal > 500;
+  const cartHasPartialPayment = cart.some((item) => item.allowPartialPayment === true);
+  const PARTIAL_PAYMENT_AMOUNT = 500;
+  const showPartialOption = cartHasPartialPayment && orderTotal > PARTIAL_PAYMENT_AMOUNT;
 
   useEffect(() => {
     if (cart.length === 0 && !isOrderPlaced.current) {
       navigate("/cart");
     }
-
-    const fetchAddresses = async () => {
-      try {
-        const data = await addressService.getAddresses();
-        setAddresses(data);
-        const defaultAddr = data.find(a => a.isDefault) || data[0];
-        if (defaultAddr) {
-          setSelectedAddressId(defaultAddr._id);
-          setShowNewAddressForm(false);
-        } else {
-          setShowNewAddressForm(true);
-        }
-      } catch (error) {
-        console.error("Failed to load addresses", error);
-      }
-    };
-    fetchAddresses();
   }, [cart, navigate, location.key]);
 
   // Fetch shipping estimate when cart or address changes
@@ -185,49 +148,30 @@ const Checkout = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const nextStep = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, 3));
-  };
-
-  const prevStep = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
-  };
-
   const handlePlaceOrder = async () => {
     setLoading(true);
     try {
-      let shippingAddress = null;
-
-      if (showNewAddressForm) {
-        if (!formData.address || !formData.city || !formData.zip) {
-          toast({ title: "Error", description: "Please fill all shipping details", variant: "destructive" });
-          setLoading(false);
-          return;
-        }
-
-        const addrResponse = await addressService.addAddress({
-          fullName: `${formData.firstName} ${formData.lastName}`,
-          street: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zip,
-          phoneNumber: formData.phoneNumber,
-          isDefault: addresses.length === 0
+      if (!formData.fullName || !formData.address || !formData.pinCode || !formData.phoneNumber) {
+        toast({
+          title: "Missing details",
+          description: "Please fill name, address, pin code and mobile number.",
+          variant: "destructive"
         });
-
-        const newAddresses = addrResponse.data;
-        shippingAddress = newAddresses[newAddresses.length - 1];
-      } else {
-        shippingAddress = addresses.find(a => a._id === selectedAddressId);
-      }
-
-      if (!shippingAddress) {
-        toast({ title: "Error", description: "Please select a shipping address", variant: "destructive" });
         setLoading(false);
         return;
       }
 
+      const shippingAddress = {
+        fullName: formData.fullName,
+        street: formData.address,
+        city: "",
+        state: "",
+        zipCode: formData.pinCode,
+        phoneNumber: formData.phoneNumber,
+      };
+
       const totalAmount = (cartTotal * 1.1) + shippingFee;
+      const amountToPay = usePartialPayment ? PARTIAL_PAYMENT_AMOUNT : totalAmount;
 
       // Branching logic for Payment Method
       if (paymentMethod === 'cod') {
@@ -270,7 +214,6 @@ const Checkout = () => {
           return;
         }
 
-        const amountToPay = usePartialPayment ? PARTIAL_PAYMENT_AMOUNT : totalAmount;
         // 1. Create Razorpay Order on Backend
         const rzpOrderRes = await api.createRazorpayOrder(amountToPay);
 
@@ -360,273 +303,156 @@ const Checkout = () => {
       <Button variant="ghost" className="mb-6 -ml-2 hover:bg-transparent hover:text-primary transition-colors group" onClick={() => navigate("/cart")}>
         <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Cart
       </Button>
-      {/* Stepper */}
-      <div className="mb-12">
-        <div className="flex items-center justify-between relative max-w-2xl mx-auto">
-          <div className="absolute left-0 top-1/2 w-full h-1 bg-muted -translate-y-1/2 -z-10" />
-          {steps.map((step) => {
-            const Icon = step.icon;
-            const isActive = step.id === currentStep;
-            const isCompleted = step.id < currentStep;
-
-            return (
-              <div key={step.id} className="flex flex-col items-center bg-background px-4">
-                <motion.div
-                  initial={false}
-                  animate={{
-                    backgroundColor: isActive || isCompleted ? "hsl(var(--primary))" : "hsl(var(--background))",
-                    borderColor: isActive || isCompleted ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
-                    color: isActive || isCompleted ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
-                    scale: isActive ? 1.2 : 1
-                  }}
-                  className="flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-500 shadow-lg"
-                >
-                  <Icon className="h-6 w-6" />
-                </motion.div>
-                <span
-                  className={`mt-3 text-xs md:text-sm font-bold uppercase tracking-widest ${isActive || isCompleted ? "text-primary" : "text-muted-foreground opacity-50"
-                    }`}
-                >
-                  {step.name}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Card className="border-none shadow-2xl bg-card rounded-3xl overflow-hidden">
             <CardHeader className="bg-primary/5 border-b border-primary/10 py-6">
               <CardTitle className="text-2xl font-black text-primary">
-                {currentStep === 1 && "Shipping Details"}
-                {currentStep === 2 && "Payment Method"}
-                {currentStep === 3 && "Review Order"}
+                Checkout
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 md:p-8">
-              <AnimatePresence mode="wait">
-                {currentStep === 1 && (
-                  <motion.div
-                    key="step1"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-8"
-                  >
-                    {/* Address Selection */}
-                    {!showNewAddressForm && addresses.length > 0 && (
-                      <div className="space-y-4">
-                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">Select Shipping Address</h3>
-                        <div className="grid gap-4">
-                          {addresses.map((addr) => (
-                            <button
-                              key={addr._id}
-                              onClick={() => setSelectedAddressId(addr._id)}
-                              className={`flex items-start gap-4 p-5 rounded-3xl border-2 text-left transition-all ${selectedAddressId === addr._id ? 'border-primary bg-primary/5 shadow-inner' : 'border-border hover:border-primary/20'}`}
-                            >
-                              <div className={`mt-1 h-5 w-5 rounded-full border-2 flex items-center justify-center ${selectedAddressId === addr._id ? 'border-primary' : 'border-muted-foreground/30'}`}>
-                                {selectedAddressId === addr._id && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-black text-sm">{addr.fullName}</span>
-                                  <Badge variant="outline" className="text-[9px] py-0">{addr.addressType}</Badge>
-                                </div>
-                                <p className="text-xs text-muted-foreground leading-tight">
-                                  {addr.street}, {addr.city}, {addr.state} {addr.zipCode}
-                                </p>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                        <Button variant="outline" className="w-full rounded-2xl border-dashed h-14 font-bold" onClick={() => setShowNewAddressForm(true)}>
-                          <Plus className="h-4 w-4 mr-2" /> Add New Address
-                        </Button>
-                      </div>
-                    )}
-
-                    {(showNewAddressForm || addresses.length === 0) && (
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">New Shipping Address</h3>
-                          {addresses.length > 0 && (
-                            <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase" onClick={() => setShowNewAddressForm(false)}>Use Saved Address</Button>
-                          )}
-                        </div>
-
-                        <AddressForm
-                          formData={formData}
-                          handleChange={handleInputChange}
-                          showSubmitButton={false}
+            <CardContent className="p-6 md:p-8 space-y-8">
+              <div className="grid gap-8 md:grid-cols-2">
+                {/* Shipping form */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">
+                    Shipping Details
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input
+                        id="fullName"
+                        name="fullName"
+                        placeholder="Your name"
+                        className="h-11 rounded-xl"
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="address">Address</Label>
+                      <Input
+                        id="address"
+                        name="address"
+                        placeholder="House / Street / Area"
+                        className="h-11 rounded-xl"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="pinCode">Pin Code</Label>
+                        <Input
+                          id="pinCode"
+                          name="pinCode"
+                          type="tel"
+                          inputMode="numeric"
+                          maxLength={6}
+                          placeholder="110001"
+                          className="h-11 rounded-xl"
+                          value={formData.pinCode}
+                          onChange={handleInputChange}
                         />
                       </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {currentStep === 2 && (
-                  <motion.div
-                    key="step2"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-8"
-                  >
-                    <div className="space-y-3">
-                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Select payment method</p>
-                      <div className="flex justify-center py-2">
-                        {[
-                          { id: "online", name: "Online Payment", icon: "💳", disabled: false },
-                        ].map((method) => (
-                          <button
-                            key={method.id}
-                            type="button"
-                            onClick={() => !method.disabled && setPaymentMethod(method.id)}
-                            disabled={method.disabled}
-                            className={`w-full max-w-[300px] p-6 sm:p-8 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all duration-200 relative ${paymentMethod === method.id
-                              ? "border-primary bg-primary/5 shadow-[0_0_30px_rgba(var(--primary-rgb),0.15)]"
-                              : "border-border hover:border-primary/40"
-                              } ${method.disabled ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
-                          >
-                            <span className="text-3xl sm:text-4xl">{method.icon}</span>
-                            <span className="font-bold text-sm uppercase tracking-wider">{method.name}</span>
-                            {paymentMethod === method.id && (
-                              <motion.div layoutId="active" className="absolute bottom-4 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-primary" />
-                            )}
-                          </button>
-                        ))}
+                      <div className="space-y-1">
+                        <Label htmlFor="phoneNumber">Mobile Number</Label>
+                        <Input
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          type="tel"
+                          inputMode="numeric"
+                          maxLength={10}
+                          placeholder="9876543210"
+                          className="h-11 rounded-xl"
+                          value={formData.phoneNumber}
+                          onChange={handleInputChange}
+                        />
                       </div>
                     </div>
+                  </div>
+                </div>
 
-                    <div className="pt-8 border-t border-border/60">
-                      <AnimatePresence mode="wait">
-                        {paymentMethod === "online" && (
-                          <motion.div
-                            key="online-info"
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            className="space-y-6"
-                          >
-                           
-                            {showPartialOption && (
-                              <div className="space-y-4">
-                                <h4 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">Choose payment option</h4>
-                                <div className="grid sm:grid-cols-2 gap-4">
-                                  <button
-                                    type="button"
-                                    onClick={() => setUsePartialPayment(false)}
-                                    className={`flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200 ${!usePartialPayment ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-primary/20 hover:bg-muted/30'}`}
-                                  >
-                                    <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${!usePartialPayment ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
-                                      {!usePartialPayment && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
-                                    </div>
-                                    <div>
-                                      <span className="font-bold text-sm block">Full Payment</span>
-                                      <span className="text-xs text-muted-foreground mt-0.5 block">Pay total ₹{orderTotal.toFixed(0)} now</span>
-                                    </div>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setUsePartialPayment(true)}
-                                    className={`flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200 ${usePartialPayment ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-primary/20 hover:bg-muted/30'}`}
-                                  >
-                                    <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${usePartialPayment ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
-                                      {usePartialPayment && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
-                                    </div>
-                                    <div>
-                                      <span className="font-bold text-sm block">Partial Payment</span>
-                                      <span className="text-xs text-muted-foreground mt-0.5 block">Pay ₹500 now, rest later</span>
-                                    </div>
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
-                )}
+                {/* Payment method */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">
+                    Payment Method
+                  </h3>
+                  <div className="flex justify-center md:justify-start">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("online")}
+                      className="w-full max-w-[320px] p-6 sm:p-7 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all duration-200 relative border-primary bg-primary/5 shadow-[0_0_30px_rgba(0,0,0,0.15)]"
+                    >
+                      <span className="text-3xl sm:text-4xl">💳</span>
+                      <span className="font-bold text-sm uppercase tracking-wider">Online Payment</span>
+                      <span className="text-[11px] text-muted-foreground text-center">
+                        Secure payment powered by Razorpay
+                      </span>
+                    </button>
+                  </div>
 
-                {currentStep === 3 && (
-                  <motion.div
-                    key="step3"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-6"
-                  >
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="rounded-2xl border bg-muted/30 p-6 space-y-3">
-                        <h4 className="font-black uppercase text-xs tracking-widest text-primary">Shipping To:</h4>
-                        <p className="text-sm font-medium leading-relaxed">
-                          {showNewAddressForm ? (
-                            <>
-                              {formData.firstName} {formData.lastName}<br />
-                              {formData.address}<br />
-                              {formData.city}, {formData.zip}
-                            </>
-                          ) : (
-                            <>
-                              {addresses.find(a => a._id === selectedAddressId)?.fullName}<br />
-                              {addresses.find(a => a._id === selectedAddressId)?.street}<br />
-                              {addresses.find(a => a._id === selectedAddressId)?.city}, {addresses.find(a => a._id === selectedAddressId)?.zipCode}
-                            </>
-                          )}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border bg-muted/30 p-6 space-y-3">
-                        <h4 className="font-black uppercase text-xs tracking-widest text-primary">Payment Via:</h4>
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{paymentMethod === 'online' ? '💳' : '💵'}</span>
-                          <p className="text-sm font-black uppercase tracking-widest">
-                            {paymentMethod === 'online'
-                              ? (usePartialPayment ? `Online Payment (₹500 now)` : 'Online Payment (Full)')
-                              : 'Cash on Delivery'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <h4 className="font-black uppercase text-xs tracking-widest text-primary">Items in Order:</h4>
-                      <div className="space-y-3">
-                        {cart.map((item, index) => (
-                          <div key={item.pid || item.id || index} className="flex justify-between items-center text-sm p-3 bg-muted/30 rounded-xl">
-                            <span className="font-medium">
-                              <span className="text-primary font-black mr-2">{item.quantity}x</span> {item.name}
-                            </span>
-                            <span className="font-black">
-                              ₹<AnimatedNumber value={(item.discountPrice || item.price) * item.quantity} decimals={2} />
-                            </span>
+                  {showPartialOption && (
+                    <div className="space-y-3 pt-4 border-t border-border/60">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        Choose payment option
+                      </p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setUsePartialPayment(false)}
+                          className={`flex items-start gap-3 p-4 rounded-2xl border text-left transition-all text-xs sm:text-sm ${!usePartialPayment ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-primary/20 hover:bg-muted/30'}`}
+                        >
+                          <div className={`mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0 ${!usePartialPayment ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                            {!usePartialPayment && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
                           </div>
-                        ))}
+                          <div>
+                            <span className="font-semibold block">Full Payment</span>
+                            <span className="text-[11px] text-muted-foreground block">Pay total ₹{orderTotal.toFixed(0)} now</span>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUsePartialPayment(true)}
+                          className={`flex items-start gap-3 p-4 rounded-2xl border text-left transition-all text-xs sm:text-sm ${usePartialPayment ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-primary/20 hover:bg-muted/30'}`}
+                        >
+                          <div className={`mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0 ${usePartialPayment ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                            {usePartialPayment && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
+                          </div>
+                          <div>
+                            <span className="font-semibold block">Partial Payment</span>
+                            <span className="text-[11px] text-muted-foreground block">Pay ₹{PARTIAL_PAYMENT_AMOUNT} now, rest later</span>
+                          </div>
+                        </button>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  )}
 
-              <div className="flex justify-between pt-10 border-t mt-10">
-                {currentStep > 1 ? (
-                  <Button variant="ghost" onClick={prevStep} className="rounded-full px-8 hover:bg-muted font-bold uppercase tracking-widest text-xs">
-                    Back
-                  </Button>
-                ) : (
-                  <div />
-                )}
+                  <div className="rounded-2xl border bg-muted/40 p-4 space-y-2 text-xs text-muted-foreground">
+                    <p className="font-semibold text-[11px] uppercase tracking-[0.2em]">Shipping To</p>
+                    <p className="text-sm font-medium leading-relaxed">
+                      {formData.fullName && <>{formData.fullName}<br /></>}
+                      {formData.address && <>{formData.address}<br /></>}
+                      {(formData.pinCode || formData.phoneNumber) && (
+                        <>
+                          {formData.pinCode && `PIN: ${formData.pinCode}`}{" "}
+                          {formData.phoneNumber && <span>• {formData.phoneNumber}</span>}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                {currentStep < 3 ? (
-                  <Button onClick={nextStep} className="rounded-full px-12 font-bold uppercase tracking-widest text-xs shadow-lg hover:shadow-primary/20 scale-105 transition-all">
-                    Next Step
-                  </Button>
-                ) : (
-                  <Button onClick={handlePlaceOrder} disabled={loading} className="rounded-full px-12 font-bold uppercase tracking-widest text-xs shadow-lg hover:shadow-primary/20 scale-105 transition-all">
-                    {loading ? "Processing..." : "Place Order"}
-                  </Button>
-                )}
+              <div className="flex justify-end pt-6 border-t mt-4">
+                <Button
+                  onClick={handlePlaceOrder}
+                  disabled={loading}
+                  className="rounded-full px-10 font-bold uppercase tracking-widest text-xs shadow-lg hover:shadow-primary/20 scale-105 transition-all"
+                >
+                  {loading ? "Processing..." : "Place Order & Pay"}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -669,18 +495,18 @@ const Checkout = () => {
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-                    {paymentMethod === 'online' && usePartialPayment ? 'Pay now (₹500)' : 'Total Amount'}
+                    {paymentMethod === 'online' && usePartialPayment ? 'Pay now' : 'Total Amount'}
                   </span>
                   <span className="text-3xl font-black text-primary leading-none">
                     ₹<AnimatedNumber
-                      value={paymentMethod === 'online' && usePartialPayment
-                        ? 500
-                        : orderTotal}
+                      value={paymentMethod === 'online' && usePartialPayment ? PARTIAL_PAYMENT_AMOUNT : orderTotal}
                       decimals={2}
                     />
                   </span>
                   {paymentMethod === 'online' && usePartialPayment && (
-                    <span className="text-[10px] text-muted-foreground mt-1">Full order total: ₹<AnimatedNumber value={orderTotal} decimals={2} /></span>
+                    <span className="text-[10px] text-muted-foreground mt-1">
+                      Full order total: ₹<AnimatedNumber value={orderTotal} decimals={2} />
+                    </span>
                   )}
                 </div>
               </div>
