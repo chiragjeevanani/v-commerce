@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -12,11 +12,17 @@ import { Label } from '@/components/ui/label';
 const Signup = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [agreeTerms, setAgreeTerms] = useState(false);
+    const [agreeTerms, setAgreeTerms] = useState(true);
 
-    const { signup } = useAuth();
+    const { signup, isAuthenticated } = useAuth();
     const { toast } = useToast();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handlePhoneChange = (e) => {
         const value = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -35,14 +41,7 @@ const Signup = () => {
             return;
         }
 
-        if (!agreeTerms) {
-            toast({
-                title: "Terms & Conditions",
-                description: "Please agree to the terms and conditions.",
-                variant: "destructive",
-            });
-            return;
-        }
+        // Terms are auto-accepted by default; no explicit validation block needed.
 
         setIsLoading(true);
         try {

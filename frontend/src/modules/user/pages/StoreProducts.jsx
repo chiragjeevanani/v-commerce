@@ -61,6 +61,7 @@ const StoreProducts = () => {
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [selectedSubcategories, setSelectedSubcategories] = useState([]);
     const [sortOption, setSortOption] = useState("newest");
+    const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
     const debounceTimer = useRef(null);
 
     useEffect(() => {
@@ -167,6 +168,22 @@ const StoreProducts = () => {
             setLoading(false);
             setLoadingMore(false);
         }
+    };
+
+    const resetFilters = () => {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete("category");
+        newParams.delete("subcategory");
+        setSearchParams(newParams);
+
+        setSelectedCategories([]);
+        setSelectedSubcategories([]);
+
+        const defaultMax = maxPrice || 100000;
+        setPriceRange([0, defaultMax]);
+        setSliderValue([0, defaultMax]);
+        setSortOption("newest");
+        setIsFilterSheetOpen(false);
     };
 
     const toggleCategory = (categoryId) => {
@@ -310,15 +327,22 @@ const StoreProducts = () => {
                     step={Math.max(100, Math.floor(maxPrice / 200))}
                     value={sliderValue}
                     onValueChange={(value) => {
-                        // Immediate update for smooth UI
                         setSliderValue(value);
                     }}
                     className="mb-4"
                 />
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm mb-4">
                     <span className="font-medium">₹{Math.round(sliderValue[0]).toLocaleString('en-IN')}</span>
                     <span className="font-medium">₹{Math.round(sliderValue[1]).toLocaleString('en-IN')}</span>
                 </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full font-semibold rounded-xl"
+                    onClick={resetFilters}
+                >
+                    Reset Filters
+                </Button>
             </div>
         </div>
     );
@@ -351,7 +375,7 @@ const StoreProducts = () => {
                     <div className="flex items-center justify-between mb-6">
                         <h1 className="text-3xl font-bold">Store Products</h1>
                         <div className="flex items-center gap-2">
-                            <Sheet>
+                            <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
                                 <SheetTrigger asChild>
                                     <Button variant="outline" className="md:hidden">
                                         <Filter className="mr-2 h-4 w-4" /> Filters

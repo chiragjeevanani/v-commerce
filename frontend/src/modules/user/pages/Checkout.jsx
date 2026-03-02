@@ -407,9 +407,16 @@ const Checkout = () => {
                           <div className={`mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0 ${!usePartialPayment ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
                             {!usePartialPayment && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
                           </div>
-                          <div>
-                            <span className="font-semibold block">Full Payment</span>
-                            <span className="text-[11px] text-muted-foreground block">Pay total ₹{orderTotal.toFixed(0)} now</span>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-[11px] sm:text-xs uppercase tracking-[0.15em]">
+                              Full Payment
+                            </span>
+                            <span className="text-2xl sm:text-3xl font-black text-primary leading-tight">
+                              ₹{orderTotal.toFixed(0)}
+                            </span>
+                            <span className="text-[11px] sm:text-xs text-muted-foreground mt-1">
+                              Pay full amount now
+                            </span>
                           </div>
                         </button>
                         <button
@@ -420,9 +427,16 @@ const Checkout = () => {
                           <div className={`mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0 ${usePartialPayment ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
                             {usePartialPayment && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
                           </div>
-                          <div>
-                            <span className="font-semibold block">Partial Payment</span>
-                            <span className="text-[11px] text-muted-foreground block">Pay ₹{PARTIAL_PAYMENT_AMOUNT} now, rest later</span>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-[11px] sm:text-xs uppercase tracking-[0.15em]">
+                              Partial Payment
+                            </span>
+                            <span className="text-2xl sm:text-3xl font-black text-primary leading-tight">
+                              ₹{PARTIAL_PAYMENT_AMOUNT}
+                            </span>
+                            <span className="text-[11px] sm:text-xs text-muted-foreground mt-1">
+                              Pay this now, remaining later
+                            </span>
                           </div>
                         </button>
                       </div>

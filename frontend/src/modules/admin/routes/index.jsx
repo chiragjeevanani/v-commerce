@@ -18,6 +18,7 @@ const HeroBanners = lazy(() => import('../pages/HeroBanners'));
 const Categories = lazy(() => import('../pages/Categories'));
 const StoreProducts = lazy(() => import('../pages/StoreProducts'));
 const OrderDetail = lazy(() => import('../pages/OrderDetail'));
+const OrderInvoice = lazy(() => import('../pages/OrderInvoice'));
 const CustomerDetail = lazy(() => import('../pages/CustomerDetail'));
 
 const LoadingFallback = () => (
@@ -45,6 +46,7 @@ const AdminRoutes = () => {
                         <Route index element={<Dashboard />} />
                         <Route path="orders" element={<Orders />} />
                         <Route path="orders/:id" element={<OrderDetail />} />
+                        <Route path="orders/:id/invoice" element={<OrderInvoice />} />
                         <Route path="products" element={<Products />} />
                         <Route path="products/:id" element={<ProductDetail />} />
                         <Route path="customers" element={<Customers />} />

@@ -39,7 +39,7 @@ const MobileBottomNav = () => {
                 isHighlighted && "text-primary"
               )}
             >
-              <div className={cn("relative", hasCartItems && "rounded-full ring-2 ring-primary/40 bg-primary/10")}>
+              <div className="relative">
                 <item.icon className={cn("h-6 w-6 mb-1", isHighlighted && "fill-current")} />
                 {item.badge > 0 && (
                   <Badge

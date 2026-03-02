@@ -171,7 +171,11 @@ const OrderDetail = () => {
                             </Button>
                         );
                     })()}
-                    <Button variant="outline" className="gap-2">
+                    <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => navigate(`/admin/orders/${id}/invoice`)}
+                    >
                         <Receipt className="h-4 w-4" /> Invoice
                     </Button>
                 </div>

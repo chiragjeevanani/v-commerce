@@ -247,15 +247,10 @@ const Navbar = () => {
                 </SheetHeader>
                 <div className="flex flex-col gap-6 mt-8">
                   {!isAuthenticated && (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-2">
                       <SheetClose asChild>
                         <Link to="/login">
                           <Button variant="outline" className="w-full rounded-xl font-bold">Login</Button>
-                        </Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link to="/signup">
-                          <Button className="w-full rounded-xl font-bold">Join</Button>
                         </Link>
                       </SheetClose>
                     </div>

@@ -80,25 +80,34 @@ const Cart = () => {
                       </div>
 
                       <div className="flex justify-between items-center mt-2">
-                        <div className="flex items-center border rounded-md h-8">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-full w-8 rounded-none"
+                        <div className="inline-flex items-center rounded-full border bg-muted/40 h-8 overflow-hidden">
+                          <button
+                            type="button"
                             onClick={() => updateQuantity(item.pid, item.quantity - 1)}
                             disabled={item.quantity <= 1}
+                            className="h-full w-8 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
                           >
                             <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="w-8 text-center text-sm">{item.quantity}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-full w-8 rounded-none"
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              if (!isNaN(val) && val > 0) {
+                                updateQuantity(item.pid, val);
+                              }
+                            }}
+                            className="w-10 text-center text-sm bg-transparent border-x border-border h-full appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
                             onClick={() => updateQuantity(item.pid, item.quantity + 1)}
+                            className="h-full w-8 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted"
                           >
                             <Plus className="h-3 w-3" />
-                          </Button>
+                          </button>
                         </div>
                         <p className="font-bold text-primary">
                           ₹<AnimatedNumber value={(item.discountPrice || item.price) * item.quantity} decimals={2} />

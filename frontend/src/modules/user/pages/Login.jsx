@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '../context/AuthContext';
 import { authService } from '@/services/auth.service';
 import {
     Phone,
@@ -19,9 +20,16 @@ const Login = () => {
     const isSubmittingRef = useRef(false);
 
     const { toast } = useToast();
+    const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from?.pathname || "/";
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handlePhoneChange = (e) => {
         const value = e.target.value.replace(/\D/g, '').slice(0, 10);
