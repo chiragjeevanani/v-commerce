@@ -27,12 +27,6 @@ const Account = () => {
     confirmPassword: "",
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,39 +64,6 @@ const Account = () => {
       toast({ title: "Success", description: "Default address updated" });
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
-  };
-
-  const handleLogout = () => {
-    authLogout();
-    navigate("/");
-  };
-
-  const handlePasswordChange = async () => {
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      toast({ title: "Required", description: "Fill all password fields.", variant: "destructive" });
-      return;
-    }
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({ title: "Mismatch", description: "New password and confirm password do not match.", variant: "destructive" });
-      return;
-    }
-    if (passwordForm.newPassword.length < 6) {
-      toast({ title: "Weak password", description: "New password should be at least 6 characters.", variant: "destructive" });
-      return;
-    }
-    setPasswordLoading(true);
-    try {
-      await authService.changePassword({
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
-      });
-      toast({ title: "Password updated", description: "Your password has been changed successfully." });
-      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (error) {
-      toast({ title: "Error", description: error.message || "Failed to change password.", variant: "destructive" });
-    } finally {
-      setPasswordLoading(false);
     }
   };
 
