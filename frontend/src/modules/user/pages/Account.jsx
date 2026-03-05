@@ -111,21 +111,18 @@ const Account = () => {
       </div>
 
       <Tabs defaultValue="orders" className="space-y-6">
-        <TabsList className="w-full h-auto p-1.5 flex flex-wrap gap-1 md:inline-flex md:flex-nowrap md:w-auto md:rounded-xl bg-muted/60">
-          <TabsTrigger value="orders" className="flex-1 md:flex-none min-w-0 px-4 py-2.5 text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
+        <TabsList className="w-full h-auto p-1.5 flex gap-1 md:inline-flex md:flex-nowrap md:w-auto md:rounded-xl bg-muted/60">
+          <TabsTrigger value="orders" className="flex-1 md:flex-none min-w-[72px] px-3 py-2.5 text-xs md:text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Package className="h-4 w-4 mr-2 hidden sm:inline" /> Orders
           </TabsTrigger>
-          <TabsTrigger value="profile" className="flex-1 md:flex-none min-w-0 px-4 py-2.5 text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <TabsTrigger value="profile" className="flex-1 md:flex-none min-w-[72px] px-3 py-2.5 text-xs md:text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
             Profile
           </TabsTrigger>
-          <TabsTrigger value="address" className="flex-1 md:flex-none min-w-0 px-4 py-2.5 text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <TabsTrigger value="address" className="flex-1 md:flex-none min-w-[90px] px-3 py-2.5 text-xs md:text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <MapPin className="h-4 w-4 mr-2 hidden sm:inline" /> Address
           </TabsTrigger>
-          <TabsTrigger value="password" className="flex-1 md:flex-none min-w-0 px-4 py-2.5 text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            Change Password
-          </TabsTrigger>
-          <TabsTrigger value="logout" className="flex-1 md:flex-none min-w-0 px-4 py-2.5 text-sm rounded-lg data-[state=active]:bg-destructive/10 data-[state=active]:text-destructive">
-            Logout
+          <TabsTrigger value="password" className="flex-1 md:flex-none min-w-[96px] px-3 py-2.5 text-xs md:text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            Password
           </TabsTrigger>
         </TabsList>
 
@@ -314,18 +311,6 @@ const Account = () => {
               >
                 {passwordLoading ? "Updating..." : "Update Password"}
               </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="logout" className="mt-6">
-          <Card className="border-border/50 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Sign Out</CardTitle>
-              <CardDescription className="text-sm mt-0.5">You will need to sign in again to access your account</CardDescription>
-            </CardHeader>
-            <CardFooter className="pt-2">
-              <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">Confirm Logout</Button>
             </CardFooter>
           </Card>
         </TabsContent>
