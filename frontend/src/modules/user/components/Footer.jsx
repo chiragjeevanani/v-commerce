@@ -49,7 +49,7 @@ const Footer = () => {
                   to="/store-products"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Shop
+                  Store Products
                 </Link>
               </li>
             </ul>
@@ -92,15 +92,15 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>support@v-commerce.com</span>
+                <span>vcommerce888@gmail.com</span>
               </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
+              {/* <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <span>+1 (555) 123-4567</span>
-              </li>
+              </li> */}
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>123 Commerce St, City, State 12345</span>
+                <span>Indore , Madhya Pradesh, India</span>
               </li>
             </ul>
           </div>

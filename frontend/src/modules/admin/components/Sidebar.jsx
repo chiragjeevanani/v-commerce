@@ -21,7 +21,7 @@ import { cn } from '@/utils/utils';
 
 const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', end: true },
-    { icon: Package, label: 'Dropshipping Products', path: '/admin/products' },
+    // { icon: Package, label: 'Dropshipping Products', path: '/admin/products' },
     { icon: ShoppingCart, label: 'Store Products', path: '/admin/store-products' },
     { icon: FolderTree, label: 'Categories', path: '/admin/categories' },
     { icon: Image, label: 'Hero Banners', path: '/admin/hero-banners' },

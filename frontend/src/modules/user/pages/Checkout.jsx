@@ -42,6 +42,11 @@ const Checkout = () => {
   const cartHasPartialPayment = cart.some((item) => item.allowPartialPayment === true);
   const PARTIAL_PAYMENT_AMOUNT = 500;
   const showPartialOption = cartHasPartialPayment && orderTotal > PARTIAL_PAYMENT_AMOUNT;
+  const isFormValid =
+    formData.fullName.trim() &&
+    formData.address.trim() &&
+    formData.pinCode.trim() &&
+    formData.phoneNumber.trim();
 
   useEffect(() => {
     if (cart.length === 0 && !isOrderPlaced.current) {
@@ -299,11 +304,11 @@ const Checkout = () => {
   };
 
   return (
-    <div className="container py-8 max-w-4xl min-h-screen">
+    <div className="container py-8 lg:py-10 max-w-6xl min-h-screen">
       <Button variant="ghost" className="mb-6 -ml-2 hover:bg-transparent hover:text-primary transition-colors group" onClick={() => navigate("/cart")}>
         <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Cart
       </Button>
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-6 lg:gap-10 items-start">
         <div className="lg:col-span-2">
           <Card className="border-none shadow-2xl bg-card rounded-3xl overflow-hidden">
             <CardHeader className="bg-primary/5 border-b border-primary/10 py-6">
@@ -462,7 +467,7 @@ const Checkout = () => {
               <div className="flex justify-end pt-6 border-t mt-4">
                 <Button
                   onClick={handlePlaceOrder}
-                  disabled={loading}
+                  disabled={loading || !isFormValid}
                   className="rounded-full px-10 font-bold uppercase tracking-widest text-xs shadow-lg hover:shadow-primary/20 scale-105 transition-all"
                 >
                   {loading ? "Processing..." : "Place Order & Pay"}

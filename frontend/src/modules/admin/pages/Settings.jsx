@@ -546,20 +546,7 @@ const Settings = () => {
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-red-100 dark:border-red-900/30">
-                                <CardHeader>
-                                    <CardTitle className="text-red-600 text-lg">Danger Zone</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex items-center justify-between border-t pt-4 border-red-50 dark:border-red-900/10">
-                                        <div className="space-y-0.5">
-                                            <p className="text-sm font-bold">Resign as Admin</p>
-                                            <p className="text-xs text-muted-foreground">This will revoke all your management access.</p>
-                                        </div>
-                                        <Button variant="destructive" size="sm">Deactivate Account</Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                           
                         </div>
                     </div>
                 </TabsContent>

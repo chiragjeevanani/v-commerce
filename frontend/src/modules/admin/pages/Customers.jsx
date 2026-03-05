@@ -33,6 +33,8 @@ const Customers = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const pageSize = 5;
 
     const fetchCustomers = async () => {
         setLoading(true);
@@ -82,6 +84,8 @@ const Customers = () => {
     );
 
     const activeCount = customers.filter(c => c.isActive).length;
+    const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / pageSize));
+    const pagedCustomers = filteredCustomers.slice((page - 1) * pageSize, page * pageSize);
 
     return (
         <div className="space-y-6 pb-10">
@@ -167,7 +171,7 @@ const Customers = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredCustomers.map((customer, i) => (
+                                    {pagedCustomers.map((customer, i) => (
                                         <motion.tr
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
@@ -241,6 +245,48 @@ const Customers = () => {
                     </div>
                 </CardContent>
             </Card>
+
+            {filteredCustomers.length > 0 && (
+                <div className="flex items-center justify-between mt-4">
+                    <p className="text-xs text-muted-foreground">
+                        Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredCustomers.length)} of {filteredCustomers.length} customers
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            disabled={page === 1}
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            className="h-8 w-8"
+                        >
+                            <ArrowUpRight className="h-4 w-4 rotate-225" />
+                        </Button>
+                        {Array.from({ length: totalPages }).map((_, i) => {
+                            const pageNum = i + 1;
+                            return (
+                                <Button
+                                    key={pageNum}
+                                    variant={page === pageNum ? "primary" : "outline"}
+                                    size="icon"
+                                    className={`h-8 w-8 text-xs ${page === pageNum ? "bg-primary text-primary-foreground" : ""}`}
+                                    onClick={() => setPage(pageNum)}
+                                >
+                                    {pageNum}
+                                </Button>
+                            );
+                        })}
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            disabled={page === totalPages}
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            className="h-8 w-8"
+                        >
+                            <ArrowUpRight className="h-4 w-4 rotate-45" />
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

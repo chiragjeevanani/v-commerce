@@ -56,6 +56,8 @@ const Categories = () => {
     const [deleteSubcategoryConfirm, setDeleteSubcategoryConfirm] = useState(null);
     const [deletingSubcategory, setDeletingSubcategory] = useState(false);
     const [expandedCategories, setExpandedCategories] = useState(new Set());
+    const [page, setPage] = useState(1);
+    const pageSize = 5;
 
     const fetchCategories = async () => {
         setLoading(true);
@@ -228,6 +230,8 @@ const Categories = () => {
 
     const activeCategoriesCount = categories.filter(c => c.isActive).length;
     const totalSubcategoriesCount = categories.reduce((sum, cat) => sum + (cat.subcategories?.length || 0), 0);
+    const totalPages = Math.max(1, Math.ceil(filteredCategories.length / pageSize));
+    const pagedCategories = filteredCategories.slice((page - 1) * pageSize, page * pageSize);
 
     return (
         <div className="space-y-6 pb-10">
@@ -274,8 +278,50 @@ const Categories = () => {
                             <p className="text-sm text-muted-foreground font-medium">Total Subcategories</p>
                             <p className="text-2xl font-bold">{totalSubcategoriesCount}</p>
                         </div>
-                    </CardContent>
-                </Card>
+                </CardContent>
+            </Card>
+
+            {filteredCategories.length > 0 && (
+                <div className="flex items-center justify-between mt-4">
+                    <p className="text-xs text-muted-foreground">
+                        Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredCategories.length)} of {filteredCategories.length} categories
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            disabled={page === 1}
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            className="h-8 w-8"
+                        >
+                            <ChevronRight className="h-4 w-4 rotate-180" />
+                        </Button>
+                        {Array.from({ length: totalPages }).map((_, i) => {
+                            const pageNum = i + 1;
+                            return (
+                                <Button
+                                    key={pageNum}
+                                    variant={page === pageNum ? "primary" : "outline"}
+                                    size="icon"
+                                    className={`h-8 w-8 text-xs ${page === pageNum ? "bg-primary text-primary-foreground" : ""}`}
+                                    onClick={() => setPage(pageNum)}
+                                >
+                                    {pageNum}
+                                </Button>
+                            );
+                        })}
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            disabled={page === totalPages}
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            className="h-8 w-8"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
             </div>
 
             <Card>
@@ -311,7 +357,7 @@ const Categories = () => {
                             </div>
                         ) : (
                             <div className="divide-y">
-                                {filteredCategories.map((category, i) => (
+                                {pagedCategories.map((category, i) => (
                                     <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}

@@ -82,7 +82,7 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-2xl font-logo tracking-wider text-primary">
               V-Commerce
@@ -101,12 +101,11 @@ const Navbar = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <motion.form
             onSubmit={handleSearch}
-            className="hidden lg:flex relative"
+            className="hidden md:flex relative w-full max-w-[260px] lg:max-w-[320px]"
             initial={false}
-            animate={{ width: searchQuery || isSearchFocused ? 320 : 220 }}
           >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -306,6 +305,26 @@ const Navbar = () => {
             </Sheet>
           </div>
         </div>
+      </div>
+
+      {/* Mobile search bar – full width below header */}
+      <div className="container md:hidden pb-2">
+        <motion.form
+          onSubmit={handleSearch}
+          className="relative w-full"
+          initial={false}
+        >
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search products..."
+            className="pl-10 h-10 rounded-full bg-muted border-none focus-visible:ring-primary/20 text-sm font-medium"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+          />
+        </motion.form>
       </div>
     </nav>
   );

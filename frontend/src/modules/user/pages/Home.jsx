@@ -223,21 +223,7 @@ const Home = () => {
     <div className="flex flex-col min-h-screen gap-4 md:gap-6 pb-4 md:pb-8">
       {/* Search Bar - Visible on all screens */}
       <section className="container pt-4">
-        <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-          <div className="relative">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search products..."
-              className="w-full h-14 pl-14 pr-6 rounded-2xl bg-muted/50 border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Button type="submit" size="sm" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl">
-              Search
-            </Button>
-          </div>
-        </form>
+       
       </section>
 
       {/* Hero Section */}
@@ -351,148 +337,98 @@ const Home = () => {
         </section>
       )}
 
-      {/* Store Categories Section (replaces CJ Browse Categories) */}
-      <section className="container pt-4 pb-3 md:pt-6 md:pb-4 space-y-3">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-4">
-          <div className="flex items-center gap-3 md:gap-5">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary blur-2xl opacity-20" />
-              <div className="relative h-12 w-12 md:h-16 md:w-16 rounded-xl md:rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/40 ring-1 ring-white/20">
-                <LayoutGrid className="h-6 w-6 md:h-8 md:w-8" />
-              </div>
+      {/* Store Categories - regular + partial combined (Bakala style chips) */}
+      <section className="container pt-4 pb-2 md:pt-6 md:pb-3 space-y-3">
+        <div className="flex items-center justify-between gap-4 mb-1">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 md:h-11 md:w-11 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <LayoutGrid className="h-5 w-5" />
             </div>
-            <div className="space-y-1">
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight">
-                Regular Store Categories
+            <div className="space-y-0.5">
+              <h2 className="text-base md:text-lg font-bold tracking-tight">
+                Categories for you
               </h2>
-              <p className="text-xs md:text-sm text-muted-foreground">
-                Browse standard categories where customers pay the full amount at checkout.
+              <p className="hidden md:block text-xs text-muted-foreground">
+                Tap a category to quickly filter products. “Partial” badge means ₹500 partial payment available.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="-mx-2 overflow-x-auto scrollbar-none">
-          <div className="flex gap-4 px-2 pb-1 md:pb-2 min-w-max">
-            {storeNormalCategories.length === 0 && loading ? (
+        <div className="-mx-4 overflow-x-auto scrollbar-none">
+          <div className="flex gap-4 px-4 pb-2 md:pb-3 min-w-max">
+            {storeNormalCategories.length === 0 && storePartialCategories.length === 0 && loading ? (
               Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-32 w-[160px] sm:w-[180px] md:w-[200px] flex-shrink-0 rounded-2xl bg-muted/40 animate-pulse border border-border/50" />
+                <div
+                  key={i}
+                  className="flex flex-col items-center gap-1.5 flex-shrink-0 w-[80px]"
+                >
+                  <div className="h-16 w-16 md:h-[4.5rem] md:w-[4.5rem] rounded-full bg-muted/40 animate-pulse border border-border/40" />
+                  <div className="h-3 w-14 rounded-full bg-muted/40 animate-pulse" />
+                </div>
               ))
-            ) : storeNormalCategories.length > 0 ? (
-              storeNormalCategories.map((cat) => {
+            ) : (storeNormalCategories.length + storePartialCategories.length) > 0 ? (
+              [...storeNormalCategories, ...storePartialCategories.filter(
+                p => !storeNormalCategories.some(n => n._id === p._id)
+              )].map((cat) => {
                 const name = cat.name || "Category";
                 const firstLetter = (name[0] || "C").toUpperCase();
                 const isSelected = selectedStoreCategoryId === cat._id;
+                const isPartial = cat.allowPartialPayment === true;
                 return (
-                  <div key={cat._id} className="w-[160px] sm:w-[180px] md:w-[200px] flex-shrink-0">
+                  <div
+                    key={cat._id}
+                    className="flex flex-col items-center gap-1.5 flex-shrink-0 w-[86px] md:w-[96px]"
+                  >
                     <button
                       type="button"
                       onClick={() => handleStoreCategoryClick(cat._id)}
-                      className={`w-full group relative overflow-hidden rounded-2xl border text-left transition-all ${
+                      className={`group relative overflow-hidden rounded-full border transition-all h-16 w-16 md:h-[4.5rem] md:w-[4.5rem] flex items-center justify-center ${
                         isSelected
-                          ? "border-primary bg-card shadow-sm shadow-primary/20"
-                          : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
+                          ? isPartial
+                            ? "border-amber-500 bg-amber-50/10 shadow-sm shadow-amber-300/40"
+                            : "border-primary bg-primary/10 shadow-sm shadow-primary/30"
+                          : isPartial
+                            ? "border-border bg-card hover:border-amber-400 hover:bg-amber-50/10"
+                            : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
                       }`}
                     >
-                      <div className="relative h-28 w-full overflow-hidden">
+                      <div className="relative h-full w-full overflow-hidden rounded-full">
                         {cat.image ? (
                           <img
                             src={cat.image}
                             alt={name}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                             loading="lazy"
                           />
                         ) : (
                           <div className="h-full w-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center">
-                            <span className="text-2xl font-black text-primary">{firstLetter}</span>
+                            <span className="text-xl md:text-2xl font-black text-primary">
+                              {firstLetter}
+                            </span>
                           </div>
                         )}
-                        {cat.allowPartialPayment && (
-                          <span className="absolute top-2 left-2 rounded-full bg-amber-500/90 text-[9px] font-black uppercase tracking-[0.18em] text-white px-2 py-0.5 shadow-sm">
+                        {isPartial && (
+                          <span className="absolute bottom-0 inset-x-0 mx-auto mb-1 rounded-full bg-amber-500/95 text-[9px] font-black uppercase tracking-[0.15em] text-white px-2 py-[2px] shadow-sm w-max">
                             Partial
                           </span>
                         )}
                       </div>
-                      <div className="p-3 space-y-1">
-                        <p className="text-sm font-semibold line-clamp-1">{name}</p>
-                        <p className="text-[11px] text-muted-foreground line-clamp-2">
-                          {cat.description || "Store category"}
-                        </p>
-                      </div>
                     </button>
+                    <p className="text-[12px] md:text-[13px] font-semibold text-center text-foreground line-clamp-2">
+                      {name}
+                    </p>
                   </div>
                 );
               })
             ) : (
               <p className="text-sm text-muted-foreground">
-                No regular (non-partial) store categories have been created yet.
+                No store categories have been created yet.
               </p>
             )}
           </div>
         </div>
       </section>
-
-      {/* Partial payment categories (separate section) */}
-      {storePartialCategories.length > 0 && (
-        <section className="container pt-3 pb-3 md:pt-4 md:pb-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg md:text-2xl font-black tracking-tight">
-                Partial Payment Categories
-              </h2>
-              <p className="text-xs md:text-sm text-muted-foreground">
-                In these categories customers can start with a ₹500 partial payment and pay the remaining amount later.
-              </p>
-            </div>
-          </div>
-          <div className="-mx-2 overflow-x-auto scrollbar-none">
-            <div className="flex gap-4 px-2 pb-1 md:pb-2 min-w-max">
-              {storePartialCategories.map((cat) => {
-                const name = cat.name || "Category";
-                const firstLetter = (name[0] || "C").toUpperCase();
-                const isSelected = selectedStoreCategoryId === cat._id;
-                return (
-                  <div key={cat._id} className="w-[160px] sm:w-[180px] md:w-[200px] flex-shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleStoreCategoryClick(cat._id)}
-                      className={`w-full group relative overflow-hidden rounded-2xl border text-left transition-all ${
-                        isSelected
-                          ? "border-amber-500 bg-card shadow-sm shadow-amber-300/40"
-                          : "border-border bg-card hover:border-amber-400 hover:bg-amber-50/10"
-                      }`}
-                    >
-                      <div className="relative h-28 w-full overflow-hidden">
-                        {cat.image ? (
-                          <img
-                            src={cat.image}
-                            alt={name}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="h-full w-full bg-gradient-to-br from-amber-400/40 to-amber-300/20 flex items-center justify-center">
-                            <span className="text-2xl font-black text-amber-700">{firstLetter}</span>
-                          </div>
-                        )}
-                        <span className="absolute top-2 left-2 rounded-full bg-amber-500/95 text-[9px] font-black uppercase tracking-[0.18em] text-white px-2 py-0.5 shadow-sm">
-                          Partial
-                        </span>
-                      </div>
-                      <div className="p-3 space-y-1">
-                        <p className="text-sm font-semibold line-clamp-1">{name}</p>
-                        <p className="text-[11px] text-muted-foreground line-clamp-2">
-                          {cat.description || "Partial payment enabled category"}
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Store Products grid (no dropshipping) */}
       <section className="container pt-4 pb-5 md:pt-6 space-y-2">

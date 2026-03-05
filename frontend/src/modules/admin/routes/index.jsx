@@ -47,7 +47,7 @@ const AdminRoutes = () => {
                         <Route path="orders" element={<Orders />} />
                         <Route path="orders/:id" element={<OrderDetail />} />
                         <Route path="orders/:id/invoice" element={<OrderInvoice />} />
-                        <Route path="products" element={<Products />} />
+                        {/* <Route path="products" element={<Products />} /> */}
                         <Route path="products/:id" element={<ProductDetail />} />
                         <Route path="customers" element={<Customers />} />
                         <Route path="customers/:id" element={<CustomerDetail />} />

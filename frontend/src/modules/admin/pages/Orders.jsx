@@ -42,7 +42,7 @@ const Orders = () => {
         try {
             const data = await ordersService.getAllOrders({
                 pageNum: page,
-                pageSize: 20
+                pageSize: 5
             });
             setOrders(data.orders);
             setTotalPages(data.totalPages);

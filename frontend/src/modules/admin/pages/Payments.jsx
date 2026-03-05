@@ -46,7 +46,7 @@ const Payments = () => {
         setLoading(true);
         try {
             // Reusing getAllOrders as the source of truth for payments for now
-            const data = await ordersService.getAllOrders({ pageNum: page, pageSize: 50 });
+            const data = await ordersService.getAllOrders({ pageNum: page, pageSize: 5 });
 
             // Map orders to a transaction-like structure
             // In a real scenario, you might have a dedicated /transactions endpoint
@@ -111,10 +111,7 @@ const Payments = () => {
                     <h1 className="text-3xl font-bold tracking-tight">Payments & Transactions</h1>
                     <p className="text-muted-foreground mt-1">Monitor revenue and manage financial transactions.</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="gap-2"><Download className="h-4 w-4" /> Export Report</Button>
-                    <Button className="gap-2 bg-primary"><Wallet className="h-4 w-4" /> Payout Settings</Button>
-                </div>
+               
             </div>
 
             {/* Summary Stats */}
@@ -291,16 +288,7 @@ const Payments = () => {
                 </CardContent>
             </Card>
 
-            <div className="bg-muted/50 p-6 rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3">
-                <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center">
-                    <CreditCard className="h-5 w-5 text-muted-foreground opacity-50" />
-                </div>
-                <div className="text-center">
-                    <p className="text-sm font-bold">Secure Payment Processing</p>
-                    <p className="text-xs text-muted-foreground max-w-sm">Financial data is handled via the dropship network's secure payment gateway. V-Commerce only maintains transaction logs for order tracking and analytics.</p>
-                </div>
-                <Button variant="link" className="text-xs h-auto p-0">Learn about our payout cycle</Button>
-            </div>
+           
         </div>
     );
 };

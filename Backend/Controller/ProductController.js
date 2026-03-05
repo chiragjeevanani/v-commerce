@@ -138,6 +138,129 @@ export const getProductById = async (req, res) => {
     }
 };
 
+// ================= PRODUCT REVIEWS =================
+
+export const addOrUpdateReview = async (req, res) => {
+    try {
+        const { id } = req.params; // product id
+        const { rating, comment } = req.body;
+        const userId = req.user?._id;
+
+        if (!rating) {
+            return res.status(400).json({
+                success: false,
+                message: "Rating is required",
+                data: null,
+            });
+        }
+
+        const numericRating = Number(rating);
+        if (Number.isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+            return res.status(400).json({
+                success: false,
+                message: "Rating must be between 1 and 5",
+                data: null,
+            });
+        }
+
+        const product = await Product.findById(id);
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found",
+                data: null,
+            });
+        }
+
+        const userName = req.user?.fullName || req.user?.name || "Customer";
+
+        // Check if user has already reviewed
+        const existingIndex = product.reviews.findIndex(
+            (rev) => rev.user.toString() === userId.toString()
+        );
+
+        if (existingIndex !== -1) {
+            product.reviews[existingIndex].rating = numericRating;
+            product.reviews[existingIndex].comment = comment || product.reviews[existingIndex].comment;
+            product.reviews[existingIndex].createdAt = new Date();
+        } else {
+            product.reviews.push({
+                user: userId,
+                name: userName,
+                rating: numericRating,
+                comment: comment || "",
+            });
+        }
+
+        // Recalculate average rating and count
+        const reviewCount = product.reviews.length;
+        const avg =
+            reviewCount === 0
+                ? 0
+                : product.reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount;
+
+        product.reviewCount = reviewCount;
+        product.averageRating = Math.round(avg * 10) / 10; // one decimal
+
+        await product.save();
+
+        res.json({
+            success: true,
+            message: "Review saved successfully",
+            data: {
+                reviews: product.reviews,
+                averageRating: product.averageRating,
+                reviewCount: product.reviewCount,
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            data: null,
+        });
+    }
+};
+
+export const getProductReviews = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await Product.findById(id)
+            .select("reviews averageRating reviewCount")
+            .populate("reviews.user", "fullName email");
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found",
+                data: null,
+            });
+        }
+
+        const sortedReviews = [...product.reviews].sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        res.json({
+            success: true,
+            message: "Reviews fetched successfully",
+            data: {
+                reviews: sortedReviews,
+                averageRating: product.averageRating ?? 0,
+                reviewCount: product.reviewCount ?? sortedReviews.length,
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            data: null,
+        });
+    }
+};
+
 // ================= CREATE PRODUCT (ADMIN) =================
 export const createProduct = async (req, res) => {
     try {

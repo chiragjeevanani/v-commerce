@@ -6,6 +6,8 @@ import {
     createProduct,
     updateProduct,
     deleteProduct,
+    addOrUpdateReview,
+    getProductReviews,
 } from "../Controller/ProductController.js";
 import { AuthMiddleware, isAdmin } from "../Middlewares/AuthMiddleware.js";
 
@@ -37,11 +39,15 @@ const upload = multer({
 // Public routes - no authentication required
 router.get("/", getActiveProducts);
 router.get("/:id", getProductById);
+router.get("/:id/reviews", getProductReviews);
 
 // Admin routes - require authentication and admin role
 router.get("/admin/all", AuthMiddleware, isAdmin, getAllProducts);
 router.post("/", AuthMiddleware, isAdmin, upload.array('images', 10), createProduct); // Max 10 images
 router.put("/:id", AuthMiddleware, isAdmin, upload.array('images', 10), updateProduct);
 router.delete("/:id", AuthMiddleware, isAdmin, deleteProduct);
+
+// Authenticated customer routes
+router.post("/:id/reviews", AuthMiddleware, addOrUpdateReview);
 
 export default router;

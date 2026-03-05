@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import AnimatedNumber from "@/modules/user/components/AnimatedNumber";
 import SkeletonCard from "@/modules/user/components/SkeletonCard";
 import StoreProductCard from "@/modules/user/components/StoreProductCard";
+import ProductReviews from "@/modules/user/components/ProductReviews";
 
 const StoreProductDetail = () => {
     const { id } = useParams();
@@ -677,6 +678,11 @@ const StoreProductDetail = () => {
                             )}
                         </motion.div>
                     </AnimatePresence>
+                </section>
+
+                {/* Reviews Section */}
+                <section className="mt-16">
+                    <ProductReviews productId={product._id} />
                 </section>
 
                 {/* Related Products */}

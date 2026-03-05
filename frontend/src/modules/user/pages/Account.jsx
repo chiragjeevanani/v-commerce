@@ -21,6 +21,18 @@ const Account = () => {
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addressLoading, setAddressLoading] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,6 +78,62 @@ const Account = () => {
     navigate("/");
   };
 
+  const handlePasswordChange = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast({ title: "Required", description: "Fill all password fields.", variant: "destructive" });
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({ title: "Mismatch", description: "New password and confirm password do not match.", variant: "destructive" });
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      toast({ title: "Weak password", description: "New password should be at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await authService.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      toast({ title: "Password updated", description: "Your password has been changed successfully." });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message || "Failed to change password.", variant: "destructive" });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast({ title: "Required", description: "Fill all password fields.", variant: "destructive" });
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({ title: "Mismatch", description: "New password and confirm password do not match.", variant: "destructive" });
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      toast({ title: "Weak password", description: "New password should be at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await authService.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      toast({ title: "Password updated", description: "Your password has been changed successfully." });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message || "Failed to change password.", variant: "destructive" });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   return (
     <div className="container py-6 md:py-10 pb-24 md:pb-10 max-w-4xl mx-auto px-4 md:px-6">
       <Button variant="ghost" className="mb-6 -ml-1 hover:bg-transparent hover:text-primary transition-colors group p-0" onClick={() => navigate("/")}>
@@ -87,6 +155,9 @@ const Account = () => {
           </TabsTrigger>
           <TabsTrigger value="address" className="flex-1 md:flex-none min-w-0 px-4 py-2.5 text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <MapPin className="h-4 w-4 mr-2 hidden sm:inline" /> Address
+          </TabsTrigger>
+          <TabsTrigger value="password" className="flex-1 md:flex-none min-w-0 px-4 py-2.5 text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            Change Password
           </TabsTrigger>
           <TabsTrigger value="logout" className="flex-1 md:flex-none min-w-0 px-4 py-2.5 text-sm rounded-lg data-[state=active]:bg-destructive/10 data-[state=active]:text-destructive">
             Logout
@@ -212,6 +283,73 @@ const Account = () => {
                 </div>
               )}
             </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="password" className="mt-6">
+          <Card className="border-border/50 shadow-sm overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-lg">Change Password</CardTitle>
+              <CardDescription className="text-sm mt-0.5">
+                Update your login password. Use a strong, unique password.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 max-w-md">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword" className="text-sm font-medium">
+                  Current Password
+                </Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  autoComplete="current-password"
+                  className="h-11"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword" className="text-sm font-medium">
+                  New Password
+                </Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  className="h-11"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  placeholder="Enter new password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                  Confirm New Password
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  className="h-11"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  placeholder="Re-enter new password"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tip: Use at least 6 characters with a mix of letters and numbers.
+              </p>
+            </CardContent>
+            <CardFooter className="pt-2">
+              <Button
+                onClick={handlePasswordChange}
+                disabled={passwordLoading}
+                className="w-full sm:w-auto"
+              >
+                {passwordLoading ? "Updating..." : "Update Password"}
+              </Button>
+            </CardFooter>
           </Card>
         </TabsContent>
 
