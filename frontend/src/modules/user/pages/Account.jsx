@@ -47,6 +47,10 @@ const Account = () => {
     fetchData();
   }, [location.key]);
 
+  const handleLogout = () => {
+    authLogout();
+    navigate("/");
+  };
   const handleDeleteAddress = async (id) => {
     try {
       const response = await addressService.deleteAddress(id);
