@@ -222,9 +222,7 @@ const Home = () => {
   return (
     <div className="flex flex-col min-h-screen gap-4 md:gap-6 pb-4 md:pb-8">
       {/* Search Bar - Visible on all screens */}
-      <section className="container pt-4">
-       
-      </section>
+     
 
       {/* Hero Section */}
       {banners.length > 0 && (
@@ -355,15 +353,15 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="-mx-4 overflow-x-auto scrollbar-none">
-          <div className="flex gap-4 px-4 pb-2 md:pb-3 min-w-max">
+        <div className="-mx-4 md:mx-0 overflow-x-auto md:overflow-visible scrollbar-none">
+          <div className="flex md:grid md:grid-cols-6 gap-4 px-4 md:px-0 pb-2 md:pb-3 min-w-max md:min-w-0">
             {storeNormalCategories.length === 0 && storePartialCategories.length === 0 && loading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex flex-col items-center gap-1.5 flex-shrink-0 w-[80px]"
+                  className="flex flex-col items-center gap-1.5 flex-shrink-0 w-[80px] md:w-full"
                 >
-                  <div className="h-16 w-16 md:h-[4.5rem] md:w-[4.5rem] rounded-full bg-muted/40 animate-pulse border border-border/40" />
+                  <div className="h-16 w-16 md:h-28 md:w-28 rounded-full bg-muted/40 animate-pulse border border-border/40" />
                   <div className="h-3 w-14 rounded-full bg-muted/40 animate-pulse" />
                 </div>
               ))
@@ -378,12 +376,12 @@ const Home = () => {
                 return (
                   <div
                     key={cat._id}
-                    className="flex flex-col items-center gap-1.5 flex-shrink-0 w-[86px] md:w-[96px]"
+                    className="flex flex-col items-center gap-2.5 flex-shrink-0 w-[86px] md:w-full"
                   >
                     <button
                       type="button"
                       onClick={() => handleStoreCategoryClick(cat._id)}
-                      className={`group relative overflow-hidden rounded-full border transition-all h-16 w-16 md:h-[4.5rem] md:w-[4.5rem] flex items-center justify-center ${
+                      className={`group relative overflow-hidden rounded-full border transition-all h-16 w-16 md:h-28 md:w-28 flex items-center justify-center ${
                         isSelected
                           ? isPartial
                             ? "border-amber-500 bg-amber-50/10 shadow-sm shadow-amber-300/40"
@@ -403,7 +401,7 @@ const Home = () => {
                           />
                         ) : (
                           <div className="h-full w-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center">
-                            <span className="text-xl md:text-2xl font-black text-primary">
+                            <span className="text-xl md:text-4xl font-black text-primary">
                               {firstLetter}
                             </span>
                           </div>
@@ -415,7 +413,7 @@ const Home = () => {
                         )}
                       </div>
                     </button>
-                    <p className="text-[12px] md:text-[13px] font-semibold text-center text-foreground line-clamp-2">
+                    <p className="text-[12px] md:text-sm font-semibold text-center text-foreground line-clamp-2">
                       {name}
                     </p>
                   </div>
