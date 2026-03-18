@@ -73,7 +73,7 @@ const RefundPolicy = () => {
                             </div>
                             <h3 className="font-bold text-lg mb-2">Quick Processing</h3>
                             <p className="text-sm text-muted-foreground">
-                                Refunds processed within 5-7 business days after we receive your return.
+                                Refunds processed within 3-4 business days after we receive your return.
                             </p>
                         </div>
                     </motion.div>
@@ -235,7 +235,7 @@ const RefundPolicy = () => {
                                 <h3 className="font-bold mb-3">Refund Timeline</h3>
                                 <p className="text-muted-foreground text-sm leading-relaxed">
                                     Once we receive your return, we'll inspect it and notify you of the approval or rejection
-                                    of your refund. If approved, your refund will be processed within <strong className="text-foreground">5-7 business days</strong> and
+                                    of your refund. If approved, your refund will be processed within <strong className="text-foreground">3-4 business days</strong> and
                                     a credit will automatically be applied to your original method of payment.
                                 </p>
                             </div>

@@ -66,14 +66,14 @@ const Checkout = () => {
           setShippingMethods([{
             name: "Standard Shipping",
             price: 0,
-            time: "5-7 business days"
+            time: "3-4 business days"
           }]);
           setSelectedShipping({
             name: "Standard Shipping",
             price: 0,
-            time: "5-7 business days"
+            time: "3-4 business days"
           });
-          setDeliveryEstimate("5-7 business days");
+          setDeliveryEstimate("3-4 business days");
           return;
         }
 
@@ -100,12 +100,12 @@ const Checkout = () => {
           setShippingMethods([{
             name: "Standard Shipping",
             price: 0,
-            time: "5-7 business days"
+            time: "3-4 business days"
           }]);
           setSelectedShipping({
             name: "Standard Shipping",
             price: 0,
-            time: "5-7 business days"
+            time: "3-4 business days"
           });
         } finally {
           setShippingLoading(false);

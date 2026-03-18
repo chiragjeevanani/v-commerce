@@ -8,6 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/modules/user/context/CartContext";
 import { useToast } from "@/hooks/use-toast";
 
+const createProductSlug = (name) => {
+    const base =
+        (name || "product")
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "") || "product";
+    return base;
+};
+
 const StoreProductCard = ({ product }) => {
     const { addToCart } = useCart();
     const navigate = useNavigate();
@@ -20,6 +30,8 @@ const StoreProductCard = ({ product }) => {
     const compareAtPrice = product.compareAtPrice;
     const categoryName = product.categoryId?.name || product.category;
     const isOutOfStock = product.trackInventory && product.stock <= 0;
+
+    const slug = createProductSlug(name);
 
     const handleAddToCart = async (e) => {
         if (e) e.preventDefault();
@@ -55,7 +67,11 @@ const StoreProductCard = ({ product }) => {
         >
             <Card className="h-full flex flex-col overflow-hidden border-none shadow-sm hover:shadow-2xl transition-all duration-500 bg-card rounded-2xl">
                 <div className="relative aspect-square overflow-hidden bg-muted shrink-0">
-                    <Link to={`/store-product/${pid}`} className="block h-full w-full bg-white">
+                    <Link
+                        to={`/store-product/${slug}`}
+                        state={{ productId: pid }}
+                        className="block h-full w-full bg-white"
+                    >
                         <motion.img
                             src={image}
                             alt={name}
@@ -101,7 +117,10 @@ const StoreProductCard = ({ product }) => {
                                 className="rounded-full h-12 w-12 shadow-xl bg-white text-primary hover:bg-primary hover:text-white border-none"
                                 asChild
                             >
-                                <Link to={`/store-product/${pid}`}>
+                                <Link
+                                    to={`/store-product/${slug}`}
+                                    state={{ productId: pid }}
+                                >
                                     <Eye className="h-5 w-5" />
                                 </Link>
                             </Button>
@@ -110,7 +129,10 @@ const StoreProductCard = ({ product }) => {
                 </div>
 
                 <CardContent className="p-3 md:p-4 flex-grow">
-                    <Link to={`/store-product/${pid}`}>
+                    <Link
+                        to={`/store-product/${slug}`}
+                        state={{ productId: pid }}
+                    >
                         <h3 className="line-clamp-1 text-sm md:text-base font-bold text-foreground hover:text-primary transition-colors">
                             {name}
                         </h3>

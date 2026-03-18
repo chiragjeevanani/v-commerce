@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import {
-    ArrowLeft, Package, MapPin, CreditCard, Calendar,
-    Printer, AlertCircle, Loader2, Banknote
+    ArrowLeft, Package, MapPin, CreditCard,
+    Printer, AlertCircle, Loader2, Banknote, Truck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ const OrderDetails = () => {
     const [error, setError] = useState(null);
     const [payRemainingLoading, setPayRemainingLoading] = useState(false);
     const [razorpayKeyId, setRazorpayKeyId] = useState(null);
+    const [deliveryCountdown, setDeliveryCountdown] = useState(null);
 
     const fetchOrder = async (silent = false) => {
         if (!silent) setLoading(true);
@@ -44,6 +45,62 @@ const OrderDetails = () => {
     useEffect(() => {
         fetchOrder();
     }, [orderId, location.key]);
+
+    useEffect(() => {
+        if (!order) return;
+
+        const placedDate = new Date(order.date ?? order.createdAt);
+
+        // Default estimated delivery window: 3-4 days from order date
+        const minEta = new Date(placedDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+        const maxEta = new Date(placedDate.getTime() + 4 * 24 * 60 * 60 * 1000);
+
+        // If backend already provides an exact estimatedDelivery date, prefer that as latest-by target
+        const latestBy = order.estimatedDelivery
+            ? new Date(order.estimatedDelivery)
+            : maxEta;
+
+        const updateCountdown = () => {
+            const now = new Date();
+            const diffMs = latestBy.getTime() - now.getTime();
+
+            if (diffMs <= 0) {
+                setDeliveryCountdown({
+                    running: false,
+                    label: "Expected delivery window has passed",
+                    parts: { totalHours: 0, minutes: 0, seconds: 0 },
+                    minEta,
+                    maxEta: latestBy,
+                });
+                return false;
+            }
+
+            const totalSeconds = Math.floor(diffMs / 1000);
+            const totalHours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            setDeliveryCountdown({
+                running: true,
+                label: "Arriving within 3 - 4 days",
+                parts: { totalHours, minutes, seconds },
+                minEta,
+                maxEta: latestBy,
+            });
+            return true;
+        };
+
+        // Initialize immediately
+        const hasFuture = updateCountdown();
+        if (!hasFuture) return;
+
+        const intervalId = setInterval(() => {
+            const stillFuture = updateCountdown();
+            if (!stillFuture) clearInterval(intervalId);
+        }, 1000);
+
+        return () => clearInterval(intervalId);
+    }, [order]);
 
     useEffect(() => {
         if (!order?.isPartialPayment || order?.remainingPaymentStatus === "paid") return;
@@ -179,6 +236,83 @@ const OrderDetails = () => {
                     </Button>
                 </div>
             </div>
+
+            {/* Estimated Delivery Banner */}
+            {deliveryCountdown && order.status.toLowerCase() !== "delivered" && (
+                <div className="mb-8 rounded-2xl overflow-hidden shadow-lg border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 px-6 py-5">
+                        {/* Icon */}
+                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center ring-2 ring-primary/20">
+                            <Truck className="w-6 h-6 text-primary" />
+                        </div>
+
+                        {/* Text block */}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold uppercase tracking-widest text-primary/70 mb-0.5">
+                                Estimated Delivery
+                            </p>
+                            <p className="text-base font-semibold text-foreground leading-snug">
+                                {order.estimatedDelivery
+                                    ? new Date(order.estimatedDelivery).toLocaleDateString("en-IN", {
+                                        day: "numeric",
+                                        month: "long",
+                                        year: "numeric",
+                                    })
+                                    : "3 – 4 days from order date"}
+                            </p>
+                        </div>
+
+                        {/* Countdown */}
+                        {deliveryCountdown.running ? (
+                            <div className="flex-shrink-0 text-right">
+                                <p className="text-xs text-muted-foreground mb-1.5">Arriving in</p>
+                                <div className="flex items-end gap-1.5">
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-2xl font-extrabold text-primary leading-none tabular-nums">
+                                            {deliveryCountdown.parts.totalHours.toString().padStart(2, "0")}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">h</span>
+                                    </div>
+                                    <span className="text-xl font-bold text-primary/40 leading-none pb-[3px]">:</span>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-2xl font-extrabold text-primary leading-none tabular-nums">
+                                            {deliveryCountdown.parts.minutes.toString().padStart(2, "0")}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">m</span>
+                                    </div>
+                                    <span className="text-xl font-bold text-primary/40 leading-none pb-[3px]">:</span>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-2xl font-extrabold text-foreground leading-none tabular-nums">
+                                            {deliveryCountdown.parts.seconds.toString().padStart(2, "0")}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">s</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground italic flex-shrink-0">
+                                Delivery window has passed
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Progress bar (visual only) */}
+                    {deliveryCountdown.running && (() => {
+                        const orderPlacedAt = new Date(order.date ?? order.createdAt).getTime();
+                        const totalWindowMs = deliveryCountdown.maxEta.getTime() - orderPlacedAt;
+                        const elapsedMs = Date.now() - orderPlacedAt;
+                        const progressPercent = Math.min(100, Math.max(0, (elapsedMs / totalWindowMs) * 100));
+                        return (
+                            <div className="h-1 bg-primary/10">
+                                <div
+                                    className="h-full bg-primary/60 transition-all duration-1000 ease-linear"
+                                    style={{ width: `${progressPercent}%` }}
+                                />
+                            </div>
+                        );
+                    })()}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column: Timeline and Items */}
@@ -341,15 +475,6 @@ const OrderDetails = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <div className="p-2 rounded-lg bg-primary/10 h-fit">
-                                    <Calendar className="w-5 h-5 text-primary" />
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Estimated Delivery</p>
-                                    <p className="text-sm font-semibold text-primary">{order.estimatedDelivery || "Coming Soon"}</p>
-                                </div>
-                            </div>
                         </CardContent>
                     </Card>
 

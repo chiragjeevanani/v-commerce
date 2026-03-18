@@ -13,7 +13,7 @@ import StoreProductCard from "@/modules/user/components/StoreProductCard";
 import ProductReviews from "@/modules/user/components/ProductReviews";
 
 const StoreProductDetail = () => {
-    const { id } = useParams();
+    const { slug } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const { addToCart, cartCount } = useCart();
@@ -29,6 +29,8 @@ const StoreProductDetail = () => {
     const touchStartX = useRef(0);
     const swipeDirection = useRef(0); // -1 = prev, 1 = next
 
+    const productIdFromState = location.state?.productId;
+
     const imagesCount = product
         ? (Array.isArray(product.images) ? product.images.length : (product.images ? 1 : 1))
         : 0;
@@ -36,7 +38,7 @@ const StoreProductDetail = () => {
     useEffect(() => {
         fetchProduct();
         window.scrollTo(0, 0);
-    }, [id, location.key]);
+    }, [slug, productIdFromState, location.key]);
 
     useEffect(() => {
         if (product) {
@@ -58,12 +60,31 @@ const StoreProductDetail = () => {
     const fetchProduct = async () => {
         setLoading(true);
         try {
-            const result = await storeProductService.getProductById(id);
-            if (result.success) {
-                setProduct(result.data);
-            } else {
-                throw new Error(result.message || "Product not found");
+            let loadedProduct = null;
+
+            if (productIdFromState) {
+                // Preferred: load by ID passed via navigation state
+                const result = await storeProductService.getProductById(productIdFromState);
+                if (result.success) {
+                    loadedProduct = result.data;
+                } else {
+                    throw new Error(result.message || "Product not found");
+                }
+            } else if (slug) {
+                // Fallback: try to find product by name using search
+                const searchTerm = slug.replace(/-/g, " ");
+                const listResult = await storeProductService.getActiveProducts({
+                    search: searchTerm,
+                    limit: 1,
+                });
+                if (listResult.success && Array.isArray(listResult.data) && listResult.data.length > 0) {
+                    loadedProduct = listResult.data[0];
+                } else {
+                    throw new Error("Product not found");
+                }
             }
+
+            setProduct(loadedProduct);
         } catch (error) {
             console.error("Failed to load product", error);
             toast({
@@ -85,7 +106,7 @@ const StoreProductDetail = () => {
                     limit: 4
                 });
                 if (result.success) {
-                    setRelatedProducts(result.data.filter(p => p._id !== id).slice(0, 4));
+                    setRelatedProducts(result.data.filter(p => p._id !== product._id).slice(0, 4));
                 }
             }
         } catch (e) {
@@ -97,7 +118,7 @@ const StoreProductDetail = () => {
         try {
             const result = await storeProductService.getActiveProducts({ limit: 8 });
             if (result.success) {
-                setRecommendedProducts(result.data.filter(p => p._id !== id).slice(0, 4));
+                setRecommendedProducts(result.data.filter(p => p._id !== product._id).slice(0, 4));
             }
         } catch (e) {
             console.error("Recommended products fetch failed", e);

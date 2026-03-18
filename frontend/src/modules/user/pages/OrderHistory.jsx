@@ -145,7 +145,10 @@ const OrderHistory = () => {
                                 ? "We couldn't find any orders matching your search."
                                 : "You haven't placed any orders yet."}
                         </p>
-                        <Button disabled>
+                        <Button
+                            onClick={() => navigate("/store-products")}
+                            className="px-6 rounded-full font-semibold"
+                        >
                             Start Shopping
                         </Button>
                     </CardContent>

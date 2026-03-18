@@ -104,17 +104,12 @@ export const placeOrder = asyncHandler(async (req, res) => {
                 if (cjResult.success) {
                     newOrder.cjOrderId = cjResult.data?.[0]?.cjOrderId;
                     newOrder.cjResponse = cjResult;
-                    newOrder.status = "confirmed";
                     await newOrder.save();
                 } else {
                     console.error("CJ Order Creation Failed:", cjResult);
                     newOrder.cjResponse = cjResult;
                     await newOrder.save();
                 }
-            } else {
-                // Only store products - mark as confirmed directly
-                newOrder.status = "confirmed";
-                await newOrder.save();
             }
         }
     } catch (error) {

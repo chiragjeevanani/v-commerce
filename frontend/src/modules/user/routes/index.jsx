@@ -44,7 +44,7 @@ const UserRoutes = () => {
           <Route index element={<Home />} />
           <Route path="product/:id" element={<ProductDetail />} />
           <Route path="store-products" element={<StoreProducts />} />
-          <Route path="store-product/:id" element={<StoreProductDetail />} />
+          <Route path="store-product/:slug" element={<StoreProductDetail />} />
 
           {/* Auth Routes */}
           <Route path="login" element={<Login />} />

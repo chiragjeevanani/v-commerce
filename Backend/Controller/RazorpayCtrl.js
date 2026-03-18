@@ -415,7 +415,6 @@ export const verifyPayment = async (req, res) => {
                 const cjResult = await cjResponse.json();
                 if (cjResult.success) {
                     newOrder.cjOrderId = cjResult.data?.[0]?.cjOrderId;
-                    newOrder.status = "confirmed";
                     await newOrder.save();
                 }
             }
