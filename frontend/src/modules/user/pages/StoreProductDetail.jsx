@@ -282,7 +282,7 @@ const StoreProductDetail = () => {
                             transition={{ type: "tween", ease: "easeOut", duration: 0.35 }}
                             src={images[activeImage] || "/placeholder-product.png"}
                             alt={product.name}
-                            className="absolute inset-0 h-full w-full object-cover select-none"
+                            className="absolute inset-0 h-full w-full object-contain select-none"
                             draggable={false}
                         />
                     </AnimatePresence>

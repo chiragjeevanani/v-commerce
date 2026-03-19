@@ -239,53 +239,83 @@ const OrderDetails = () => {
 
             {/* Estimated Delivery Banner */}
             {deliveryCountdown && order.status.toLowerCase() !== "delivered" && (
-                <div className="mb-8 rounded-2xl overflow-hidden shadow-lg border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 px-6 py-5">
-                        {/* Icon */}
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center ring-2 ring-primary/20">
-                            <Truck className="w-6 h-6 text-primary" />
+                <div className="mb-8 rounded-2xl overflow-hidden shadow-2xl border border-primary/25 bg-gradient-to-br from-primary/12 via-primary/5 to-transparent relative">
+                    {/* Shimmer sweep */}
+                    <div className="delivery-shimmer" />
+
+                    <div className="relative flex flex-col sm:flex-row items-center gap-6 px-6 py-6">
+                        {/* Truck icon with radiating pulse rings */}
+                        <div className="flex-shrink-0 relative w-16 h-16 flex items-center justify-center">
+                            <div className="pulse-ring" />
+                            <div className="pulse-ring-2" />
+                            <div className="relative z-10 w-14 h-14 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/20">
+                                <Truck className="truck-anim w-7 h-7 text-primary" />
+                            </div>
                         </div>
 
-                        {/* Text block */}
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold uppercase tracking-widest text-primary/70 mb-0.5">
+                        {/* Label */}
+                        <div className="flex-1 min-w-0 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary/60 mb-1">
                                 Estimated Delivery
                             </p>
-                            <p className="text-base font-semibold text-foreground leading-snug">
+                            <p className="text-lg font-bold text-foreground leading-tight">
                                 {order.estimatedDelivery
                                     ? new Date(order.estimatedDelivery).toLocaleDateString("en-IN", {
-                                        day: "numeric",
-                                        month: "long",
-                                        year: "numeric",
+                                        day: "numeric", month: "long", year: "numeric",
                                     })
                                     : "3 – 4 days from order date"}
                             </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Arriving at your doorstep</p>
                         </div>
 
-                        {/* Countdown */}
+                        {/* Flip-clock countdown */}
                         {deliveryCountdown.running ? (
-                            <div className="flex-shrink-0 text-right">
-                                <p className="text-xs text-muted-foreground mb-1.5">Arriving in</p>
-                                <div className="flex items-end gap-1.5">
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-2xl font-extrabold text-primary leading-none tabular-nums">
-                                            {deliveryCountdown.parts.totalHours.toString().padStart(2, "0")}
-                                        </span>
-                                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">h</span>
+                            <div className="flex-shrink-0 flex flex-col items-center gap-2">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                                    Arriving in
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    {/* Hours tile */}
+                                    <div className="flex flex-col items-center gap-1.5">
+                                        <div className="countdown-tile">
+                                            <span
+                                                key={deliveryCountdown.parts.totalHours}
+                                                className="digit-flip text-3xl font-black text-primary tabular-nums leading-none"
+                                            >
+                                                {deliveryCountdown.parts.totalHours.toString().padStart(2, "0")}
+                                            </span>
+                                        </div>
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">hrs</span>
                                     </div>
-                                    <span className="text-xl font-bold text-primary/40 leading-none pb-[3px]">:</span>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-2xl font-extrabold text-primary leading-none tabular-nums">
-                                            {deliveryCountdown.parts.minutes.toString().padStart(2, "0")}
-                                        </span>
-                                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">m</span>
+
+                                    <span className="colon-blink text-2xl font-black text-primary pb-5 select-none">:</span>
+
+                                    {/* Minutes tile */}
+                                    <div className="flex flex-col items-center gap-1.5">
+                                        <div className="countdown-tile">
+                                            <span
+                                                key={deliveryCountdown.parts.minutes}
+                                                className="digit-flip text-3xl font-black text-primary tabular-nums leading-none"
+                                            >
+                                                {deliveryCountdown.parts.minutes.toString().padStart(2, "0")}
+                                            </span>
+                                        </div>
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">min</span>
                                     </div>
-                                    <span className="text-xl font-bold text-primary/40 leading-none pb-[3px]">:</span>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-2xl font-extrabold text-foreground leading-none tabular-nums">
-                                            {deliveryCountdown.parts.seconds.toString().padStart(2, "0")}
-                                        </span>
-                                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">s</span>
+
+                                    <span className="colon-blink text-2xl font-black text-primary pb-5 select-none">:</span>
+
+                                    {/* Seconds tile */}
+                                    <div className="flex flex-col items-center gap-1.5">
+                                        <div className="countdown-tile" style={{ borderColor: "hsl(var(--foreground) / 0.18)" }}>
+                                            <span
+                                                key={deliveryCountdown.parts.seconds}
+                                                className="digit-flip text-3xl font-black text-foreground tabular-nums leading-none"
+                                            >
+                                                {deliveryCountdown.parts.seconds.toString().padStart(2, "0")}
+                                            </span>
+                                        </div>
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">sec</span>
                                     </div>
                                 </div>
                             </div>
@@ -296,18 +326,19 @@ const OrderDetails = () => {
                         )}
                     </div>
 
-                    {/* Progress bar (visual only) */}
+                    {/* Animated progress bar */}
                     {deliveryCountdown.running && (() => {
                         const orderPlacedAt = new Date(order.date ?? order.createdAt).getTime();
                         const totalWindowMs = deliveryCountdown.maxEta.getTime() - orderPlacedAt;
                         const elapsedMs = Date.now() - orderPlacedAt;
                         const progressPercent = Math.min(100, Math.max(0, (elapsedMs / totalWindowMs) * 100));
                         return (
-                            <div className="h-1 bg-primary/10">
+                            <div className="h-2 bg-primary/8 relative overflow-hidden">
                                 <div
-                                    className="h-full bg-primary/60 transition-all duration-1000 ease-linear"
+                                    className="h-full bg-gradient-to-r from-primary/50 via-primary to-primary/80 transition-all duration-1000 ease-linear rounded-full"
                                     style={{ width: `${progressPercent}%` }}
                                 />
+                                <div className="progress-shine" />
                             </div>
                         );
                     })()}
