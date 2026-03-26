@@ -238,6 +238,61 @@ html {
   animation: truck-rock 2.2s ease-in-out infinite;
 }
 
+/* Simple blinking text for delivery callout */
+@keyframes blink-fast {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
+.blink-text {
+  animation: blink-fast 1.2s step-start infinite;
+}
+
+/* Delivery pill and fancy text */
+
+.delivery-pill {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid hsl(var(--primary) / 0.18);
+  backdrop-filter: blur(8px);
+  padding: 0.9rem 1.25rem;
+  border-radius: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 760px;
+}
+
+.delivery-pill .truck-circle {
+  width: 4rem;
+  height: 4rem;
+  min-width: 4rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.14), hsl(var(--primary) / 0.06));
+  border: 1px solid hsl(var(--primary) / 0.24);
+  position: relative;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #F59E0B, #F97316 40%, #F43F5E 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.delivery-pill:hover {
+  transform: translateY(-6px) scale(1.01);
+  transition: transform 220ms cubic-bezier(.2,.9,.3,1);
+}
+
+.truck-glow {
+  filter: drop-shadow(0 8px 30px rgba(249,115,22,0.16));
+}
+
 /* Flip-clock tile */
 .countdown-tile {
   display: flex;

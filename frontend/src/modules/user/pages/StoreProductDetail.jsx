@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, ShoppingCart, CreditCard, ArrowLeft, Info } from "lucide-react";
+import { Minus, Plus, ShoppingCart, CreditCard, ArrowLeft, Info, Truck } from "lucide-react";
 import { storeProductService } from "@/modules/admin/services/storeProduct.service";
 import { useCart } from "@/modules/user/context/CartContext";
 import { Button } from "@/components/ui/button";
@@ -382,12 +382,32 @@ const StoreProductDetail = () => {
                                 {product.allowPartialPayment && (
                                     <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wide">Pay ₹500 now, rest later</Badge>
                                 )}
-                                {/* Delivery countdown (mobile) - enlarged */}
-                                <div className="w-full mt-3 flex items-center gap-3 text-base md:text-lg text-muted-foreground">
-                                    <Info className="h-5 w-5 text-primary" />
-                                    <span className="font-extrabold text-lg md:text-xl">Delivery in</span>
-                                    <Countdown hours={96} className="font-black text-primary ml-3 text-xl md:text-2xl" />
-                                </div>
+                                {/* Delivery estimate (mobile) - animated pill; clickable to view shipping */}
+                                <motion.div
+                                    role="button"
+                                    onClick={() => setActiveTab('shipping & returns')}
+                                    title="View shipping & returns"
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.38, ease: [0.2, 0.9, 0.3, 1] }}
+                                    className="w-full mt-4 group cursor-pointer"
+                                >
+                                    <div className="relative delivery-pill">
+                                        <div className="absolute inset-0 delivery-shimmer opacity-40 pointer-events-none" />
+                                        <div className="absolute -left-10 top-1/2 transform -translate-y-1/2 progress-shine opacity-40 pointer-events-none" />
+
+                                        <div className="truck-circle relative flex-shrink-0">
+                                            <span className="absolute inset-0 rounded-lg pulse-ring opacity-30" />
+                                            <span className="absolute inset-0 rounded-lg pulse-ring-2 opacity-20" />
+                                            <Truck className="h-8 w-8 text-primary truck-anim truck-glow" />
+                                        </div>
+
+                                        <div className="flex flex-col">
+                                            <span className="text-xs text-muted-foreground uppercase tracking-wider">Estimated</span>
+                                            <span className="gradient-text text-lg md:text-xl">5 - 7 Days Delivery</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
                             </div>
                         </div>
 
@@ -499,12 +519,32 @@ const StoreProductDetail = () => {
                                 {product.allowPartialPayment && (
                                     <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wide">Pay ₹500 now, rest later</Badge>
                                 )}
-                                {/* Delivery countdown (desktop) - enlarged */}
-                                <div className="w-full mt-3 flex items-center gap-4 text-base text-muted-foreground">
-                                    <Info className="h-5 w-5 text-primary" />
-                                    <span className="font-extrabold text-lg">Delivery in</span>
-                                    <Countdown hours={96} className="font-black text-primary ml-3 text-2xl" />
-                                </div>
+                                {/* Delivery estimate (desktop) - animated pill; clickable to view shipping */}
+                                <motion.div
+                                    role="button"
+                                    onClick={() => setActiveTab('shipping & returns')}
+                                    title="View shipping & returns"
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.38, ease: [0.2, 0.9, 0.3, 1], delay: 0.05 }}
+                                    className="w-full mt-4 group cursor-pointer"
+                                >
+                                    <div className="relative delivery-pill">
+                                        <div className="absolute inset-0 delivery-shimmer opacity-40 pointer-events-none" />
+                                        <div className="absolute -left-12 top-1/2 transform -translate-y-1/2 progress-shine opacity-40 pointer-events-none" />
+
+                                        <div className="truck-circle relative flex-shrink-0">
+                                            <span className="absolute inset-0 rounded-lg pulse-ring opacity-30" />
+                                            <span className="absolute inset-0 rounded-lg pulse-ring-2 opacity-20" />
+                                            <Truck className="h-8 w-8 text-primary truck-anim truck-glow" />
+                                        </div>
+
+                                        <div className="flex flex-col">
+                                            <span className="text-xs text-muted-foreground uppercase tracking-wider">Estimated</span>
+                                            <span className="gradient-text text-lg">5 - 7 Days Delivery</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
                             </div>
                         </div>
 
