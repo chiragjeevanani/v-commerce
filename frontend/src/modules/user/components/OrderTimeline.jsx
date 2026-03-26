@@ -1,96 +1,106 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Check, Package, Truck, MapPin, CheckCircle2, Circle } from "lucide-react";
+import { ShoppingBag, Truck, MapPin, Clock, Banknote, ShieldCheck, ThumbsUp } from "lucide-react";
 import { cn } from "@/utils/utils";
 
-const OrderTimeline = ({ steps, currentStatus }) => {
+const OrderTimeline = ({ steps, currentStatus, orderDate, deliveryCountdown }) => {
+    const getActiveIndex = () => {
+        const statusMap = {
+            'placed': 0, 'confirmed': 1, 'shipped': 1, 'delivered': 2
+        };
+        return statusMap[currentStatus.toLowerCase()] ?? 0;
+    };
+
+    const activeIndex = getActiveIndex();
+
+    const timelineSteps = [
+        { label: "Purchased", icon: ShoppingBag, status: 'placed' },
+        { label: "Processing", icon: Truck, status: 'processing' },
+        { label: "Delivered", icon: MapPin, status: 'delivered' }
+    ];
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return "";
+        try {
+            return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } catch (e) { return ""; }
+    };
+
+    const getStepDate = (status) => {
+        const found = steps.find(s => s.status.toLowerCase() === status.toLowerCase());
+        if (found?.date) return formatDate(found.date);
+        if (status === 'placed' && orderDate) return formatDate(orderDate);
+        return "";
+    };
+
     return (
-        <div className="relative">
-            <div className="flex flex-col space-y-8">
-                {steps.map((step, index) => {
-                    const isCompleted = step.completed;
-                    const isLast = index === steps.length - 1;
-                    // Current status is the last completed step or the currentStatus from props
-                    const isCurrent = step.status === currentStatus;
+        <div className="w-full">
+            {/* Top Row: Info + Timeline + Features */}
+            <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
+                
+                {/* 1. Timer Section */}
+                <div className="flex flex-col gap-2 min-w-[220px]">
+                    <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-tighter text-muted-foreground/60">
+                         <Clock className="w-4 h-4" /> Order today within
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-2xl font-black tabular-nums tracking-tighter">06 : 28 : 36</span>
+                    </div>
+                    <div className="text-[11px] font-medium text-muted-foreground">
+                        Get it by <span className="text-foreground font-bold underline decoration-primary/30">21 March</span>
+                    </div>
+                </div>
 
-                    const formatDate = (dateStr) => {
-                        if (!dateStr) return null;
-                        try {
-                            return new Date(dateStr).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                        } catch (e) {
-                            return dateStr;
-                        }
-                    };
+                <div className="hidden lg:block w-px h-16 bg-muted/30" />
 
-                    return (
-                        <div key={step.status} className="relative flex gap-4">
-                            {!isLast && (
-                                <div
-                                    className={cn(
-                                        "absolute left-[15px] top-[30px] w-[2px] h-[calc(100%+8px)]",
-                                        isCompleted ? "bg-primary" : "bg-muted"
-                                    )}
-                                />
-                            )}
+                {/* 2. Timeline Progress */}
+                <div className="flex-1 relative w-full px-4 min-h-[80px] flex items-center">
+                    <div className="absolute top-1/2 left-4 right-4 h-[2px] bg-muted/20 -translate-y-1/2" />
+                    <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(activeIndex / (timelineSteps.length - 1)) * 100}%` }}
+                        className="absolute top-1/2 left-4 h-[2px] bg-foreground -translate-y-1/2"
+                    />
+                    <div className="relative w-full flex justify-between z-10">
+                        {timelineSteps.map((step, idx) => {
+                            const Icon = step.icon;
+                            const isActive = idx <= activeIndex;
+                            return (
+                                <div key={idx} className="flex flex-col items-center gap-2">
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-full flex items-center justify-center bg-background border-2 transition-all duration-500 shadow-sm",
+                                        isActive ? "border-foreground scale-110" : "border-muted-foreground/20 text-muted-foreground"
+                                    )}>
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className={cn("text-[11px] font-bold uppercase tracking-tight", isActive ? "text-foreground" : "text-muted-foreground")}>{step.label}</span>
+                                        <span className="text-[9px] font-medium text-muted-foreground/70">{getStepDate(step.status)}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
 
-                            <div className="relative z-10">
-                                <motion.div
-                                    initial={false}
-                                    animate={{
-                                        scale: isCompleted || isCurrent ? 1 : 0.8,
-                                        backgroundColor: isCompleted ? "hsl(var(--primary))" : isCurrent ? "transparent" : "hsl(var(--muted))"
-                                    }}
-                                    className={cn(
-                                        "w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors",
-                                        isCompleted ? "border-primary text-primary-foreground" :
-                                            isCurrent ? "border-primary text-primary" : "border-muted text-muted-foreground"
-                                    )}
-                                >
-                                    {isCompleted ? (
-                                        <Check className="w-5 h-5 mx-auto" />
-                                    ) : (
-                                        <Circle className="w-4 h-4 mx-auto fill-current opacity-20" />
-                                    )}
-                                </motion.div>
+                <div className="hidden lg:block w-px h-16 bg-muted/30" />
+
+                {/* 3. Features Row */}
+                <div className="grid grid-cols-4 gap-4 flex-shrink-0">
+                    {[
+                        { icon: Banknote, label: "Cash" },
+                        { icon: Truck, label: "Free" },
+                        { icon: ShieldCheck, label: "Quality" },
+                        { icon: ThumbsUp, label: "Happy" }
+                    ].map((f, i) => (
+                        <div key={i} className="flex flex-col items-center gap-1 group">
+                            <div className="w-10 h-10 rounded-xl bg-muted/20 flex items-center justify-center text-muted-foreground/70 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                                <f.icon className="w-5 h-5 stroke-1" />
                             </div>
-
-                            <div className="flex flex-col pb-2">
-                                <h4 className={cn(
-                                    "font-bold text-lg leading-none mb-1",
-                                    isCompleted ? "text-foreground" : isCurrent ? "text-primary" : "text-muted-foreground"
-                                )}>
-                                    {step.label}
-                                </h4>
-                                {step.date && (
-                                    <p className="text-xs text-muted-foreground font-medium">
-                                        {formatDate(step.date)}
-                                    </p>
-                                )}
-                                {isCurrent && (
-                                    <motion.div
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        className="flex items-center gap-1.5 mt-1"
-                                    >
-                                        <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                                        </span>
-                                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">
-                                            Current Status
-                                        </span>
-                                    </motion.div>
-                                )}
-                            </div>
+                            <span className="text-[9px] font-bold uppercase tracking-tighter text-muted-foreground/60">{f.label}</span>
                         </div>
-                    );
-                })}
+                    ))}
+                </div>
             </div>
         </div>
     );

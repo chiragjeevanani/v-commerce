@@ -237,127 +237,18 @@ const OrderDetails = () => {
                 </div>
             </div>
 
-            {/* Estimated Delivery Banner */}
-            {deliveryCountdown && order.status.toLowerCase() !== "delivered" && (
-                <div className="mb-8 rounded-2xl overflow-hidden shadow-2xl border border-primary/25 bg-gradient-to-br from-primary/12 via-primary/5 to-transparent relative">
-                    {/* Shimmer sweep */}
-                    <div className="delivery-shimmer" />
-
-                    <div className="relative flex flex-col sm:flex-row items-center gap-6 px-6 py-6">
-                        {/* Truck icon with radiating pulse rings */}
-                        <div className="flex-shrink-0 relative w-16 h-16 flex items-center justify-center">
-                            <div className="pulse-ring" />
-                            <div className="pulse-ring-2" />
-                            <div className="relative z-10 w-14 h-14 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/20">
-                                <Truck className="truck-anim w-7 h-7 text-primary" />
-                            </div>
-                        </div>
-
-                        {/* Label */}
-                        <div className="flex-1 min-w-0 text-center sm:text-left">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary/60 mb-1">
-                                Estimated Delivery
-                            </p>
-                            <p className="text-lg font-bold text-foreground leading-tight">
-                                {order.estimatedDelivery
-                                    ? new Date(order.estimatedDelivery).toLocaleDateString("en-IN", {
-                                        day: "numeric", month: "long", year: "numeric",
-                                    })
-                                    : "3 – 4 days from order date"}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Arriving at your doorstep</p>
-                        </div>
-
-                        {/* Flip-clock countdown */}
-                        {deliveryCountdown.running ? (
-                            <div className="flex-shrink-0 flex flex-col items-center gap-2">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                                    Arriving in
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    {/* Hours tile */}
-                                    <div className="flex flex-col items-center gap-1.5">
-                                        <div className="countdown-tile">
-                                            <span
-                                                key={deliveryCountdown.parts.totalHours}
-                                                className="digit-flip text-3xl font-black text-primary tabular-nums leading-none"
-                                            >
-                                                {deliveryCountdown.parts.totalHours.toString().padStart(2, "0")}
-                                            </span>
-                                        </div>
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">hrs</span>
-                                    </div>
-
-                                    <span className="colon-blink text-2xl font-black text-primary pb-5 select-none">:</span>
-
-                                    {/* Minutes tile */}
-                                    <div className="flex flex-col items-center gap-1.5">
-                                        <div className="countdown-tile">
-                                            <span
-                                                key={deliveryCountdown.parts.minutes}
-                                                className="digit-flip text-3xl font-black text-primary tabular-nums leading-none"
-                                            >
-                                                {deliveryCountdown.parts.minutes.toString().padStart(2, "0")}
-                                            </span>
-                                        </div>
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">min</span>
-                                    </div>
-
-                                    <span className="colon-blink text-2xl font-black text-primary pb-5 select-none">:</span>
-
-                                    {/* Seconds tile */}
-                                    <div className="flex flex-col items-center gap-1.5">
-                                        <div className="countdown-tile" style={{ borderColor: "hsl(var(--foreground) / 0.18)" }}>
-                                            <span
-                                                key={deliveryCountdown.parts.seconds}
-                                                className="digit-flip text-3xl font-black text-foreground tabular-nums leading-none"
-                                            >
-                                                {deliveryCountdown.parts.seconds.toString().padStart(2, "0")}
-                                            </span>
-                                        </div>
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">sec</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-sm text-muted-foreground italic flex-shrink-0">
-                                Delivery window has passed
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Animated progress bar */}
-                    {deliveryCountdown.running && (() => {
-                        const orderPlacedAt = new Date(order.date ?? order.createdAt).getTime();
-                        const totalWindowMs = deliveryCountdown.maxEta.getTime() - orderPlacedAt;
-                        const elapsedMs = Date.now() - orderPlacedAt;
-                        const progressPercent = Math.min(100, Math.max(0, (elapsedMs / totalWindowMs) * 100));
-                        return (
-                            <div className="h-2 bg-primary/8 relative overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-primary/50 via-primary to-primary/80 transition-all duration-1000 ease-linear rounded-full"
-                                    style={{ width: `${progressPercent}%` }}
-                                />
-                                <div className="progress-shine" />
-                            </div>
-                        );
-                    })()}
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
                 {/* Left Column: Timeline and Items */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Status Timeline Card */}
                     <Card className="border-none shadow-xl bg-card rounded-3xl overflow-hidden">
-                        <CardHeader className="bg-primary/5 border-b border-primary/10">
-                            <CardTitle className="flex items-center gap-2">
-                                <Package className="w-5 h-5 text-primary" />
-                                Order Tracking
-                            </CardTitle>
-                        </CardHeader>
                         <CardContent className="pt-8 pb-8 px-6 md:px-10">
-                            <OrderTimeline steps={order.timeline} currentStatus={order.status} />
+                            <OrderTimeline 
+                                steps={order.timeline} 
+                                currentStatus={order.status} 
+                                orderDate={order.date ?? order.createdAt}
+                                deliveryCountdown={deliveryCountdown}
+                            />
                         </CardContent>
                     </Card>
 

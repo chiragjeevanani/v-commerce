@@ -11,6 +11,7 @@ import AnimatedNumber from "@/modules/user/components/AnimatedNumber";
 import SkeletonCard from "@/modules/user/components/SkeletonCard";
 import StoreProductCard from "@/modules/user/components/StoreProductCard";
 import ProductReviews from "@/modules/user/components/ProductReviews";
+import Countdown from "@/components/Countdown";
 
 const StoreProductDetail = () => {
     const { slug } = useParams();
@@ -381,6 +382,12 @@ const StoreProductDetail = () => {
                                 {product.allowPartialPayment && (
                                     <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wide">Pay ₹500 now, rest later</Badge>
                                 )}
+                                {/* Delivery countdown (mobile) - enlarged */}
+                                <div className="w-full mt-3 flex items-center gap-3 text-base md:text-lg text-muted-foreground">
+                                    <Info className="h-5 w-5 text-primary" />
+                                    <span className="font-extrabold text-lg md:text-xl">Delivery in</span>
+                                    <Countdown hours={96} className="font-black text-primary ml-3 text-xl md:text-2xl" />
+                                </div>
                             </div>
                         </div>
 
@@ -492,6 +499,12 @@ const StoreProductDetail = () => {
                                 {product.allowPartialPayment && (
                                     <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wide">Pay ₹500 now, rest later</Badge>
                                 )}
+                                {/* Delivery countdown (desktop) - enlarged */}
+                                <div className="w-full mt-3 flex items-center gap-4 text-base text-muted-foreground">
+                                    <Info className="h-5 w-5 text-primary" />
+                                    <span className="font-extrabold text-lg">Delivery in</span>
+                                    <Countdown hours={96} className="font-black text-primary ml-3 text-2xl" />
+                                </div>
                             </div>
                         </div>
 
