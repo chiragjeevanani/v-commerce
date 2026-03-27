@@ -10,7 +10,8 @@ import {
     History,
     Phone,
     ArrowUpRight,
-    Loader2
+    Loader2,
+    LogOut
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,44 @@ const Customers = () => {
         fetchCustomers();
     }, []);
 
+    const handleForceLogout = async (userId) => {
+        if (!window.confirm("Are you sure you want to force logout this user from all devices?")) return;
+        try {
+            const result = await authService.forceLogout(userId);
+            if (result.success) {
+                toast({
+                    title: "Force Logout",
+                    description: "User session invalidated on all devices.",
+                });
+            }
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleForceLogoutAll = async () => {
+        if (!window.confirm("⚠️ CRITICAL: Are you sure you want to force logout ALL customers? They will be required to log in again.")) return;
+        try {
+            const result = await authService.forceLogoutAll();
+            if (result.success) {
+                toast({
+                    title: "Success",
+                    description: "All customers have been logged out.",
+                });
+            }
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive",
+            });
+        }
+    };
+
     const handleToggleStatus = async (userId) => {
         try {
             const result = await authService.toggleUserStatus(userId);
@@ -93,6 +132,16 @@ const Customers = () => {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Customers Management</h1>
                     <p className="text-muted-foreground mt-1">View and manage your platform users and their activity.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Button 
+                        variant="destructive" 
+                        className="flex items-center gap-2"
+                        onClick={handleForceLogoutAll}
+                    >
+                        <LogOut className="h-4 w-4" />
+                        Logout All Customers
+                    </Button>
                 </div>
             </div>
 
@@ -234,6 +283,10 @@ const Customers = () => {
                                                                 <Ban className="mr-2 h-4 w-4" /> Deactivate User
                                                             </DropdownMenuItem>
                                                         )}
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem className="text-orange-600 font-medium" onClick={() => handleForceLogout(customer._id)}>
+                                                            <LogOut className="mr-2 h-4 w-4" /> Force Logout
+                                                        </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </td>

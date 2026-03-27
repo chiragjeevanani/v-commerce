@@ -65,7 +65,11 @@ const userSchema = new mongoose.Schema(
         phoneNumber: String,
         isDefault: { type: Boolean, default: false }
       }
-    ]
+    ],
+    tokenVersion: {
+      type: Number,
+      default: 0
+    }
   },
   { timestamps: true },
 );

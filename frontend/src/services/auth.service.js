@@ -269,6 +269,24 @@ export const authService = {
         } catch (error) {
             throw new Error(error.response?.data?.message || "Failed to delete account");
         }
+    },
+
+    forceLogout: async (userId) => {
+        try {
+            const response = await apiClient.post(`/auth/force-logout/${userId}`);
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to force logout user");
+        }
+    },
+
+    forceLogoutAll: async () => {
+        try {
+            const response = await apiClient.post('/auth/force-logout-all');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to force logout all users");
+        }
     }
 };
 

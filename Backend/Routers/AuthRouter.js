@@ -20,6 +20,8 @@ import {
     forgotPassword,
     verifyForgotPasswordOTP,
     resetPassword,
+    forceLogoutUser,
+    forceLogoutAllUsers,
 } from "../Controller/AuthCtrl.js";
 
 import { AuthMiddleware, isAdmin } from "../Middlewares/AuthMiddleware.js";
@@ -52,6 +54,8 @@ router.delete("/delete-profile/:id", AuthMiddleware, isAdmin, deleteProfile);
 router.put("/toggle-status/:id", AuthMiddleware, isAdmin, toggleUserStatus);
 router.get("/userProfile/:id", AuthMiddleware, isAdmin, userProfileById);
 router.get("/all-users", AuthMiddleware, isAdmin, getAllUsers);
+router.post("/force-logout/:id", AuthMiddleware, isAdmin, forceLogoutUser);
+router.post("/force-logout-all", AuthMiddleware, isAdmin, forceLogoutAllUsers);
 
 
 export default router;

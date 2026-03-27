@@ -15,6 +15,12 @@ export const AuthMiddleware = asyncHandler(async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
+
+    // Force Logout Check
+    if (decoded.version !== (user.tokenVersion || 0)) {
+      return res.status(401).json({ message: "Session expired, please login again" });
+    }
+
     req.user = user;
     next();
   } catch (error) {

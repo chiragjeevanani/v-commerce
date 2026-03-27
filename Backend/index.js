@@ -12,11 +12,18 @@ import { dbConnect } from "./Config/dbConnect.js";
 import { errorHandler } from "./Helpers/helpers.js";
 import routes from "./app.js";
 
+import http from "http";
+import { initSocket } from "./Config/socket.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.io
+initSocket(server);
 
 // DB
 dbConnect();
@@ -33,9 +40,8 @@ app.use("/api", routes);
 /* ================= FRONTEND ================= */
 const distPath = path.join(__dirname, "../frontend/dist");
 
-// Serve static files with proper MIME types
+// ... [rest of the app.use static logic] ...
 app.use(express.static(distPath, {
-  // Set proper MIME types for different file extensions
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
     const mimeTypes = {
@@ -53,31 +59,16 @@ app.use(express.static(distPath, {
       '.ttf': 'font/ttf',
       '.eot': 'application/vnd.ms-fontobject',
     };
-    
-    if (mimeTypes[ext]) {
-      res.setHeader('Content-Type', mimeTypes[ext]);
-    }
+    if (mimeTypes[ext]) res.setHeader('Content-Type', mimeTypes[ext]);
   },
-  // Don't redirect, just serve files
   redirect: false,
-  // Enable index file serving
   index: false,
 }));
 
-/* ========== SPA FALLBACK (EXPRESS v5 SAFE) ========== */
 app.use((req, res, next) => {
-  // Skip API routes
-  if (req.originalUrl.startsWith("/api")) {
-    return next();
-  }
-  
-  // Skip static asset requests (files with extensions)
+  if (req.originalUrl.startsWith("/api")) return next();
   const hasFileExtension = /\.[a-zA-Z0-9]+$/.test(req.originalUrl.split('?')[0]);
-  if (hasFileExtension) {
-    return next(); // Let express.static handle it or return 404
-  }
-  
-  // For all other routes, serve index.html (SPA fallback)
+  if (hasFileExtension) return next();
   res.sendFile(path.join(distPath, "index.html"));
 });
 
@@ -85,6 +76,6 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 // Start
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
