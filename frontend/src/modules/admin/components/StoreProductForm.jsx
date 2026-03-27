@@ -459,32 +459,33 @@ const StoreProductForm = ({ product, onSuccess, onCancel }) => {
                 <h3 className="text-lg font-semibold">Status</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-amber-500/30 bg-white transition-all hover:bg-amber-50/50 shadow-sm">
                         <div className="space-y-0.5">
-                            <Label htmlFor="isActive">Active Status</Label>
-                            <p className="text-xs text-muted-foreground">
-                                Visible to customers
+                            <Label htmlFor="isActive" className="text-amber-900 font-bold">Active Status</Label>
+                            <p className="text-xs text-amber-700/70 uppercase tracking-wider font-semibold">
+                                Visible to shoppers
                             </p>
                         </div>
                         <Switch
                             id="isActive"
                             checked={formData.isActive}
                             onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                            className="data-[state=checked]:bg-amber-700"
                         />
                     </div>
 
-                    <div className="flex items-center justify-between p-4 rounded-lg border border-indigo-200 bg-indigo-50/50">
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-amber-500/30 bg-white transition-all hover:bg-amber-50/50 shadow-sm">
                         <div className="space-y-0.5">
-                            <Label htmlFor="isFeatured" className="text-indigo-700">Featured Product</Label>
-                            <p className="text-xs text-indigo-500">
-                                Show in special sections
+                            <Label htmlFor="isFeatured" className="text-amber-900 font-bold">Featured Product</Label>
+                            <p className="text-xs text-amber-700/70 uppercase tracking-wider font-semibold">
+                                Special showcase placement
                             </p>
                         </div>
                         <Switch
                             id="isFeatured"
                             checked={formData.isFeatured}
                             onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
-                            className="data-[state=checked]:bg-indigo-600"
+                            className="data-[state=checked]:bg-amber-700"
                         />
                     </div>
                 </div>
