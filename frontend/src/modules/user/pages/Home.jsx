@@ -447,8 +447,8 @@ const Home = () => {
             <div className="h-9 w-9 md:h-11 md:w-11 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 shadow-sm">
               <Zap className="h-5 w-5 fill-amber-500" />
             </div>
-            <div className="space-y-0.5">
-              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase italic">
+            <div className="space-y-0.5 min-w-0">
+              <h2 className="text-lg md:text-2xl font-black tracking-tight uppercase italic whitespace-nowrap">
                 Trending Featured
               </h2>
               <p className="hidden md:block text-xs text-muted-foreground font-medium uppercase tracking-wider">
@@ -458,10 +458,10 @@ const Home = () => {
           </div>
           <Link 
             to="/store-products?featured=true" 
-            className="flex items-center gap-2 text-xs md:text-sm font-black uppercase tracking-widest text-primary hover:gap-3 transition-all group"
+            className="flex items-center gap-1.5 text-xs md:text-sm font-black uppercase tracking-widest text-primary hover:gap-2 transition-all group whitespace-nowrap flex-shrink-0"
           >
             View All
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
 
