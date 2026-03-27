@@ -185,6 +185,7 @@ const StoreProducts = () => {
             formData.append('stock', product.stock);
             formData.append('trackInventory', product.trackInventory);
             formData.append('isActive', !product.isActive);
+            formData.append('isFeatured', product.isFeatured !== undefined ? product.isFeatured : false);
             if (product.tags && product.tags.length > 0) formData.append('tags', product.tags.join(', '));
             formData.append('existingImages', JSON.stringify(product.images));
 
@@ -360,7 +361,14 @@ const StoreProducts = () => {
                                                 <CardContent className="p-4">
                                                     <div className="space-y-2">
                                                         <div className="flex items-center justify-between gap-2">
-                                                            <h3 className="font-bold text-lg line-clamp-1 flex-1">{product.name}</h3>
+                                                            <div className="flex items-center gap-2 flex-1">
+                                                                <h3 className="font-bold text-lg line-clamp-1">{product.name}</h3>
+                                                                {product.isFeatured && (
+                                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 px-1.5 h-5 text-[10px]">
+                                                                        Featured
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
                                                             <div className="flex items-center gap-1 flex-shrink-0">
                                                                 <Button 
                                                                     variant="ghost" 

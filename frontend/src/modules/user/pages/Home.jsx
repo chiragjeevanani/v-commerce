@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight, LayoutGrid, Zap, Search } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, LayoutGrid, Zap, Search, ShoppingBag } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { API_BASE_URL } from "@/lib/axios";
 import { productsService } from "@/modules/admin/services/products.service";
@@ -23,6 +23,7 @@ const Home = () => {
   const [banners, setBanners] = useState([]);
   const [bannersLoading, setBannersLoading] = useState(true);
   const [products, setProducts] = useState([]);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedStoreCategoryId, setSelectedStoreCategoryId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +34,11 @@ const Home = () => {
   const loadingRef = useRef(false);
   const lastRequestTime = useRef(0);
   const minRequestInterval = 1500; // 1.5 seconds between requests
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Fetch hero banners
   useEffect(() => {
@@ -61,9 +67,10 @@ const Home = () => {
       }
 
       try {
-        const [storeProductsResult, storeCategoriesResult] = await Promise.all([
+        const [storeProductsResult, storeCategoriesResult, featuredProductsResult] = await Promise.all([
           storeProductService.getActiveProducts({ limit: 20, page: 1 }),
           categoryService.getActiveCategories(),
+          storeProductService.getActiveProducts({ featured: 'true', limit: 4 })
         ]);
 
         if (!isMounted) return;
@@ -79,6 +86,11 @@ const Home = () => {
           setProducts(storeProductsResult.data);
           setPage(1);
           setHasMore(storeProductsResult.data.length >= 20);
+        }
+
+        // Featured products
+        if (featuredProductsResult?.success && Array.isArray(featuredProductsResult.data)) {
+          setFeaturedProducts(featuredProductsResult.data);
         }
 
         // Store categories (sorted: newest first)
@@ -428,12 +440,68 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Featured Products Section */}
+      <section className="container pt-4 pb-2 md:pt-6 md:pb-3 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 md:h-11 md:w-11 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 shadow-sm">
+              <Zap className="h-5 w-5 fill-amber-500" />
+            </div>
+            <div className="space-y-0.5">
+              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase italic">
+                Trending Featured
+              </h2>
+              <p className="hidden md:block text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                Our hand-picked premium selections
+              </p>
+            </div>
+          </div>
+          <Link 
+            to="/store-products?featured=true" 
+            className="flex items-center gap-2 text-xs md:text-sm font-black uppercase tracking-widest text-primary hover:gap-3 transition-all group"
+          >
+            View All
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          {loading && featuredProducts.length === 0 ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-3">
+                <div className="aspect-square rounded-2xl bg-muted/40 animate-pulse" />
+                <div className="h-4 w-2/3 rounded-full bg-muted/40 animate-pulse" />
+                <div className="h-4 w-1/3 rounded-full bg-muted/40 animate-pulse" />
+              </div>
+            ))
+          ) : featuredProducts.length > 0 ? (
+            featuredProducts.map((product) => (
+              <StoreProductCard key={product._id} product={product} />
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground col-span-full py-10 text-center bg-muted/10 rounded-3xl border border-dashed">
+              No featured products found. Check back later!
+            </p>
+          )}
+        </div>
+      </section>
+
       {/* Store Products grid (no dropshipping) */}
       <section className="container pt-4 pb-5 md:pt-6 space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">
-            {selectedStoreCategoryId ? "Store Products in this Category" : "Store Products"}
-          </h2>
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 md:h-11 md:w-11 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+            <div className="space-y-0.5">
+              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase italic">
+                {selectedStoreCategoryId ? "Category Products" : "Explore Store"}
+              </h2>
+              <p className="hidden md:block text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                 Browse our complete premium collection
+              </p>
+            </div>
+          </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {loading && products.length === 0

@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import {
     Select,
     SelectContent,
@@ -40,6 +41,7 @@ const StoreProductForm = ({ product, onSuccess, onCancel }) => {
         stock: product?.stock || 0,
         trackInventory: product?.trackInventory !== undefined ? product.trackInventory : true,
         isActive: product?.isActive !== undefined ? product.isActive : true,
+        isFeatured: product?.isFeatured !== undefined ? product.isFeatured : false,
         tags: product?.tags?.join(', ') || '',
     });
 
@@ -168,6 +170,7 @@ const StoreProductForm = ({ product, onSuccess, onCancel }) => {
             data.append('stock', formData.stock);
             data.append('trackInventory', formData.trackInventory);
             data.append('isActive', formData.isActive);
+            data.append('isFeatured', formData.isFeatured);
             // Auto-set allowPartialPayment from category: all products in partial-payment category get it
             data.append('allowPartialPayment', showPartialPaymentOption);
             if (formData.tags) data.append('tags', formData.tags);
@@ -419,20 +422,19 @@ const StoreProductForm = ({ product, onSuccess, onCancel }) => {
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <div className="flex items-center space-x-2 h-10">
-                        <Checkbox
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="trackInventory">Track Inventory</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Automatically manage stock levels
+                            </p>
+                        </div>
+                        <Switch
                             id="trackInventory"
-                            name="trackInventory"
                             checked={formData.trackInventory}
                             onCheckedChange={(checked) => setFormData(prev => ({ ...prev, trackInventory: checked }))}
                         />
-                        <label
-                            htmlFor="trackInventory"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                            Track inventory
-                        </label>
                     </div>
                 </div>
             </div>
@@ -456,20 +458,34 @@ const StoreProductForm = ({ product, onSuccess, onCancel }) => {
             <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Status</h3>
                 
-                <div className="space-y-3">
-                    <div className="flex items-center space-x-2 h-10">
-                        <Checkbox
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="isActive">Active Status</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Visible to customers
+                            </p>
+                        </div>
+                        <Switch
                             id="isActive"
-                            name="isActive"
                             checked={formData.isActive}
                             onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
                         />
-                        <label
-                            htmlFor="isActive"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                            Active (visible to customers)
-                        </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-lg border border-indigo-200 bg-indigo-50/50">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="isFeatured" className="text-indigo-700">Featured Product</Label>
+                            <p className="text-xs text-indigo-500">
+                                Show in special sections
+                            </p>
+                        </div>
+                        <Switch
+                            id="isFeatured"
+                            checked={formData.isFeatured}
+                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
+                            className="data-[state=checked]:bg-indigo-600"
+                        />
                     </div>
                 </div>
             </div>

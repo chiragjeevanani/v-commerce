@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { Filter, Loader2, ArrowLeft, Search } from "lucide-react";
+import { Filter, Loader2, ArrowLeft, Search, Zap } from "lucide-react";
 import { storeProductService } from "@/modules/admin/services/storeProduct.service";
 import { categoryService } from "@/modules/admin/services/category.service";
 import StoreProductCard from "@/modules/user/components/StoreProductCard";
@@ -137,6 +137,7 @@ const StoreProducts = () => {
             const categoryParam = searchParams.get("category");
             const subcategoryParam = searchParams.get("subcategory");
             const searchParam = searchParams.get("search");
+            const featuredParam = searchParams.get("featured");
 
             const params = {
                 page: pageNumber,
@@ -144,6 +145,7 @@ const StoreProducts = () => {
             };
 
             if (searchParam) params.search = searchParam;
+            if (featuredParam) params.featured = featuredParam;
             if (categoryParam) params.categoryId = categoryParam;
             if (subcategoryParam) params.subcategoryId = subcategoryParam;
 
@@ -373,7 +375,14 @@ const StoreProducts = () => {
                         </div>
                     </form>
                     <div className="flex items-center justify-between mb-6">
-                        <h1 className="text-3xl font-bold">Store Products</h1>
+                        <h1 className="text-3xl font-bold italic uppercase tracking-tight">
+                            {searchParams.get("featured") === "true" ? (
+                                <span className="flex items-center gap-2">
+                                    <Zap className="h-6 w-6 fill-amber-500 text-amber-500" />
+                                    Featured Products
+                                </span>
+                            ) : "Store Products"}
+                        </h1>
                         <div className="flex items-center gap-2">
                             <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
                                 <SheetTrigger asChild>
