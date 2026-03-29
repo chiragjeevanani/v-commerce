@@ -570,7 +570,7 @@ export const forceLogoutAllUsers = async (req, res) => {
 
     // Real-time Force Logout ALL via Socket.io
     try {
-      getIO().emit("forceLogout", { message: "All user sessions have been terminated for security updates." });
+      getIO().to("user").emit("forceLogout", { message: "All user sessions have been terminated for security updates." });
     } catch (ioErr) {
       console.warn("Socket.io not available for broadcast logout emission:", ioErr.message);
     }

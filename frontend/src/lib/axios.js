@@ -30,9 +30,9 @@ apiClient.interceptors.response.use(
       localStorage.removeItem("user");
       
       // Only redirect if we are not already on the login or landing page to avoid loops
-      const publicPaths = ["/", "/auth/login", "/auth/signup"];
+      const publicPaths = ["/", "/login", "/signup"];
       if (!publicPaths.includes(window.location.pathname)) {
-        window.location.href = "/";
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);

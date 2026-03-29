@@ -17,13 +17,32 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        const storedUser = authService.getCurrentUser();
-        const token = authService.getToken();
-        if (storedUser && token) {
-            setUser(storedUser);
-            setIsAuthenticated(true);
-        }
-        setIsLoading(false);
+        const verifySession = async () => {
+            const storedUser = authService.getCurrentUser();
+            const token = authService.getToken();
+            
+            if (storedUser && token) {
+                try {
+                    // Call backend to verify token is still valid (checks tokenVersion)
+                    const result = await authService.userProfile();
+                    if (result.success) {
+                        setUser(result.data);
+                        setIsAuthenticated(true);
+                    } else {
+                        logout();
+                    }
+                } catch (error) {
+                    console.error("Session verification failed:", error);
+                    // If error is 401 or invalid token, logout
+                    if (error.message.includes("401") || error.message.includes("Session expired")) {
+                        logout();
+                    }
+                }
+            }
+            setIsLoading(false);
+        };
+
+        verifySession();
     }, []);
 
     const login = async (email, password) => {

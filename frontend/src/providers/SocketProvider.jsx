@@ -28,11 +28,16 @@ export const SocketProvider = ({ children }) => {
             console.log("WebSocket: Connected! ID:", socket.id);
             setIsConnected(true);
             
-            // Join user room if logged in
+            // Join user-specific AND role-specific rooms if logged in
             const user = authService.getCurrentUser();
             if (user && user._id) {
                 console.log("WebSocket: Joining user room", user._id);
                 socket.emit("join", user._id);
+                
+                if (user.role) {
+                    console.log("WebSocket: Joining role room", user.role);
+                    socket.emit("join", user.role);
+                }
             }
         });
 
@@ -56,13 +61,14 @@ export const SocketProvider = ({ children }) => {
                 title: "Session Terminated",
                 description: data.message || "Your session has been terminated by the administrator.",
                 variant: "destructive",
-                duration: 10000,
+                duration: 5000,
             });
 
-            // Redirect home
+            // Redirect to login page immediately
+            // Using window.location.href to ensure full app state reset
             setTimeout(() => {
-                window.location.href = "/";
-            }, 1000);
+                window.location.href = "/login";
+            }, 2000);
         });
 
         return () => {
@@ -76,6 +82,7 @@ export const SocketProvider = ({ children }) => {
             const user = authService.getCurrentUser();
             if (socketRef.current?.connected && user && user._id) {
                 socketRef.current.emit("join", user._id);
+                if (user.role) socketRef.current.emit("join", user.role);
             }
         }, 5000); // Verify room membership every 5s
 
