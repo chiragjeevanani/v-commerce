@@ -7,7 +7,10 @@ export const initSocket = (server) => {
         cors: {
             origin: "*",
             methods: ["GET", "POST"]
-        }
+        },
+        pingTimeout: 10000,
+        pingInterval: 5000,
+        allowEIO3: true, // Support for older socket.io clients if needed in WebView
     });
 
     io.on("connection", (socket) => {

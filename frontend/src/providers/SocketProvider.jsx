@@ -11,15 +11,17 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+        // NOTE for APK: If you use 'localhost' in your build, it will not connect on a physical device.
         const SOCKET_URL = apiBase.split('/api')[0];
         
-        console.log("WebSocket: Attempting connection to", SOCKET_URL);
+        console.log("WebSocket: Initializing connecting to", SOCKET_URL);
 
         const socket = io(SOCKET_URL, {
-            transports: ["websocket", "polling"],
+            transports: ["websocket", "polling"], // Ensure both are allowed for fallback
             reconnection: true,
-            reconnectionAttempts: 10,
+            reconnectionAttempts: Infinity, // Keep trying on mobile as connection drops are common
             reconnectionDelay: 1000,
+            autoConnect: true,
         });
 
         socketRef.current = socket;
