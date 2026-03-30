@@ -62,26 +62,25 @@ const StoreProductDetail = () => {
         setLoading(true);
         try {
             let loadedProduct = null;
-
-            if (productIdFromState) {
-                // Preferred: load by ID passed via navigation state
-                const result = await storeProductService.getProductById(productIdFromState);
-                if (result.success) {
-                    loadedProduct = result.data;
-                } else {
-                    throw new Error(result.message || "Product not found");
-                }
-            } else if (slug) {
-                // Fallback: try to find product by name using search
+            let idToUse = productIdFromState;
+            
+            // If opening in new tab, find ID first via slug search
+            if (!idToUse && slug) {
                 const searchTerm = slug.replace(/-/g, " ");
                 const listResult = await storeProductService.getActiveProducts({
                     search: searchTerm,
                     limit: 1,
                 });
-                if (listResult.success && Array.isArray(listResult.data) && listResult.data.length > 0) {
-                    loadedProduct = listResult.data[0];
-                } else {
-                    throw new Error("Product not found");
+                if (listResult.success && listResult.data?.[0]) {
+                    idToUse = listResult.data[0]._id;
+                }
+            }
+
+            if (idToUse) {
+                // Now always use the detailed getById API
+                const result = await storeProductService.getProductById(idToUse);
+                if (result.success) {
+                    loadedProduct = result.data;
                 }
             }
 
