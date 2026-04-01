@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Plus, Minus, ArrowRight, ShoppingCart, ArrowLeft } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowRight, ShoppingCart, ArrowLeft, Tag } from "lucide-react";
 import { useCart } from "@/modules/user/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -128,15 +128,11 @@ const Cart = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">₹<AnimatedNumber value={cartTotal} decimals={2} /></span>
+                  <span className="font-medium">₹<AnimatedNumber value={cartTotal} decimals={0} /></span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="text-primary font-bold">FREE</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Tax (10%)</span>
-                  <span className="font-medium">₹<AnimatedNumber value={cartTotal * 0.1} decimals={2} /></span>
                 </div>
               </div>
 
@@ -144,7 +140,7 @@ const Cart = () => {
 
               <div className="flex justify-between font-black text-xl text-primary">
                 <span>Total</span>
-                <span>₹<AnimatedNumber value={cartTotal * 1.1} decimals={2} /></span>
+                <span>₹<AnimatedNumber value={cartTotal} decimals={0} /></span>
               </div>
 
               <Button className="w-full" size="lg" onClick={() => navigate("/checkout")}>

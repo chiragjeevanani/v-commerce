@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, CreditCard, MapPin, Truck, ArrowLeft } from "lucide-react";
+import { Check, CreditCard, MapPin, Truck, ArrowLeft, Tag } from "lucide-react";
 import { useCart } from "@/modules/user/context/CartContext";
 import { api } from "@/services/api";
 import { useAuth } from "@/modules/user/context/AuthContext";
@@ -38,7 +38,8 @@ const Checkout = () => {
   const [shippingLoading, setShippingLoading] = useState(false);
   const [deliveryEstimate, setDeliveryEstimate] = useState("");
   const shippingFee = selectedShipping?.fee ?? selectedShipping?.price ?? 0;
-  const orderTotal = (cartTotal * 1.1) + shippingFee;
+
+  const orderTotal = cartTotal + shippingFee;
   const cartHasPartialPayment = cart.some((item) => item.allowPartialPayment === true);
   const PARTIAL_PAYMENT_AMOUNT = 500;
   const showPartialOption = cartHasPartialPayment && orderTotal > PARTIAL_PAYMENT_AMOUNT;
@@ -175,7 +176,7 @@ const Checkout = () => {
         phoneNumber: formData.phoneNumber,
       };
 
-      const totalAmount = (cartTotal * 1.1) + shippingFee;
+      const totalAmount = cartTotal + shippingFee;
       const amountToPay = usePartialPayment ? PARTIAL_PAYMENT_AMOUNT : totalAmount;
 
       // Branching logic for Payment Method
@@ -505,10 +506,6 @@ const Checkout = () => {
                     <span className="text-xs font-bold">{typeof deliveryEstimate === 'number' ? `${deliveryEstimate} days` : deliveryEstimate}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center border-t pt-2">
-                  <span className="text-muted-foreground">Tax (10%)</span>
-                  <span className="font-black">₹<AnimatedNumber value={cartTotal * 0.1} decimals={2} /></span>
-                </div>
               </div>
               <Separator className="opacity-50" />
               <div className="flex justify-between items-end">

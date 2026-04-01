@@ -3,6 +3,7 @@ import Category from "../Models/CategoryModel.js";
 import Subcategory from "../Models/SubcategoryModel.js";
 import fs from "fs";
 import cloudinary from "../Cloudinary/Cloudinary.js";
+import mongoose from "mongoose";
 
 // ================= GET ALL PRODUCTS (PUBLIC) =================
 export const getActiveProducts = async (req, res) => {
@@ -101,13 +102,31 @@ export const getAllProducts = async (req, res) => {
 };
 
 // ================= GET SINGLE PRODUCT =================
+
 export const getProductById = async (req, res) => {
     try {
         const { id } = req.params;
-        const product = await Product.findById(id)
+        let product;
+
+        if (mongoose.Types.ObjectId.isValid(id) && id.length === 24) {
+            product = await Product.findById(id)
+                .populate('categoryId', 'name image allowPartialPayment')
+                .populate('subcategoryId', 'name')
+                .select("-__v");
+        }
+
+        // If not found by valid ID or it was passed as a slug
+        if (!product) {
+            const searchTerm = id.replace(/-/g, " ");
+            product = await Product.findOne(
+                { $text: { $search: searchTerm } },
+                { score: { $meta: "textScore" } }
+            )
+            .sort({ score: { $meta: "textScore" } })
             .populate('categoryId', 'name image allowPartialPayment')
             .populate('subcategoryId', 'name')
             .select("-__v");
+        }
 
         if (!product) {
             return res.status(404).json({
