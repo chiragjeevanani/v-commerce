@@ -12,9 +12,6 @@ import SkeletonCard from "@/modules/user/components/SkeletonCard";
 import StoreProductCard from "@/modules/user/components/StoreProductCard";
 import ProductReviews from "@/modules/user/components/ProductReviews";
 import Countdown from "@/components/Countdown";
-import DeliveryTimeline from "@/modules/user/components/DeliveryTimeline";
-import OfferBanner from "@/modules/user/components/OfferBanner";
-import { RatingSnippet, PurchaseBadge } from "@/modules/user/components/RatingSnippet";
 
 const StoreProductDetail = () => {
     const { slug } = useParams();
@@ -65,12 +62,26 @@ const StoreProductDetail = () => {
         setLoading(true);
         try {
             let loadedProduct = null;
-            let idToUse = productIdFromState || slug;
 
-            if (idToUse) {
-                const result = await storeProductService.getProductById(idToUse);
+            if (productIdFromState) {
+                // Preferred: load by ID passed via navigation state
+                const result = await storeProductService.getProductById(productIdFromState);
                 if (result.success) {
                     loadedProduct = result.data;
+                } else {
+                    throw new Error(result.message || "Product not found");
+                }
+            } else if (slug) {
+                // Fallback: try to find product by name using search
+                const searchTerm = slug.replace(/-/g, " ");
+                const listResult = await storeProductService.getActiveProducts({
+                    search: searchTerm,
+                    limit: 1,
+                });
+                if (listResult.success && Array.isArray(listResult.data) && listResult.data.length > 0) {
+                    loadedProduct = listResult.data[0];
+                } else {
+                    throw new Error("Product not found");
                 }
             }
 
@@ -328,9 +339,6 @@ const StoreProductDetail = () => {
                             <h1 className="text-2xl font-black text-foreground tracking-tight leading-tight">
                                 {product.name}
                             </h1>
-                            
-                            <RatingSnippet productId={product._id} />
-                            <PurchaseBadge productId={product._id} />
 
                             {/* Mobile Thumbnails */}
                             {images.length > 0 && (
@@ -374,9 +382,33 @@ const StoreProductDetail = () => {
                                 {product.allowPartialPayment && (
                                     <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wide">Pay ₹500 now, rest later</Badge>
                                 )}
-                                </div>
-                                <OfferBanner price={product.discountPrice || product.price} />
-                                <DeliveryTimeline />
+                                {/* Delivery estimate (mobile) - animated pill; clickable to view shipping */}
+                                <motion.div
+                                    role="button"
+                                    onClick={() => setActiveTab('shipping & returns')}
+                                    title="View shipping & returns"
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.38, ease: [0.2, 0.9, 0.3, 1] }}
+                                    className="w-full mt-4 group cursor-pointer"
+                                >
+                                    <div className="relative delivery-pill">
+                                        <div className="absolute inset-0 delivery-shimmer opacity-40 pointer-events-none" />
+                                        <div className="absolute -left-10 top-1/2 transform -translate-y-1/2 progress-shine opacity-40 pointer-events-none" />
+
+                                        <div className="truck-circle relative flex-shrink-0">
+                                            <span className="absolute inset-0 rounded-lg pulse-ring opacity-30" />
+                                            <span className="absolute inset-0 rounded-lg pulse-ring-2 opacity-20" />
+                                            <Truck className="h-6 w-6 text-primary truck-anim truck-glow" />
+                                        </div>
+
+                                        <div className="flex flex-col">
+                                            <span className="text-xs text-muted-foreground uppercase tracking-wider">Estimated</span>
+                                            <span className="gradient-text text-lg md:text-xl">5 - 7 Days Delivery</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </div>
                         </div>
 
                         <p className="text-base text-muted-foreground leading-relaxed font-medium line-clamp-3">
@@ -388,15 +420,8 @@ const StoreProductDetail = () => {
 
             {/* Desktop-Only Standard Layout */}
             <div className="hidden md:block container py-8">
-                <Button 
-                    variant="ghost" 
-                    className="mb-10 px-0 hover:bg-transparent text-muted-foreground hover:text-primary transition-all group flex items-center gap-2 font-bold uppercase tracking-widest text-xs" 
-                    onClick={() => navigate(-1)}
-                >
-                    <div className="bg-muted p-2 rounded-full group-hover:bg-primary/10 transition-colors">
-                        <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /> 
-                    </div>
-                    Back to results
+                <Button variant="ghost" className="mb-8 hover:bg-transparent hover:text-primary transition-colors group" onClick={() => navigate(-1)}>
+                    <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to result
                 </Button>
 
                 <div className="grid grid-cols-12 gap-12 lg:gap-16">
@@ -473,20 +498,13 @@ const StoreProductDetail = () => {
 
                     {/* Desktop Right: Content Info */}
                     <div className="col-span-12 lg:col-span-5 space-y-10">
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <span className="text-[11px] font-black text-primary uppercase tracking-[0.3em] opacity-80 bg-primary/5 px-3 py-1 rounded-full w-fit">
-                                    {product.categoryId?.name || "General"}
-                                </span>
-                                <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-foreground tracking-tight leading-[1.1] break-words">
-                                    {product.name}
-                                </h1>
-                            </div>
-                            
-                            <div className="flex flex-col gap-2">
-                                <RatingSnippet productId={product._id} />
-                                <PurchaseBadge productId={product._id} />
-                            </div>
+                        <div className="space-y-4">
+                            <span className="text-xs font-bold text-primary uppercase tracking-[0.2em]">
+                                {product.categoryId?.name || "General"}
+                            </span>
+                            <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-foreground tracking-tight break-words">
+                                {product.name}
+                            </h1>
                             <div className="flex items-center gap-6 py-4 flex-wrap">
                                 <div className="flex flex-col">
                                     <span className="text-3xl xl:text-4xl font-black text-primary">
@@ -501,14 +519,38 @@ const StoreProductDetail = () => {
                                 {product.allowPartialPayment && (
                                     <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wide">Pay ₹500 now, rest later</Badge>
                                 )}
-                                </div>
-                                <OfferBanner price={product.discountPrice || product.price} />
-                                <DeliveryTimeline />
+                                {/* Delivery estimate (desktop) - animated pill; clickable to view shipping */}
+                                <motion.div
+                                    role="button"
+                                    onClick={() => setActiveTab('shipping & returns')}
+                                    title="View shipping & returns"
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.38, ease: [0.2, 0.9, 0.3, 1], delay: 0.05 }}
+                                    className="w-full mt-4 group cursor-pointer"
+                                >
+                                    <div className="relative delivery-pill">
+                                        <div className="absolute inset-0 delivery-shimmer opacity-40 pointer-events-none" />
+                                        <div className="absolute -left-12 top-1/2 transform -translate-y-1/2 progress-shine opacity-40 pointer-events-none" />
+
+                                        <div className="truck-circle relative flex-shrink-0">
+                                            <span className="absolute inset-0 rounded-lg pulse-ring opacity-30" />
+                                            <span className="absolute inset-0 rounded-lg pulse-ring-2 opacity-20" />
+                                            <Truck className="h-6 w-6 text-primary truck-anim truck-glow" />
+                                        </div>
+
+                                        <div className="flex flex-col">
+                                            <span className="text-xs text-muted-foreground uppercase tracking-wider">Estimated</span>
+                                            <span className="gradient-text text-lg">5 - 7 Days Delivery</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </div>
                         </div>
 
                         <div
-                            className="text-[17px] text-muted-foreground/90 leading-[1.8] font-medium border-l-[3px] border-primary/30 pl-8 product-description italic"
-                            dangerouslySetInnerHTML={{ __html:  product.shortDescription || "Experience the pinnacle of quality and craftsmanship with our premium selection." }}
+                            className="text-base text-muted-foreground leading-relaxed font-medium border-l-4 border-primary/20 pl-6 product-description"
+                            dangerouslySetInnerHTML={{ __html:  product.shortDescription || "Premium quality product." }}
                         />
 
                         <div className="space-y-8 pt-6 border-t">
@@ -599,11 +641,11 @@ const StoreProductDetail = () => {
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeTab}
-                            initial={{ opacity: 0, y: 15 }}
+                            initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            transition={{ duration: 0.4 }}
-                            className="max-w-4xl bg-muted/5 rounded-[32px] p-8 md:p-12 border border-white/5"
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                            className="max-w-4xl"
                         >
                             {activeTab === "description" && (
                                 <div className="space-y-6">
@@ -713,8 +755,8 @@ const StoreProductDetail = () => {
                 </section>
 
                 {/* Reviews Section */}
-                <section id="product-reviews" className="mt-16">
-                    <ProductReviews productId={product._id} product={product} />
+                <section className="mt-16">
+                    <ProductReviews productId={product._id} />
                 </section>
 
                 {/* Related Products */}
@@ -778,21 +820,12 @@ const StoreProductDetail = () => {
                         </Button>
                     </div>
                 )}
-                {/* Mobile Sticky Action Bar - Refined hierarchy */}
-                <div className="fixed bottom-0 left-0 right-0 p-5 px-6 bg-background/90 backdrop-blur-2xl border-t md:hidden z-40 flex gap-4 items-center shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-                    <Button 
-                        variant="secondary" 
-                        className="flex-1 h-14 font-black rounded-2xl border bg-muted/50 hover:bg-muted text-foreground transition-all active:scale-95" 
-                        onClick={handleAddToCart} 
-                        disabled={isOutOfStock || !product.isActive}
-                    >
+                {/* Mobile Sticky Action Bar - Buttons only */}
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t md:hidden z-40 flex gap-3">
+                    <Button className="flex-1 h-12 font-bold rounded-xl shadow-lg" onClick={handleAddToCart} disabled={isOutOfStock || !product.isActive}>
                         Add to Cart
                     </Button>
-                    <Button 
-                        className="flex-[1.2] h-14 font-black rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground transition-all active:scale-95 text-lg" 
-                        onClick={handleBuyNow} 
-                        disabled={isOutOfStock || !product.isActive}
-                    >
+                    <Button variant="secondary" className="flex-1 h-12 font-bold rounded-xl border" onClick={handleBuyNow} disabled={isOutOfStock || !product.isActive}>
                         Buy Now
                     </Button>
                 </div>

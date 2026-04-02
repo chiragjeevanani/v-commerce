@@ -249,29 +249,25 @@ html {
 }
 
 /* Delivery pill and fancy text */
-
 .delivery-pill {
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   border: 1px solid hsl(var(--primary) / 0.18);
-  backdrop-filter: blur(8px);
-  padding: 0.9rem 1.25rem;
-  border-radius: 1.25rem;
-  display: flex;
+  backdrop-filter: blur(6px);
+  padding: 0.6rem 0.9rem;
+  border-radius: 1rem;
+  display: inline-flex;
   align-items: center;
-  gap: 1rem;
-  width: 100%;
-  max-width: 760px;
+  gap: 0.75rem;
 }
 
 .delivery-pill .truck-circle {
-  width: 4rem;
-  height: 4rem;
-  min-width: 4rem;
+  width: 3rem;
+  height: 3rem;
   display: inline-grid;
   place-items: center;
-  border-radius: 0.9rem;
-  background: linear-gradient(180deg, hsl(var(--primary) / 0.14), hsl(var(--primary) / 0.06));
-  border: 1px solid hsl(var(--primary) / 0.24);
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.06));
+  border: 1px solid hsl(var(--primary) / 0.22);
   position: relative;
 }
 
@@ -280,17 +276,16 @@ html {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  font-weight: 900;
-  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 .delivery-pill:hover {
-  transform: translateY(-6px) scale(1.01);
+  transform: translateY(-4px);
   transition: transform 220ms cubic-bezier(.2,.9,.3,1);
 }
 
 .truck-glow {
-  filter: drop-shadow(0 8px 30px rgba(249,115,22,0.16));
+  filter: drop-shadow(0 6px 18px rgba(249,115,22,0.14));
 }
 
 /* Flip-clock tile */
